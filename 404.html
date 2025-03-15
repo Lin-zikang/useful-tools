@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found</title>
+    <style>
+        /* 通用样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(45deg, #ff6ec7, #3a8d99);
+            color: white;
+            text-align: center;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            animation: fadeIn 1s ease-out;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 8px;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        a:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-5px);
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 细节效果 */
+        .error-message {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-out forwards;
+            animation-delay: 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>404 - 页面未找到</h1>
+        <p class="error-message">抱歉，我们无法找到您请求的页面。</p>
+		<a href="../">返回主页</a>
+    </div>
+</body>
+</html>

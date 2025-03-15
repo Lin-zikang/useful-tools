@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>进制转换工具</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: gradientAnimation 10s ease infinite;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            transform: scale(0.9);
+            animation: scaleUp 0.5s ease-out forwards;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes scaleUp {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .title {
+            font-size: 32px;
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-box {
+            margin: 20px 0;
+        }
+
+        .input-box label {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-box select,
+        .input-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: #f4f4f4;
+        }
+
+        .input-box select:focus,
+        .input-box input:focus {
+            border-color: #6a11cb;
+            background: #e0e0e0;
+        }
+
+        .button {
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            color: #fff;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .button:hover {
+            background: linear-gradient(45deg, #2575fc, #6a11cb);
+            transform: scale(1.05);
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #2e2e2e;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 18px;
+            word-wrap: break-word; /* 长内容换行 */
+            word-break: break-word;
+            white-space: pre-wrap; /* 保留空格并换行 */
+            max-height: 200px; /* 限制最大高度 */
+            overflow-y: auto; /* 长内容滚动 */
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .result-box span {
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .result-box .result-value {
+            font-size: 22px;
+            color: #1db954;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="title">进制转换工具</h1>
+
+        <div class="input-box">
+            <label for="fromBase">待转换数进制：</label>
+            <select id="fromBase">
+                <option value="2">2进制</option>
+                <option value="3">3进制</option>
+                <option value="4">4进制</option>
+                <option value="5">5进制</option>
+                <option value="6">6进制</option>
+                <option value="7">7进制</option>
+                <option value="8">8进制</option>
+                <option value="9">9进制</option>
+                <option value="10" selected>10进制</option>
+                <option value="11">11进制</option>
+                <option value="12">12进制</option>
+                <option value="13">13进制</option>
+                <option value="14">14进制</option>
+                <option value="15">15进制</option>
+                <option value="16">16进制</option>
+                <option value="17">17进制</option>
+                <option value="18">18进制</option>
+                <option value="19">19进制</option>
+                <option value="20">20进制</option>
+                <option value="21">21进制</option>
+                <option value="22">22进制</option>
+                <option value="23">23进制</option>
+                <option value="24">24进制</option>
+                <option value="25">25进制</option>
+                <option value="26">26进制</option>
+                <option value="27">27进制</option>
+                <option value="28">28进制</option>
+                <option value="29">29进制</option>
+                <option value="30">30进制</option>
+                <option value="31">31进制</option>
+                <option value="32">32进制</option>
+                <option value="33">33进制</option>
+                <option value="34">34进制</option>
+                <option value="35">35进制</option>
+                <option value="36">36进制</option>
+            </select>
+
+            <label for="numberInput">转换数字：</label>
+            <input type="text" id="numberInput" placeholder="请输入需要转换的数字" required>
+
+            <label for="toBase">转换结果进制：</label>
+            <select id="toBase">
+                <option value="2">2进制</option>
+                <option value="3">3进制</option>
+                <option value="4">4进制</option>
+                <option value="5">5进制</option>
+                <option value="6">6进制</option>
+                <option value="7">7进制</option>
+                <option value="8">8进制</option>
+                <option value="9">9进制</option>
+                <option value="10">10进制</option>
+                <option value="11">11进制</option>
+                <option value="12">12进制</option>
+                <option value="13">13进制</option>
+                <option value="14">14进制</option>
+                <option value="15">15进制</option>
+                <option value="16">16进制</option>
+                <option value="17">17进制</option>
+                <option value="18">18进制</option>
+                <option value="19">19进制</option>
+                <option value="20">20进制</option>
+                <option value="21">21进制</option>
+                <option value="22">22进制</option>
+                <option value="23">23进制</option>
+                <option value="24">24进制</option>
+                <option value="25">25进制</option>
+                <option value="26">26进制</option>
+                <option value="27">27进制</option>
+                <option value="28">28进制</option>
+                <option value="29">29进制</option>
+                <option value="30">30进制</option>
+                <option value="31">31进制</option>
+                <option value="32">32进制</option>
+                <option value="33">33进制</option>
+                <option value="34">34进制</option>
+                <option value="35">35进制</option>
+                <option value="36">36进制</option>
+            </select>
+        </div>
+
+        <button class="button" onclick="convert()">转换</button>
+
+        <div class="result-box" id="resultBox">
+            <p><span>转换结果：</span><span id="result" class="result-value">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        function convert() {
+            const fromBase = parseInt(document.getElementById('fromBase').value);
+            const toBase = parseInt(document.getElementById('toBase').value);
+            let numberInput = document.getElementById('numberInput').value.trim();
+
+            // 输入验证：确保数字不为空并且是合法的
+            if (!numberInput || !/^-?[a-zA-Z0-9.]+$/.test(numberInput)) {
+                alert("请输入有效的数字！");
+                return;
+            }
+
+            // 检查是否是负数
+            const isNegative = numberInput.startsWith('-');
+            if (isNegative) {
+                numberInput = numberInput.slice(1); // 移除负号
+            }
+
+            let [integerPart, decimalPart] = numberInput.split('.');
+            if (!integerPart) integerPart = '0';
+
+            let decimalInteger = 0n;
+            for (let char of integerPart.toUpperCase()) {
+                decimalInteger = decimalInteger * BigInt(fromBase) + BigInt(parseInt(char, fromBase));
+            }
+
+            let integerResult = decimalInteger.toString(toBase).toUpperCase();
+
+            let decimalResult = '';
+            if (decimalPart) {
+                let decimalValue = parseFloat('0.' + decimalPart);  // 获取小数部分
+                let precision = 10; // 限制精度
+                let counter = 0;
+                while (decimalValue !== 0 && counter < precision) {
+                    decimalValue *= toBase;
+                    const integerDigit = Math.floor(decimalValue);
+                    decimalResult += integerDigit.toString(toBase).toUpperCase();
+                    decimalValue -= integerDigit;  // 继续处理余数
+                    counter++;
+                }
+                decimalResult = '.' + decimalResult;
+            }
+
+            displayResult(isNegative ? '-' + integerResult + decimalResult : integerResult + decimalResult);
+        }
+
+        function displayResult(result) {
+            document.getElementById('result').textContent = result;
+            document.getElementById('resultBox').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

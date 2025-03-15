@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学符号大全</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #f3f4f9, #e1e6f0);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 36px;
+            color: #4a4a4a;
+        }
+        .symbol-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 40px;
+            padding: 20px;
+        }
+        .symbol-item {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 120px;
+            height: 120px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+        }
+        .symbol-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            background-color: #f5f5f5;
+        }
+        .symbol-item span {
+            font-size: 36px;
+            color: #4a90e2;
+            transition: color 0.3s;
+        }
+        .symbol-item:hover span {
+            color: #333;
+        }
+        .symbol-item:active {
+            transform: scale(0.98);
+        }
+        .copy-button {
+            background-color: #4a90e2;
+            color: #fff;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        .copy-button:hover {
+            background-color: #357ab7;
+        }
+        .symbol-description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>数学符号大全</h1>
+
+    <div class="symbol-list">
+        <!-- Original symbols -->
+        <div class="symbol-item">
+            <span>+</span>
+            <button class="copy-button" onclick="copySymbol('+')">复制</button>
+            <div class="symbol-description">加号，表示两个数相加</div>
+        </div>
+        <div class="symbol-item">
+            <span>-</span>
+            <button class="copy-button" onclick="copySymbol('-')">复制</button>
+            <div class="symbol-description">减号，表示两个数相减</div>
+        </div>
+        <div class="symbol-item">
+            <span>×</span>
+            <button class="copy-button" onclick="copySymbol('×')">复制</button>
+            <div class="symbol-description">乘号，表示两个数相乘</div>
+        </div>
+        <div class="symbol-item">
+            <span>÷</span>
+            <button class="copy-button" onclick="copySymbol('÷')">复制</button>
+            <div class="symbol-description">除号，表示两个数相除</div>
+        </div>
+        <div class="symbol-item">
+            <span>=</span>
+            <button class="copy-button" onclick="copySymbol('=')">复制</button>
+            <div class="symbol-description">等号，表示两个数相等</div>
+        </div>
+        <div class="symbol-item">
+            <span>≠</span>
+            <button class="copy-button" onclick="copySymbol('≠')">复制</button>
+            <div class="symbol-description">不等号，表示两个数不相等</div>
+        </div>
+        <div class="symbol-item">
+            <span>≈</span>
+            <button class="copy-button" onclick="copySymbol('≈')">复制</button>
+            <div class="symbol-description">约等于，表示两个数接近但不完全相等</div>
+        </div>
+        <div class="symbol-item">
+            <span>≤</span>
+            <button class="copy-button" onclick="copySymbol('≤')">复制</button>
+            <div class="symbol-description">小于等于，表示一个数小于或等于另一个数</div>
+        </div>
+        <div class="symbol-item">
+            <span>≥</span>
+            <button class="copy-button" onclick="copySymbol('≥')">复制</button>
+            <div class="symbol-description">大于等于，表示一个数大于或等于另一个数</div>
+        </div>
+        <div class="symbol-item">
+            <span>∞</span>
+            <button class="copy-button" onclick="copySymbol('∞')">复制</button>
+            <div class="symbol-description">无穷大，表示没有限制的极限</div>
+        </div>
+        <div class="symbol-item">
+            <span>∑</span>
+            <button class="copy-button" onclick="copySymbol('∑')">复制</button>
+            <div class="symbol-description">求和符号，用于表示数值的累加</div>
+        </div>
+        <div class="symbol-item">
+            <span>∏</span>
+            <button class="copy-button" onclick="copySymbol('∏')">复制</button>
+            <div class="symbol-description">求积符号，用于表示数值的累乘</div>
+        </div>
+        <div class="symbol-item">
+            <span>√</span>
+            <button class="copy-button" onclick="copySymbol('√')">复制</button>
+            <div class="symbol-description">根号，表示一个数的算数平方根</div>
+        </div>
+        <div class="symbol-item">
+            <span>∂</span>
+            <button class="copy-button" onclick="copySymbol('∂')">复制</button>
+            <div class="symbol-description">偏导数，表示多元函数的偏导数</div>
+        </div>
+        <div class="symbol-item">
+            <span>∇</span>
+            <button class="copy-button" onclick="copySymbol('∇')">复制</button>
+            <div class="symbol-description">梯度符号，表示一个向量场的梯度</div>
+        </div>
+
+        <!-- New symbols -->
+        <div class="symbol-item">
+            <span>±</span>
+            <button class="copy-button" onclick="copySymbol('±')">复制</button>
+            <div class="symbol-description">正负号，表示一个数的正负可能性</div>
+        </div>
+        <div class="symbol-item">
+            <span>∫</span>
+            <button class="copy-button" onclick="copySymbol('∫')">复制</button>
+            <div class="symbol-description">积分符号，用于表示积分运算</div>
+        </div>
+        <div class="symbol-item">
+            <span>∩</span>
+            <button class="copy-button" onclick="copySymbol('∩')">复制</button>
+            <div class="symbol-description">交集符号，表示集合的交集</div>
+        </div>
+        <div class="symbol-item">
+            <span>∪</span>
+            <button class="copy-button" onclick="copySymbol('∪')">复制</button>
+            <div class="symbol-description">并集符号，表示集合的并集</div>
+        </div>
+        <div class="symbol-item">
+            <span>∈</span>
+            <button class="copy-button" onclick="copySymbol('∈')">复制</button>
+            <div class="symbol-description">属于符号，表示元素属于集合</div>
+        </div>
+        <div class="symbol-item">
+            <span>⊂</span>
+            <button class="copy-button" onclick="copySymbol('⊂')">复制</button>
+            <div class="symbol-description">真子集符号，表示严格包含关系</div>
+        </div>
+        <div class="symbol-item">
+            <span>⊃</span>
+            <button class="copy-button" onclick="copySymbol('⊃')">复制</button>
+            <div class="symbol-description">真超集符号，表示严格超集关系</div>
+        </div>
+    </div>
+
+    <script>
+        function copySymbol(symbol) {
+            // 创建一个临时的textarea元素
+            const textarea = document.createElement('textarea');
+            // 设置其值为要复制的符号
+            textarea.value = symbol;
+            // 将其添加到DOM中
+            document.body.appendChild(textarea);
+            // 选中该文本
+            textarea.select();
+            // 执行复制命令
+            document.execCommand('copy');
+            // 移除临时的textarea元素
+            document.body.removeChild(textarea);
+            // 提示用户已复制
+            alert('符号已复制到剪贴板！');
+        }
+    </script>
+
+</body>
+</html>

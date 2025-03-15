@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>汇率转换器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #ff7e5f, #feb47b);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #fff;
+            background: #333;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 1.3rem;
+        }
+
+        .result span {
+            font-weight: bold;
+        }
+
+        .currency-section {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .currency-section h3 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>汇率转换器</h1>
+
+        <div class="currency-section">
+            <h3>待转换货币</h3>
+            <input type="number" id="amount" placeholder="输入金额" />
+            <select id="fromCurrency">
+                <option value="USD">美元 (USD)</option>
+                <option value="EUR">欧元 (EUR)</option>
+                <option value="GBP">英镑 (GBP)</option>
+                <option value="CNY">人民币 (CNY)</option>
+                <option value="JPY">日元 (JPY)</option>
+                <option value="AUD">澳大利亚元 (AUD)</option>
+                <option value="CAD">加拿大元 (CAD)</option>
+                <option value="RUB">俄罗斯卢布 (RUB)</option>
+            </select>
+        </div>
+
+        <div class="currency-section">
+            <h3>目标转换货币</h3>
+            <select id="toCurrency">
+                <option value="CNY">人民币 (CNY)</option>
+                <option value="USD">美元 (USD)</option>
+                <option value="EUR">欧元 (EUR)</option>
+                <option value="GBP">英镑 (GBP)</option>
+                <option value="JPY">日元 (JPY)</option>
+                <option value="AUD">澳大利亚元 (AUD)</option>
+                <option value="CAD">加拿大元 (CAD)</option>
+                <option value="RUB">俄罗斯卢布 (RUB)</option>
+            </select>
+        </div>
+
+        <button onclick="convertCurrency()">转换</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const exchangeRates = {
+            USD: { CNY: 7.3271, EUR: 0.9215, GBP: 0.8078, AUD: 1.3441, CAD: 1.2417, JPY: 148.20, RUB: 102.47 },
+            CNY: { USD: 0.1365, EUR: 0.1257, GBP: 0.1103, AUD: 0.1834, CAD: 0.1702, JPY: 20.22, RUB: 13.99 },
+            EUR: { USD: 1.0851, CNY: 7.9585, GBP: 0.8764, AUD: 1.4579, CAD: 1.3461, JPY: 161.03, RUB: 108.45 },
+            GBP: { USD: 1.2387, CNY: 8.9585, EUR: 1.1410, AUD: 1.6624, CAD: 1.5356, JPY: 183.89, RUB: 121.50 },
+            AUD: { USD: 0.7445, CNY: 5.4518, EUR: 0.6858, GBP: 0.6015, CAD: 0.9235, JPY: 122.99, RUB: 66.50 },
+            CAD: { USD: 0.8052, CNY: 5.8771, EUR: 0.7433, GBP: 0.6512, AUD: 1.0831, JPY: 135.18, RUB: 75.50 },
+            JPY: { USD: 0.0067, CNY: 0.0495, EUR: 0.0062, GBP: 0.0054, AUD: 0.0081, CAD: 0.0074, RUB: 0.75 },
+            RUB: { USD: 0.0139, CNY: 0.07148, EUR: 0.0128, GBP: 0.0109, AUD: 0.021, CAD: 0.019, JPY: 1.33 }
+        };
+
+        function convertCurrency() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+
+            if (isNaN(amount) || amount <= 0) {
+                document.getElementById('result').innerText = "请输入有效金额";
+                return;
+            }
+
+            if (fromCurrency === toCurrency) {
+                document.getElementById('result').innerText = "请选择不同的货币进行转换";
+                return;
+            }
+
+            const rate = exchangeRates[fromCurrency][toCurrency];
+            if (rate === undefined) {
+                document.getElementById('result').innerText = "汇率未提供或无效";
+            } else {
+                const result = amount * rate;
+                document.getElementById('result').innerHTML = `<span>${amount}</span> ${fromCurrency} = <span>${result.toFixed(5)}</span> ${toCurrency}`;
+            }
+        }
+    </script>
+</body>
+</html>

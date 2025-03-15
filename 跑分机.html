@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合性能跑分器</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        /* 基础样式 */
+        body {
+            background: linear-gradient(45deg, #6e7c7f, #1c3b3d); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+        }
+
+        /* 性能测试容器 */
+        .performance-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 420px;
+            padding: 30px;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* 测试部分 */
+        .test-section {
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+        }
+
+        /* 按钮 */
+        .btn {
+            background: linear-gradient(45deg, #ff3b3f, #ff9966);
+            color: white;
+            padding: 12px 30px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #ff9966, #ff3b3f);
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 结果容器 */
+        .results-container {
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 420px;
+            padding: 30px;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .results-container h2 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        /* 动画效果 */
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-50px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 性能测试部分 -->
+    <div class="performance-container" id="performanceSection">
+        <h1>综合性能跑分器</h1>
+        <div class="test-section">
+            <h2>图形渲染速度</h2>
+            <div id="graphicsResult"></div>
+            <canvas id="gameCanvas" style="display:none;"></canvas>
+        </div>
+        <div class="test-section">
+            <h2>内存读写速度</h2>
+            <div id="memoryResult"></div>
+        </div>
+        <div class="test-section">
+            <h2>存储设备性能</h2>
+            <div id="storageResult"></div>
+        </div>
+        <button id="startBtn" class="btn" onclick="startTests()">开始测试</button>
+        <button id="stopBtn" class="btn" onclick="stopTests()" style="display: none;">结束测试</button>
+    </div>
+
+    <!-- 结果展示部分 -->
+    <div class="results-container" id="resultsSection">
+        <h2>测试结果</h2>
+        <div id="finalGraphicsResult"></div>
+        <div id="finalMemoryResult"></div>
+        <div id="finalStorageResult"></div>
+        <button class="btn" onclick="restartTests()">重新测试</button>
+    </div>
+
+    <script>
+        let graphicsInterval, memoryInterval, storageInterval;
+        let isGraphicsRunning = false;
+
+        // 图形渲染速度测试
+        function startGraphicsTest() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 300;
+            canvas.height = 200;
+            canvas.style.display = 'block';
+
+            let lastFrameTimeMs = performance.now();
+            let framesThisSecond = 0;
+            let lastFpsUpdate = 0;
+            let fps = 0;
+
+            function draw() {
+                if (!isGraphicsRunning) return; // 停止测试
+
+                const now = performance.now();
+                const delta = now - lastFrameTimeMs;
+                lastFrameTimeMs = now;
+
+                if (now > lastFpsUpdate + 1000) { // 每秒更新FPS
+                    fps = framesThisSecond;
+                    framesThisSecond = 0;
+                    lastFpsUpdate = now;
+                    document.getElementById('graphicsResult').textContent = `图形渲染速度: ${fps} FPS`;
+                }
+
+                framesThisSecond++;
+
+                // 绘制随机圆形
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < 1000; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const radius = Math.random() * 10;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(draw); // 请求下一帧
+            }
+
+            isGraphicsRunning = true;
+            draw();
+        }
+
+        // 内存读写速度测试
+        async function memoryTestLoop() {
+            const arraySize = 1e8; // 1亿个元素
+            const testArray = new Uint8Array(arraySize);
+
+            const startTime = performance.now();
+
+            // 写入数据
+            for (let i = 0; i < arraySize; i++) {
+                testArray[i] = i % 256;
+            }
+
+            // 读取数据
+            let sum = 0;
+            for (let i = 0; i < arraySize; i++) {
+                sum += testArray[i];
+            }
+
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            document.getElementById('memoryResult').textContent = `内存读写速度: ${(arraySize / duration).toFixed(2)} MB/s`;
+        }
+
+        // 存储设备性能测试
+        async function storageTestLoop() {
+            const testData = new ArrayBuffer(10 * 1024 * 1024); // 10MB 数据
+            const blob = new Blob([testData], { type: 'application/octet-stream' });
+
+            try {
+                // 测试写入性能
+                const writeStart = performance.now();
+                await simulateWrite(blob);
+                const writeEnd = performance.now();
+                const writeDuration = writeEnd - writeStart;
+                const writeSpeed = (blob.size / writeDuration).toFixed(2) + ' MB/s';
+
+                // 测试读取性能
+                const readStart = performance.now();
+                await simulateRead(blob);
+                const readEnd = performance.now();
+                const readDuration = readEnd - readStart;
+                const readSpeed = (blob.size / readDuration).toFixed(2) + ' MB/s';
+
+                document.getElementById('storageResult').innerHTML = `存储设备性能:<br>写入速度: ${writeSpeed}<br>读取速度: ${readSpeed}`;
+            } catch (error) {
+                document.getElementById('storageResult').textContent = `存储设备性能测试失败: ${error.message}`;
+            }
+        }
+
+        // 模拟写入操作
+        async function simulateWrite(blob) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve();
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        // 模拟读取操作
+        async function simulateRead(blob) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve();
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        // 启动所有测试
+        function startTests() {
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+
+            startGraphicsTest();
+            memoryInterval = setInterval(memoryTestLoop, 1000); // 每秒测试一次
+            storageInterval = setInterval(storageTestLoop, 1000); // 每秒测试一次
+        }
+
+        // 停止所有测试并显示结果
+        function stopTests() {
+            clearInterval(memoryInterval);
+            clearInterval(storageInterval);
+            isGraphicsRunning = false;
+
+            document.getElementById('performanceSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+
+            document.getElementById('finalGraphicsResult').textContent = document.getElementById('graphicsResult').textContent;
+            document.getElementById('finalMemoryResult').textContent = document.getElementById('memoryResult').textContent;
+            document.getElementById('finalStorageResult').innerHTML = document.getElementById('storageResult').innerHTML;
+        }
+
+        // 重新测试
+        function restartTests() {
+            document.getElementById('performanceSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

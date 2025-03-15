@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>手速测试器</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            user-select: none;
+        }
+ 
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            height: 100vh;
+            color: white;
+        }
+ 
+        /* 页面容器 */
+        .page {
+            display: none;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+ 
+        /* 模式选择页 */
+        #index {
+            display: block;
+        }
+ 
+        /* 测试区域 */
+        .click-area {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px auto;
+            width: 90vw;
+            height: 70vh;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+ 
+        /* 数据展示 */
+        .stats {
+            font-size: 24px;
+            margin: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+ 
+        /* 全屏提示 */
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            z-index: 999;
+        }
+ 
+        /* 输入样式 */
+        input {
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+            border-radius: 5px;
+            border: none;
+        }
+ 
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <!-- 模式选择页 -->
+    <div class="page" id="index">
+        <h1>手速测试器</h1>
+        <div style="margin: 50px">
+            <div style="margin: 30px">
+                <h2>时间模式</h2>
+                <input type="number" id="timeInput" placeholder="测试时间（秒）">
+                <button onclick="startTest('time')">开始测试</button>
+            </div>
+            <div style="margin: 30px">
+                <h2>次数模式</h2>
+                <input type="number" id="countInput" placeholder="目标点击次数">
+                <button onclick="startTest('count')">开始测试</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- 测试页 -->
+    <div class="page" id="test">
+        <div class="stats">
+            <div>点击次数：<span id="clickCount">0</span></div>
+            <div>用时：<span id="timeLeft">0</span>s</div>
+        </div>
+        <div class="click-area" id="clickArea">
+            <h2 style="margin-top: 20%">点击这里开始！</h2>
+        </div>
+    </div>
+ 
+    <!-- 结果页 -->
+    <div class="page" id="result">
+        <h1>测试结果</h1>
+        <div style="margin: 50px; font-size: 24px">
+            <p>总点击次数：<span id="resultCount">0</span></p>
+            <p>总用时：<span id="resultTime">0</span>秒</p>
+            <p>每秒点击：<span id="resultCPS">0</span>次/秒</p>
+        </div>
+        <button onclick="location.reload()"> 再测一次</button>
+    </div>
+ 
+    <!-- 全屏提示 -->
+    <div class="fullscreen" id="endAlert">点击结束！</div>
+ 
+<script>
+    let mode, startTime, clickCount = 0;
+    let timer, targetValue, timeDisplayTimer;
+
+    function startTest(selectedMode) {
+        mode = selectedMode;
+        targetValue = mode === 'time' ? 
+            parseInt(document.getElementById('timeInput').value)  :
+            parseInt(document.getElementById('countInput').value); 
+
+        if (!targetValue || targetValue <= 0) {
+            alert("请输入有效的数值！");
+            return;
+        }
+
+        // 切换页面 
+        document.getElementById('index').style.display  = 'none';
+        document.getElementById('test').style.display  = 'block';
+        
+        // 初始化数据 
+        clickCount = 0;
+        startTime = Date.now(); 
+        updateDisplay();
+        
+        // 启动测试 
+        if (mode === 'time') {
+            timer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed >= targetValue) endTest();
+                else document.getElementById('timeLeft').textContent = 
+                    (targetValue - elapsed).toFixed(1);
+            }, 100);
+        }
+
+        // 计时器显示
+        if (mode === 'count') {
+            timeDisplayTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('timeLeft').textContent = elapsed.toFixed(1);
+            }, 100);
+        }
+
+        // 绑定点击事件 
+        document.getElementById('clickArea').onclick  = handleClick;
+    }
+
+    function handleClick() {
+        clickCount++;
+        updateDisplay();
+        
+        if (mode === 'count' && clickCount >= targetValue) {
+            endTest();
+        }
+    }
+
+    function updateDisplay() {
+        document.getElementById('clickCount').textContent  = clickCount;
+    }
+
+    function endTest() {
+        clearInterval(timer);
+        clearInterval(timeDisplayTimer);  // Stop the real-time time display in count mode
+        const totalTime = (Date.now() - startTime) / 1000;
+        
+        // 显示全屏提示
+        document.getElementById('endAlert').style.display  = 'flex';
+        setTimeout(() => {
+            document.getElementById('endAlert').style.display  = 'none';
+            showResult(totalTime);
+        }, 1000);
+    }
+
+    function showResult(totalTime) {
+        document.getElementById('test').style.display  = 'none';
+        document.getElementById('result').style.display  = 'block';
+        
+        document.getElementById('resultCount').textContent  = clickCount;
+        document.getElementById('resultTime').textContent  = totalTime.toFixed(2); 
+        document.getElementById('resultCPS').textContent  = 
+            (clickCount / totalTime).toFixed(2);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>解方程器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <!-- 引入Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <!-- 引入math.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+  <style>
+    /* 全局样式 */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: backgroundAnimation 15s infinite alternate;
+    }
+    /* 背景动画 */
+    @keyframes backgroundAnimation {
+      0% {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      }
+      100% {
+        background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+      }
+    }
+    /* 容器样式 */
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(8.5px);
+      -webkit-backdrop-filter: blur(8.5px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+    /* 渐显动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* 标题样式 */
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2em;
+      color: #ffffff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    /* 表单组样式 */
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1em;
+      transition: box-shadow 0.3s ease;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+    }
+    /* 按钮样式 */
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(45deg, #ff6a00, #ee0979);
+      border: none;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(255, 106, 0, 0.4);
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(255, 106, 0, 0.4);
+    }
+    /* 结果和错误信息样式 */
+    .result, .error {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 1em;
+      line-height: 1.5;
+      animation: slideIn 0.5s ease-in-out;
+    }
+    .result {
+      background-color: rgba(34, 193, 195, 0.8);
+      border-left: 6px solid #22c1c3;
+      color: #ffffff;
+    }
+    .error {
+      background-color: rgba(255, 0, 0, 0.7);
+      border-left: 6px solid #ff0000;
+      color: #ffffff;
+    }
+    /* 滑入动画 */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* 响应式设计 */
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 1.5em;
+      }
+      button {
+        font-size: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>解方程器</h1>
+    <div class="form-group">
+      <label for="equation">输入方程：</label>
+      <input type="text" id="equation" placeholder="例如：2x + 3 = 0 或 x^2 - 3x + 2 = 0 或 sqrt(x) = 4">
+    </div>
+    <button onclick="solveEquation()">解 方程</button>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function solveEquation() {
+      let equationInput = document.getElementById('equation').value.trim();
+      const outputDiv = document.getElementById('output');
+      outputDiv.innerHTML = '';
+
+      if (equationInput === '') {
+        showError('请输入一个方程。');
+        return;
+      }
+
+      // 保存原始方程以检查 sqrt
+      const originalEquation = equationInput;
+
+      // 预处理：替换上标字符、sqrt 等
+      equationInput = preprocessEquation(equationInput);
+
+      if (!equationInput.includes('=')) {
+        showError('方程中必须包含“=”。');
+        return;
+      }
+
+      // 拆分左右两边
+      const sides = splitEquation(equationInput);
+      if (!sides) {
+        showError('方程格式不正确。请确保方程只有一个“=”。');
+        return;
+      }
+      const left = sides.left, right = sides.right;
+
+      // 假设只有一个变量（如 x, y 等）
+      const variableMatch = equationInput.match(/[a-zA-Z]/);
+      if (!variableMatch) {
+        showError('无法识别方程中的变量。请确保方程包含一个变量（如 x, y 等）。');
+        return;
+      }
+      const variable = variableMatch[0];
+
+      // 统一写成 f(x) = 0 形式
+      const expr = `(${left}) - (${right})`;
+
+      try {
+        // 用 AST 判断是否为线性方程
+        const parsed = math.parse(expr);
+        const degree = getPolynomialDegree(parsed, variable);
+
+        if (degree === 1) {
+          // 线性方程直接求解
+          const solution = solveLinearEquation(parsed, variable);
+          if (solution === null) {
+            showError('方程无解。');
+          } else if (solution === 'all') {
+            showResult('方程对所有实数都成立，无数解。');
+          } else {
+            showResult(`实数解：${variable} = ${solution}`);
+          }
+          return;
+        }
+
+        // 对于高次或含 sqrt、sin 等函数的情况，采用数值求解
+        // 构造函数 f(x)
+        const f = (v) => {
+          const scope = {};
+          scope[variable] = v;
+          const value = math.evaluate(expr, scope);
+          return (typeof value === 'number') ? value : NaN;
+        };
+
+        // 检测是否恒等于0（采样法）
+        if (checkAlwaysZero(f)) {
+          showResult('方程对所有实数都成立，无数解。');
+          return;
+        }
+
+        // 初始搜索区间
+        let min = -1000, max = 1000;
+        // 如果原始方程中含有 sqrt(，将 min 固定为 0
+        if (originalEquation.toLowerCase().includes('sqrt(')) {
+          min = 0;
+        }
+
+        // 自适应扩展搜索区间：修改为采样多个点检测符号变化
+        const rangeObj = extendRange(f, min, max);
+        min = rangeObj.min;
+        max = rangeObj.max;
+        // 根据区间长度自适应步长，保证搜索效率（步长至少为0.1）
+        const step = Math.max(0.1, (max - min) / 10000);
+
+        // 数值搜索根
+        const roots = findRoots(f, min, max, step);
+        if (roots.length === 0) {
+          showError('未找到实数解。');
+          return;
+        }
+
+        // 去重并格式化（若接近整数则四舍五入）
+        const uniqueRoots = Array.from(new Set(roots.map(r => parseFloat(r.toFixed(6)))));
+        const processedRoots = uniqueRoots.map(r => {
+          if (Math.abs(r - Math.round(r)) < 1e-5) {
+            return Math.round(r);
+          }
+          return r;
+        });
+
+        showResult(`实数解：${variable} = ${processedRoots.join(', ')}`);
+      } catch (error) {
+        console.error(error);
+        showError('无法解析或求解方程。请检查输入格式。');
+      }
+    }
+
+    // ================= 辅助函数 =================
+
+    // 预处理：替换上标字符、sqrt(…) -> (…)^(1/2) 等
+    function preprocessEquation(equation) {
+      const superscriptMap = {
+        '²': '^2','³': '^3','⁴': '^4','⁵': '^5',
+        '⁶': '^6','⁷': '^7','⁸': '^8','⁹': '^9',
+        '⁰': '^0','¹': '^1'
+      };
+      // 将 sqrt(...) 替换为 (...)^(1/2)
+      equation = equation.replace(/sqrt\(([^)]+)\)/g, '($1)^(1/2)');
+      // 替换 Unicode 上标
+      equation = equation.replace(/[\u00B2-\u00B9]/g, m => superscriptMap[m] || m);
+      return equation;
+    }
+
+    // 拆分方程左右两边
+    function splitEquation(equation) {
+      const parts = equation.split('=');
+      if (parts.length !== 2) return null;
+      return {
+        left: parts[0].replace(/\s+/g, ''),
+        right: parts[1].replace(/\s+/g, '')
+      };
+    }
+
+    // 简单判定多项式次数（仅适用于常见形式）
+    function getPolynomialDegree(node, variable) {
+      if (node.type === 'SymbolNode' && node.name === variable) {
+        return 1;
+      }
+      if (node.type === 'OperatorNode') {
+        if (node.fn === 'add' || node.fn === 'subtract') {
+          return Math.max(
+            getPolynomialDegree(node.args[0], variable),
+            getPolynomialDegree(node.args[1], variable)
+          );
+        }
+        if (node.fn === 'multiply') {
+          return getPolynomialDegree(node.args[0], variable) +
+                 getPolynomialDegree(node.args[1], variable);
+        }
+        if (node.fn === 'pow') {
+          // 修改：先判断底数是否为 SymbolNode
+          if (node.args[0].type === 'SymbolNode' && node.args[0].name === variable && node.args[1].type === 'ConstantNode') {
+            return parseInt(node.args[1].value);
+          }
+        }
+      }
+      return 0;
+    }
+
+    // 解线性方程 ax + b = 0
+    function solveLinearEquation(node, variable) {
+      let a = 0, b = 0;
+      function traverse(n) {
+        if (n.type === 'OperatorNode') {
+          if (n.fn === 'add' || n.fn === 'subtract') {
+            traverse(n.args[0]);
+            const rightNode = n.args[1].clone();
+            if (n.fn === 'subtract') {
+              negateNode(rightNode);
+            }
+            traverse(rightNode);
+          } else if (n.fn === 'multiply') {
+            let coeff = 1, varFound = false;
+            n.args.forEach(arg => {
+              if (arg.type === 'SymbolNode' && arg.name === variable) {
+                varFound = true;
+              } else {
+                coeff *= math.evaluate(arg.toString());
+              }
+            });
+            if (varFound) a += coeff;
+            else b += coeff;
+          } else if (n.fn === 'unaryMinus') {
+            const temp = n.args[0].clone();
+            negateNode(temp);
+            traverse(temp);
+          }
+        } else if (n.type === 'SymbolNode' && n.name === variable) {
+          a += 1;
+        } else if (n.type === 'ConstantNode') {
+          b += parseFloat(n.value);
+        }
+      }
+
+      try {
+        traverse(node);
+      } catch (e) {
+        return null;
+      }
+      if (a === 0) {
+        return (b === 0) ? 'all' : null;
+      }
+      return (-b / a);
+    }
+
+    // 将节点取负
+    function negateNode(node) {
+      if (node.type === 'ConstantNode') {
+        node.value = (-parseFloat(node.value)).toString();
+      } else if (node.type === 'OperatorNode') {
+        if (node.fn === 'add') {
+          node.fn = 'subtract';
+        } else if (node.fn === 'subtract') {
+          node.fn = 'add';
+        }
+        node.args.forEach(arg => negateNode(arg));
+      }
+    }
+
+    // 检测函数是否恒等于0（简单采样法）
+    function checkAlwaysZero(f) {
+      const testPoints = [-1, 0, 1, 2];
+      for (let pt of testPoints) {
+        const val = f(pt);
+        if (isNaN(val)) continue;
+        if (Math.abs(val) > 1e-12) return false;
+      }
+      return true;
+    }
+
+    // 自适应扩展搜索区间（修改为采样多个点检测符号变化）
+    function extendRange(f, min, max) {
+      const maxIterations = 100;
+      let iteration = 0;
+      const numSamples = 100; // 采样点数
+      while (iteration < maxIterations) {
+        let foundSignChange = false;
+        const sampleStep = (max - min) / numSamples;
+        let prev = f(min);
+        for (let i = 1; i <= numSamples; i++) {
+          let x = min + i * sampleStep;
+          let cur = f(x);
+          if (prev * cur <= 0) {
+            foundSignChange = true;
+            break;
+          }
+          prev = cur;
+        }
+        if (foundSignChange) {
+          break;
+        }
+        // 否则，对区间进行对称扩展
+        const range = max - min;
+        min -= range;
+        max += range;
+        iteration++;
+      }
+      return { min, max };
+    }
+
+    // 数值找根（采用简单二分法扫描）
+    function findRoots(f, min, max, step = 0.1, tolerance = 1e-10, maxIterations = 100) {
+      const roots = [];
+      let previous = f(min);
+      for (let x = min + step; x <= max; x += step) {
+        const current = f(x);
+        if (isNaN(current)) continue;
+        // 检测符号变化或函数值接近 0
+        if ((previous * current <= 0) || (Math.abs(current) < tolerance)) {
+          const root = improvedBisection(f, x - step, x, tolerance, maxIterations);
+          if (root !== null) {
+            const roundedRoot = parseFloat(root.toFixed(6));
+            // 去重
+            if (!roots.some(r => Math.abs(r - roundedRoot) < 1e-6)) {
+              roots.push(roundedRoot);
+            }
+          }
+        }
+        previous = current;
+      }
+      return roots;
+    }
+
+    // 改进的二分法
+    function improvedBisection(f, a, b, tolerance, maxIterations) {
+      let fa = f(a), fb = f(b);
+      if (Math.abs(fa) < tolerance) return a;
+      if (Math.abs(fb) < tolerance) return b;
+      if (fa * fb > 0) return null;  // 无法保证有根
+
+      for (let i = 0; i < maxIterations; i++) {
+        const c = (a + b) / 2;
+        const fc = f(c);
+        if (isNaN(fc)) return null;
+        if (Math.abs(fc) < tolerance) return c;
+        if (fa * fc < 0) {
+          b = c;
+          fb = fc;
+        } else {
+          a = c;
+          fa = fc;
+        }
+      }
+      return (a + b) / 2;
+    }
+
+    // 显示结果
+    function showResult(message) {
+      document.getElementById('output').innerHTML = `<div class="result">${message}</div>`;
+    }
+    // 显示错误
+    function showError(message) {
+      document.getElementById('output').innerHTML = `<div class="error">${message}</div>`;
+    }
+  </script>
+</body>
+</html>
