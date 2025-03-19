@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>质数检测器</title>
+  <title>24点解法计算器</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    /* 整体背景与字体样式（淡色主题） */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333;
+    }
+    /* 居中布局，确保标题完整显示 */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 1px 1px 3px #aaa;
+    }
+    p {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+    /* 输入框样式（淡色风格） */
+    input {
+      width: 200px;
+      padding: 10px;
+      font-size: 1.2em;
+      border: 2px solid #00aaff;
+      border-radius: 5px;
+      background: #fff;
+      color: #333;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: #ff66cc;
+    }
+    /* 按钮样式 */
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      cursor: pointer;
+      background: linear-gradient(45deg, #00aaff, #ff66cc);
+      border: none;
+      border-radius: 5px;
+      color: #141414;
+      font-weight: bold;
+      text-transform: uppercase;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px #ff66cc, 0 0 30px #00aaff;
+    }
+    /* 输出框初始隐藏 */
+    #result {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #fff;
+      border: 2px solid #00aaff;
+      width: 80%;
+      max-width: 500px;
+      text-align: left;
+      font-size: 1.2em;
+      display: none;
+    }
+    /* Fade-in 动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+    /* Shake 动画 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .shake {
+      animation: shake 0.4s ease;
+    }
+    /* Prime 霓虹闪烁效果（适合淡色背景） */
+    @keyframes neonGlow {
+      0%, 100% { text-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff; }
+      50% { text-shadow: 0 0 20px #00aaff, 0 0 30px #00aaff; }
+    }
+    .prime {
+      animation: neonGlow 1.5s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>质数检测器</h1>
+    <p>请输入一个正整数（不允许小数、负数和0）：</p>
+    <input type="text" id="numberInput" placeholder="例如: 17">
+    <button onclick="checkNumber()">检测</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function checkNumber() {
+      var inputElem = document.getElementById("numberInput");
+      var input = inputElem.value.trim();
+      var n = parseFloat(input);
+      var resultElem = document.getElementById("result");
+      // 清空上次结果及动画类，并隐藏输出框
+      resultElem.innerHTML = "";
+      resultElem.className = "";
+      resultElem.style.display = "none";
+
+      // 验证输入是否为正整数
+      if (isNaN(n) || n <= 0 || n !== Math.floor(n)) {
+        resultElem.innerHTML = "<span style='color:#ff4444;'>请输入一个正整数（不允许小数、负数和0）！</span>";
+        inputElem.classList.add("shake");
+        setTimeout(function() {
+          inputElem.classList.remove("shake");
+        }, 400);
+        resultElem.style.display = "block";
+        resultElem.classList.add("fade-in");
+        return;
+      }
+      
+      // 拒绝处理太大的数字（1e8及以上）
+      if (n > 1e8) {
+        resultElem.innerHTML = "<span style='color:#ff4444;'>输入的数字太大（1e8以上），拒绝处理！</span>";
+        inputElem.classList.add("shake");
+        setTimeout(function() {
+          inputElem.classList.remove("shake");
+        }, 400);
+        resultElem.style.display = "block";
+        resultElem.classList.add("fade-in");
+        return;
+      }
+
+      // 特殊情况：1 既不是质数也不是合数
+      if (n === 1) {
+        resultElem.innerHTML = "1既不是质数也不是合数。";
+        resultElem.style.display = "block";
+        resultElem.classList.add("fade-in");
+        return;
+      }
+
+      // 检查质数：遍历 2 到 √n
+      var isPrime = true;
+      for (var i = 2; i <= Math.sqrt(n); i++) {
+        if (n % i === 0) {
+          isPrime = false;
+          break;
+        }
+      }
+
+      // 输出结果并添加动画效果
+      if (isPrime) {
+        resultElem.innerHTML = n + " 是质数。";
+        resultElem.style.display = "block";
+        resultElem.classList.add("fade-in", "prime");
+      } else {
+        resultElem.innerHTML = n + " 是合数。<br>可能的因数分解有：<br>";
+        // 遍历寻找所有 a × b = n 且 a <= b，排除 1 和 n 自身的组合
+        for (var a = 2; a <= n; a++) {
+          if (n % a === 0) {
+            var b = n / a;
+            if (a <= b && b !== n) {
+              resultElem.innerHTML += a + " × " + b + "<br>";
+            }
+          }
+        }
+        resultElem.style.display = "block";
+        resultElem.classList.add("fade-in");
+      }
+    }
+  </script>
+</body>
+</html>
