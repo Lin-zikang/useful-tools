@@ -83,6 +83,15 @@
             flex: 1;
             width: 100%;
         }
+
+        /* 页脚样式 */
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body class="dark">
@@ -103,6 +112,10 @@
     </div>
     <div id="editor"></div>
 
+    <footer>
+        转载并修改自 <a href="https://utilities.rth2.xyz/" target="_blank" style="color: #00cc66;">ZDZL Premium Tools</a>
+    </footer>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
     <script>
         // 初始化主题状态与字号
@@ -110,7 +123,7 @@
         let currentFontSize = 14; // 默认字号
 
         let editor;
-        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }}); 
         require(['vs/editor/editor.main'], function() {
             editor = monaco.editor.create(document.getElementById('editor'), {
                 value: localStorage.getItem('savedCode') || '',
