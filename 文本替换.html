@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>文本替换工具</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    /* 页面基础样式 */
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* 输入区域 */
+    label {
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    /* 替换按钮 */
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      color: #fff;
+      background: #4285f4;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #3367d6;
+    }
+
+    /* 输出容器（默认隐藏） */
+    .output-container {
+      margin-top: 20px;
+      background: #e8f0fe;
+      border-left: 4px solid #4285f4;
+      border-radius: 4px;
+      padding: 15px;
+      min-height: 50px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      display: none; /* 默认隐藏，替换后再显示 */
+    }
+
+    /* 替换次数提示（单独放最下方） */
+    .replace-count {
+      font-weight: bold;
+      color: #d93025;
+      text-align: center;
+      margin-top: 10px;
+      display: none; /* 默认隐藏 */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>文本替换工具</h1>
+
+    <label for="inputText">请输入原始文本：</label>
+    <textarea id="inputText" placeholder="在这里输入要修改的文本"></textarea>
+
+    <label for="searchText">要替换的内容：</label>
+    <input type="text" id="searchText" placeholder="输入要替换的字符或单词" />
+
+    <label for="replaceText">替换为：</label>
+    <input type="text" id="replaceText" placeholder="输入替换后的字符或单词" />
+
+    <button onclick="replaceText()">执行替换</button>
+
+    <!-- 输出区域 -->
+    <div class="output-container" id="outputContainer">
+      <div id="resultText"></div>
+    </div>
+
+    <!-- 替换次数（单独放最下方） -->
+    <div id="replaceCount" class="replace-count"></div>
+  </div>
+
+  <script>
+    function replaceText() {
+      const original = document.getElementById('inputText').value;
+      const search = document.getElementById('searchText').value;
+      const replacement = document.getElementById('replaceText').value;
+      const resultText = document.getElementById('resultText');
+      const replaceCountDiv = document.getElementById('replaceCount');
+      const outputContainer = document.getElementById('outputContainer');
+
+      if (!search) {
+        alert("请输入要替换的内容！");
+        return;
+      }
+
+      // 计算替换次数
+      const regex = new RegExp(search, "g");
+      const matchCount = (original.match(regex) || []).length;
+      const replaced = original.replace(regex, replacement);
+
+      // 显示结果
+      if (matchCount > 0) {
+        resultText.innerText = replaced;
+        outputContainer.style.display = "block";
+        replaceCountDiv.innerText = `替换了 ${matchCount} 处`;
+        replaceCountDiv.style.display = "block";
+      } else {
+        resultText.innerText = "未找到匹配项";
+        outputContainer.style.display = "block";
+        replaceCountDiv.style.display = "none"; // 隐藏替换次数
+      }
+    }
+  </script>
+</body>
+</html>
