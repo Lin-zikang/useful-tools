@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>质因数分解器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    body {
+      background: radial-gradient(circle at center, #1b2735, #090a0f);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: linear-gradient(145deg, #1f1c2c, #928dab);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00ffea;
+      font-size: 2em;
+    }
+    p {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #aaa;
+      font-size: 1.1em;
+    }
+    input[type="text"] {
+      width: calc(100% - 22px);
+      padding: 12px;
+      font-size: 18px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: #2e2e2e;
+      color: #e0e0e0;
+      margin-bottom: 15px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      background: linear-gradient(45deg, #00ffea, #007a7a);
+      color: #121212;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px #00ffea;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: #2e2e2e;
+      border-radius: 5px;
+      word-break: break-all;
+      min-height: 70px;
+      font-family: monospace;
+      font-size: 20px;
+      white-space: pre-wrap;
+      position: relative;
+    }
+    .cursor {
+      display: inline-block;
+      background-color: #00ffea;
+      width: 5px;
+      height: 1.2em;
+      margin-left: 3px;
+      vertical-align: bottom;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>质因数分解器</h1>
+    <p>输入一个数字（支持高精度，最多可达 1e100），点击分解按钮进行质因数分解。</p>
+    <input type="text" id="numberInput" placeholder="请输入数字">
+    <button id="factorButton">分解质因数</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    function gcd(a, b) {
+      while (b !== 0n) {
+        let temp = b;
+        b = a % b;
+        a = temp;
+      }
+      return a;
+    }
+
+    function randBetween(min, max) {
+      const range = max - min + 1n;
+      const rand = BigInt(Math.floor(Math.random() * Number(range)));
+      return min + rand;
+    }
+
+    function modPow(base, exponent, mod) {
+      let result = 1n;
+      base = base % mod;
+      while (exponent > 0n) {
+        if (exponent % 2n === 1n)
+          result = (result * base) % mod;
+        exponent = exponent / 2n;
+        base = (base * base) % mod;
+      }
+      return result;
+    }
+
+    function isPrime(n) {
+      if (n < 2n) return false;
+      if (n === 2n || n === 3n) return true;
+      if (n % 2n === 0n) return false;
+
+      let s = 0n;
+      let d = n - 1n;
+      while (d % 2n === 0n) {
+        d /= 2n;
+        s += 1n;
+      }
+
+      const bases = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n];
+      for (let a of bases) {
+        if (a > n - 2n) continue;
+        let x = modPow(a, d, n);
+        if (x === 1n || x === n - 1n) continue;
+        let composite = true;
+        for (let r = 1n; r < s; r++) {
+          x = modPow(x, 2n, n);
+          if (x === n - 1n) {
+            composite = false;
+            break;
+          }
+        }
+        if (composite) return false;
+      }
+      return true;
+    }
+
+    function pollardRho(n) {
+      if (n % 2n === 0n) return 2n;
+      let x = randBetween(2n, n - 1n);
+      let y = x;
+      let c = randBetween(1n, n - 1n);
+      let d = 1n;
+      while (d === 1n) {
+        x = (modPow(x, 2n, n) + c) % n;
+        y = (modPow(y, 2n, n) + c) % n;
+        y = (modPow(y, 2n, n) + c) % n;
+        d = gcd(x > y ? x - y : y - x, n);
+        if (d === n) return pollardRho(n);
+      }
+      return d;
+    }
+
+    function factorize(n) {
+      let factors = [];
+      if (n < 2n) return factors;
+      if (isPrime(n)) {
+        factors.push(n);
+        return factors;
+      }
+      let divisor = pollardRho(n);
+      factors = factors.concat(factorize(divisor));
+      factors = factors.concat(factorize(n / divisor));
+      return factors;
+    }
+
+    function typewriterEffect(element, text, speed = 50, callback) {
+      element.textContent = "";
+      let cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      element.appendChild(cursor);
+
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          element.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          setTimeout(type, speed);
+        } else {
+          setTimeout(() => {
+            cursor.remove();
+            if (callback) callback();
+          }, 1000); // 1秒后移除光标
+        }
+      }
+      type();
+    }
+
+    document.getElementById('factorButton').addEventListener('click', function () {
+      const input = document.getElementById('numberInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      let n;
+
+      try {
+        n = BigInt(input);
+      } catch (e) {
+        typewriterEffect(resultDiv, "请输入有效的整数！", 50);
+        return;
+      }
+
+      if (n < 1n) {
+        typewriterEffect(resultDiv, "请输入大于0的整数！", 50);
+        return;
+      }
+
+      typewriterEffect(resultDiv, "质分因解数，分请解稍结候果.：. .", 50, () => {
+        setTimeout(() => {
+          resultDiv.textContent = "";
+          setTimeout(() => {
+            let factors = factorize(n);
+            factors.sort((a, b) => (a > b ? 1 : -1));
+            const factorStr = factors.join(" × ");
+            const count = factors.length;
+            const resultText = "质因数分解结果：\n" + factorStr + "\n\n共 " + count + " 个质因数（含重复）";
+            typewriterEffect(resultDiv, resultText, 50);
+          }, 10);
+        }, 500);
+      });
+    });
+  </script>
+</body>
+</html>
