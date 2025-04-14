@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <title>计算器</title>
+  <!-- 引入 Big.js 库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/big.js/6.1.1/big.min.js"></script>
+  <style>
+    /* 全局背景动画（蓝色渐变） */
+    @keyframes backgroundMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(-45deg, #a1c4fd, #c2e9fb, #a1c4fd, #c2e9fb);
+      background-size: 400% 400%;
+      animation: backgroundMove 15s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+    /* 计算器容器：采用蓝白渐变 */
+    .calculator {
+      width: 100%;
+      max-width: 350px;
+      padding: 20px;
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(to bottom right, #ffffff, #e0f7fa);
+      position: relative;
+      overflow: hidden;
+    }
+    /* 显示区域：蓝色调背景 */
+    .display {
+      width: 100%;
+      height: 50px;
+      font-size: 24px;
+      text-align: right;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: #e1f5fe;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    /* 按钮区域采用网格布局，自适应调整 */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    /* 按钮样式：蓝色渐变背景，白色文字 */
+    .button {
+      position: relative;
+      overflow: hidden;
+      padding: 15px;
+      font-size: 18px;
+      text-align: center;
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    }
+    .button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    /* 水波纹动画 */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(0);
+      animation: rippleEffect 600ms linear;
+      pointer-events: none;
+    }
+    @keyframes rippleEffect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    /* 针对移动设备的响应式调整 */
+    @media (max-width: 480px) {
+      .display { font-size: 20px; height: 45px; }
+      .button { padding: 12px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <input type="text" class="display" id="display" readonly />
+    <div class="buttons">
+      <div class="button" onclick="appendToDisplay('(')">(</div>
+      <div class="button" onclick="appendToDisplay(')')">)</div>
+      <div class="button" onclick="clearDisplay()">C</div>
+      <div class="button" onclick="backspace()">←</div>
+      <div class="button" onclick="appendToDisplay('^')">^</div>
+      <div class="button" onclick="appendToDisplay('7')">7</div>
+      <div class="button" onclick="appendToDisplay('8')">8</div>
+      <div class="button" onclick="appendToDisplay('9')">9</div>
+      <div class="button" onclick="appendToDisplay('/')">/</div>
+      <div class="button" onclick="appendToDisplay('4')">4</div>
+      <div class="button" onclick="appendToDisplay('5')">5</div>
+      <div class="button" onclick="appendToDisplay('6')">6</div>
+      <div class="button" onclick="appendToDisplay('*')">*</div>
+      <div class="button" onclick="appendToDisplay('1')">1</div>
+      <div class="button" onclick="appendToDisplay('2')">2</div>
+      <div class="button" onclick="appendToDisplay('3')">3</div>
+      <div class="button" onclick="appendToDisplay('-')">-</div>
+      <div class="button" onclick="appendToDisplay('0')">0</div>
+      <div class="button" onclick="appendToDisplay('.')">.</div>
+      <div class="button" onclick="calculate()">=</div>
+      <div class="button" onclick="appendToDisplay('+')">+</div>
+      <div class="button" onclick="appendToDisplay('sin(')">sin</div>
+      <div class="button" onclick="appendToDisplay('cos(')">cos</div>
+      <div class="button" onclick="appendToDisplay('tan(')">tan</div>
+      <div class="button" onclick="appendToDisplay('ln(')">ln</div>
+      <div class="button" onclick="appendToDisplay('log(')">log</div>
+      <div class="button" onclick="appendToDisplay('sqrt(')">√</div>
+      <div class="button" onclick="appendToDisplay('e')">e</div>
+      <div class="button" onclick="appendToDisplay('pi')">π</div>
+    </div>
+  </div>
+
+  <script>
+    // 按钮点击水波纹效果
+    document.querySelectorAll('.button').forEach(button => {
+      button.addEventListener('click', function (e) {
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = e.clientX - rect.left - size / 2 + 'px';
+        ripple.style.top = e.clientY - rect.top - size / 2 + 'px';
+        this.appendChild(ripple);
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+    });
+
+    function appendToDisplay(value) {
+      document.getElementById('display').value += value;
+    }
+    function clearDisplay() {
+      document.getElementById('display').value = '';
+    }
+    // 退格键功能
+    function backspace() {
+      let display = document.getElementById('display');
+      display.value = display.value.slice(0, -1);
+    }
+    function calculate() {
+      try {
+        let expression = document.getElementById('display').value;
+        // 替换数学函数和常量
+        expression = expression.replace(/sin\(/g, 'Math.sin(')
+          .replace(/cos\(/g, 'Math.cos(')
+          .replace(/tan\(/g, 'Math.tan(')
+          .replace(/ln\(/g, 'Math.log(')
+          .replace(/log\(/g, 'Math.log10(')
+          .replace(/sqrt\(/g, 'Math.sqrt(')
+          .replace(/\^/g, '**')
+          .replace(/e/g, 'Math.E')
+          .replace(/pi/g, 'Math.PI');
+        let result = eval(expression);
+        let bigResult = new Big(result);
+        // 直接用 toString() 输出，无需额外补零
+        document.getElementById('display').value = bigResult.toString();
+      } catch (error) {
+        document.getElementById('display').value = 'Error';
+      }
+    }
+  </script>
+</body>
+</html>
