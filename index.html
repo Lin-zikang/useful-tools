@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8">
+<!-- saved from url=(0026)https://m9tvs7q4.rth1.xyz/ -->
+<html lang="zh"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
   <title>工具大全</title>
@@ -275,60 +275,266 @@
         transform: scale(1);
       }
     }
+
+    /* 庆祝弹窗样式 */
+    .celebration-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.5s ease;
+    }
+
+    .celebration-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .celebration-content {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transform: scale(0.7);
+      transition: transform 0.5s ease;
+      animation: glow 2s infinite alternate;
+    }
+
+    .celebration-modal.active .celebration-content {
+      transform: scale(1);
+    }
+
+    @keyframes glow {
+      from {
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      }
+      to {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6);
+      }
+    }
+
+    .celebration-title {
+      font-size: 2.5rem;
+      color: #e74c3c;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .celebration-message {
+      font-size: 1.2rem;
+      color: #2c3e50;
+      margin-bottom: 25px;
+      line-height: 1.6;
+    }
+
+    .celebration-highlight {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    .celebration-confetti {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      opacity: 0;
+      animation: confetti-fall 5s linear forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .close-celebration {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5rem;
+      color: #7f8c8d;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .close-celebration:hover {
+      color: #e74c3c;
+    }
+
+    .dont-show-again {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #7f8c8d;
+    }
+
+    .dont-show-again input {
+      margin-right: 8px;
+    }
+
+    .celebration-button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      font-size: 1rem;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .celebration-button:hover {
+      background-color: #c0392b;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 暗色模式下的庆祝弹窗 */
+    .dark-mode .celebration-content {
+      background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+    }
+
+    .dark-mode .celebration-title {
+      color: #f0e6d2;
+    }
+
+    .dark-mode .celebration-message {
+      color: #ecf0f1;
+    }
+
+    .dark-mode .celebration-highlight {
+      color: #f0e6d2;
+    }
+
+    .dark-mode .close-celebration {
+      color: #bdc3c7;
+    }
+
+    .dark-mode .celebration-button {
+      background-color: #1abc9c;
+    }
+
+    .dark-mode .celebration-button:hover {
+      background-color: #16a085;
+    }
   </style>
 </head>
 <body>
-  <h1>欢迎来到“工具大全”导航页</h1>
+  <!-- 庆祝弹窗 -->
+  <div class="celebration-modal" id="celebrationModal">
+    <div class="celebration-content">
+      <span class="close-celebration" id="closeCelebration">×</span>
+      <div class="celebration-confetti" id="confettiContainer"><div class="confetti" style="left: 53.2537%; background-color: rgb(231, 76, 60); width: 6.6897px; height: 6.6897px; border-radius: 0px; animation-delay: 0.501417s; animation-duration: 4.24292s;"></div><div class="confetti" style="left: 69.1233%; background-color: rgb(155, 89, 182); width: 13.1922px; height: 13.1922px; border-radius: 50%; animation-delay: 0.296309s; animation-duration: 4.08093s;"></div><div class="confetti" style="left: 90.9998%; background-color: rgb(241, 196, 15); width: 7.29073px; height: 7.29073px; border-radius: 0px; animation-delay: 2.72607s; animation-duration: 3.43071s;"></div><div class="confetti" style="left: 74.0569%; background-color: rgb(26, 188, 156); width: 14.1717px; height: 14.1717px; border-radius: 0px; animation-delay: 1.4802s; animation-duration: 4.90264s;"></div><div class="confetti" style="left: 15.9393%; background-color: rgb(26, 188, 156); width: 10.4465px; height: 10.4465px; border-radius: 0px; animation-delay: 0.46163s; animation-duration: 4.49933s;"></div><div class="confetti" style="left: 41.2496%; background-color: rgb(26, 188, 156); width: 12.4478px; height: 12.4478px; border-radius: 50%; animation-delay: 1.50584s; animation-duration: 2.63537s;"></div><div class="confetti" style="left: 98.4261%; background-color: rgb(230, 126, 34); width: 8.77753px; height: 8.77753px; border-radius: 50%; animation-delay: 1.5492s; animation-duration: 4.29068s;"></div><div class="confetti" style="left: 20.9644%; background-color: rgb(230, 126, 34); width: 6.03713px; height: 6.03713px; border-radius: 50%; animation-delay: 0.554203s; animation-duration: 3.36895s;"></div><div class="confetti" style="left: 20.2942%; background-color: rgb(52, 152, 219); width: 9.18035px; height: 9.18035px; border-radius: 50%; animation-delay: 2.13142s; animation-duration: 2.95013s;"></div><div class="confetti" style="left: 11.0186%; background-color: rgb(241, 196, 15); width: 10.9878px; height: 10.9878px; border-radius: 0px; animation-delay: 0.662833s; animation-duration: 4.00877s;"></div><div class="confetti" style="left: 96.1422%; background-color: rgb(155, 89, 182); width: 11.1829px; height: 11.1829px; border-radius: 0px; animation-delay: 0.902267s; animation-duration: 4.88725s;"></div><div class="confetti" style="left: 74.6821%; background-color: rgb(230, 126, 34); width: 6.63495px; height: 6.63495px; border-radius: 50%; animation-delay: 2.76855s; animation-duration: 4.00844s;"></div><div class="confetti" style="left: 43.4556%; background-color: rgb(231, 76, 60); width: 7.81803px; height: 7.81803px; border-radius: 50%; animation-delay: 1.22058s; animation-duration: 2.44162s;"></div><div class="confetti" style="left: 94.8943%; background-color: rgb(155, 89, 182); width: 6.2592px; height: 6.2592px; border-radius: 0px; animation-delay: 0.166393s; animation-duration: 2.6604s;"></div><div class="confetti" style="left: 84.4886%; background-color: rgb(241, 196, 15); width: 12.9241px; height: 12.9241px; border-radius: 50%; animation-delay: 1.81698s; animation-duration: 4.75612s;"></div><div class="confetti" style="left: 6.9784%; background-color: rgb(46, 204, 113); width: 13.4064px; height: 13.4064px; border-radius: 0px; animation-delay: 1.38268s; animation-duration: 2.16459s;"></div><div class="confetti" style="left: 67.2762%; background-color: rgb(155, 89, 182); width: 6.32873px; height: 6.32873px; border-radius: 0px; animation-delay: 1.21713s; animation-duration: 4.59452s;"></div><div class="confetti" style="left: 11.7817%; background-color: rgb(230, 126, 34); width: 7.76933px; height: 7.76933px; border-radius: 50%; animation-delay: 1.7732s; animation-duration: 3.65087s;"></div><div class="confetti" style="left: 75.3388%; background-color: rgb(52, 152, 219); width: 8.10511px; height: 8.10511px; border-radius: 0px; animation-delay: 1.70962s; animation-duration: 4.81043s;"></div><div class="confetti" style="left: 93.0995%; background-color: rgb(231, 76, 60); width: 12.3641px; height: 12.3641px; border-radius: 50%; animation-delay: 1.09839s; animation-duration: 4.06694s;"></div><div class="confetti" style="left: 92.8691%; background-color: rgb(231, 76, 60); width: 5.59703px; height: 5.59703px; border-radius: 50%; animation-delay: 0.809533s; animation-duration: 3.95793s;"></div><div class="confetti" style="left: 20.6918%; background-color: rgb(46, 204, 113); width: 13.4797px; height: 13.4797px; border-radius: 0px; animation-delay: 1.07882s; animation-duration: 2.81097s;"></div><div class="confetti" style="left: 29.9357%; background-color: rgb(231, 76, 60); width: 12.3952px; height: 12.3952px; border-radius: 0px; animation-delay: 1.97647s; animation-duration: 2.10977s;"></div><div class="confetti" style="left: 13.6508%; background-color: rgb(155, 89, 182); width: 9.77572px; height: 9.77572px; border-radius: 50%; animation-delay: 1.51761s; animation-duration: 2.94494s;"></div><div class="confetti" style="left: 86.7725%; background-color: rgb(46, 204, 113); width: 10.3484px; height: 10.3484px; border-radius: 0px; animation-delay: 0.687611s; animation-duration: 3.03636s;"></div><div class="confetti" style="left: 13.1634%; background-color: rgb(46, 204, 113); width: 7.73959px; height: 7.73959px; border-radius: 0px; animation-delay: 2.42919s; animation-duration: 3.24283s;"></div><div class="confetti" style="left: 28.5294%; background-color: rgb(230, 126, 34); width: 10.4763px; height: 10.4763px; border-radius: 50%; animation-delay: 1.63708s; animation-duration: 3.70584s;"></div><div class="confetti" style="left: 85.9035%; background-color: rgb(26, 188, 156); width: 8.75323px; height: 8.75323px; border-radius: 0px; animation-delay: 1.25866s; animation-duration: 3.60605s;"></div><div class="confetti" style="left: 83.0378%; background-color: rgb(155, 89, 182); width: 5.05328px; height: 5.05328px; border-radius: 0px; animation-delay: 0.781256s; animation-duration: 3.2946s;"></div><div class="confetti" style="left: 49.8713%; background-color: rgb(52, 152, 219); width: 14.3601px; height: 14.3601px; border-radius: 0px; animation-delay: 1.20657s; animation-duration: 4.92784s;"></div><div class="confetti" style="left: 32.2684%; background-color: rgb(231, 76, 60); width: 10.7416px; height: 10.7416px; border-radius: 50%; animation-delay: 0.733806s; animation-duration: 3.95048s;"></div><div class="confetti" style="left: 69.501%; background-color: rgb(241, 196, 15); width: 5.25897px; height: 5.25897px; border-radius: 0px; animation-delay: 1.62368s; animation-duration: 2.66791s;"></div><div class="confetti" style="left: 0.857435%; background-color: rgb(231, 76, 60); width: 10.007px; height: 10.007px; border-radius: 0px; animation-delay: 1.49263s; animation-duration: 4.73167s;"></div><div class="confetti" style="left: 2.77566%; background-color: rgb(52, 152, 219); width: 14.8856px; height: 14.8856px; border-radius: 0px; animation-delay: 0.974136s; animation-duration: 2.52286s;"></div><div class="confetti" style="left: 50.9612%; background-color: rgb(230, 126, 34); width: 8.5124px; height: 8.5124px; border-radius: 50%; animation-delay: 0.874176s; animation-duration: 4.7322s;"></div><div class="confetti" style="left: 53.3927%; background-color: rgb(230, 126, 34); width: 11.0187px; height: 11.0187px; border-radius: 0px; animation-delay: 1.32373s; animation-duration: 3.97889s;"></div><div class="confetti" style="left: 39.3103%; background-color: rgb(231, 76, 60); width: 12.2654px; height: 12.2654px; border-radius: 0px; animation-delay: 0.445758s; animation-duration: 3.43094s;"></div><div class="confetti" style="left: 82.5756%; background-color: rgb(155, 89, 182); width: 8.87397px; height: 8.87397px; border-radius: 0px; animation-delay: 2.91604s; animation-duration: 4.06438s;"></div><div class="confetti" style="left: 88.6075%; background-color: rgb(231, 76, 60); width: 13.6138px; height: 13.6138px; border-radius: 0px; animation-delay: 1.37268s; animation-duration: 3.9861s;"></div><div class="confetti" style="left: 25.5553%; background-color: rgb(26, 188, 156); width: 8.78348px; height: 8.78348px; border-radius: 50%; animation-delay: 2.78856s; animation-duration: 4.08484s;"></div><div class="confetti" style="left: 83.139%; background-color: rgb(26, 188, 156); width: 7.1998px; height: 7.1998px; border-radius: 0px; animation-delay: 0.531218s; animation-duration: 3.21946s;"></div><div class="confetti" style="left: 80.9067%; background-color: rgb(52, 152, 219); width: 9.56106px; height: 9.56106px; border-radius: 0px; animation-delay: 0.83075s; animation-duration: 4.87476s;"></div><div class="confetti" style="left: 30.8733%; background-color: rgb(26, 188, 156); width: 9.12264px; height: 9.12264px; border-radius: 0px; animation-delay: 2.79816s; animation-duration: 4.39882s;"></div><div class="confetti" style="left: 38.0567%; background-color: rgb(230, 126, 34); width: 7.17933px; height: 7.17933px; border-radius: 0px; animation-delay: 1.96064s; animation-duration: 2.89143s;"></div><div class="confetti" style="left: 54.153%; background-color: rgb(46, 204, 113); width: 5.63047px; height: 5.63047px; border-radius: 50%; animation-delay: 0.903885s; animation-duration: 3.24522s;"></div><div class="confetti" style="left: 96.6692%; background-color: rgb(52, 152, 219); width: 12.817px; height: 12.817px; border-radius: 50%; animation-delay: 2.39169s; animation-duration: 2.42881s;"></div><div class="confetti" style="left: 90.7066%; background-color: rgb(52, 152, 219); width: 7.62084px; height: 7.62084px; border-radius: 0px; animation-delay: 0.030578s; animation-duration: 3.25393s;"></div><div class="confetti" style="left: 8.99454%; background-color: rgb(46, 204, 113); width: 10.9914px; height: 10.9914px; border-radius: 50%; animation-delay: 1.36294s; animation-duration: 2.71189s;"></div><div class="confetti" style="left: 58.9706%; background-color: rgb(230, 126, 34); width: 10.8347px; height: 10.8347px; border-radius: 50%; animation-delay: 0.28002s; animation-duration: 3.99967s;"></div><div class="confetti" style="left: 37.3772%; background-color: rgb(26, 188, 156); width: 11.9543px; height: 11.9543px; border-radius: 0px; animation-delay: 1.15385s; animation-duration: 2.358s;"></div></div>
+      <h2 class="celebration-title">🎉 半周年快乐！ 🎉</h2>
+      <p class="celebration-message">
+        亲爱的用户，感谢您一直以来的支持！<br>
+        今天是我们网站成立<span class="celebration-highlight">半周年</span>的特别日子！<br>
+        在这半年里，我们不断努力完善工具，优化体验。<br>
+        未来我们将继续为您提供更多优质服务！
+      </p>
+      <button class="celebration-button" id="celebrateButton">我已知晓</button>
+      <div class="dont-show-again">
+        <input type="checkbox" id="dontShowAgain">
+        <label for="dontShowAgain">不再显示此消息</label>
+      </div>
+    </div>
+  </div>
+
+  <h1>欢迎来到"工具大全"导航页</h1>
   <p class="subtitle">目前我们正在不断完善工具，感谢您的耐心等待！</p>
-  <div class="time" id="current-time"></div>
+  <div class="time" id="current-time">2025年4月23日 星期三 20:50:17</div>
 
   <!-- Dark Mode Toggle Button -->
   <button id="dark-mode-toggle">夜</button>
 
   <div class="search-container">
-    <input type="text" id="search-input" placeholder="搜索工具..." oninput="searchTools()" />
+    <input type="text" id="search-input" placeholder="搜索工具..." oninput="searchTools()">
     <button id="search-button">搜索</button>
   </div>
 
   <ul id="tools-list">
-		<li><a href="/%E5%8D%95%E4%BD%8D%E8%BD%AC%E6%8D%A2">单位转换器</a>
-		<li><a href="/%E8%AE%A1%E7%AE%97%E5%99%A8">计算器</a>
-		<li><a href="/%E8%B4%A8%E5%9B%A0%E6%95%B0%E5%88%86%E8%A7%A3">质因数分解器</a>
-		<li><a href="/%E6%96%87%E6%9C%AC%E6%9B%BF%E6%8D%A2">文本替换器</a>
-		<li><a href="/%E6%97%A5%E5%8E%86">日历（简易版）</a>
-		<li><a href="/IDE">在线IDE</a>
-		<li><a href="/%E8%B4%A8%E6%95%B0%E5%88%A4%E5%AE%9A">质数判定器</a>
-		<li><a href="/%E5%8A%A0%E6%9D%83%E5%B9%B3%E5%9D%87%E5%80%BC%E8%AE%A1%E7%AE%97">加权平均值计算器</a>
-		<li><a href="/%E5%BC%80%E5%BF%83%E6%B6%88%E6%B6%88%E4%B9%90">开心消消乐</a>
-        <li>
-            <a href="/%E5%9B%B4%E6%A3%8B">围棋游戏</a>
+		<li><a href="https://m9tvs7q4.rth1.xyz/%E5%8D%95%E4%BD%8D%E8%BD%AC%E6%8D%A2">单位转换器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E8%AE%A1%E7%AE%97%E5%99%A8">计算器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E8%B4%A8%E5%9B%A0%E6%95%B0%E5%88%86%E8%A7%A3">质因数分解器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E6%96%87%E6%9C%AC%E6%9B%BF%E6%8D%A2">文本替换器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E6%97%A5%E5%8E%86">日历（简易版）</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/IDE">在线IDE</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E8%B4%A8%E6%95%B0%E5%88%A4%E5%AE%9A">质数判定器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E5%8A%A0%E6%9D%83%E5%B9%B3%E5%9D%87%E5%80%BC%E8%AE%A1%E7%AE%97">加权平均值计算器</a>
+		</li><li><a href="https://m9tvs7q4.rth1.xyz/%E5%BC%80%E5%BF%83%E6%B6%88%E6%B6%88%E4%B9%90">开心消消乐</a>
+        </li><li>
+            <a href="https://m9tvs7q4.rth1.xyz/%E5%9B%B4%E6%A3%8B">围棋游戏</a>
             <span class="badge">测试中</span>
         </li>
-		<li><a href="/%E6%95%B0%E7%8B%AC">数独练习</a>
-        <li><a href="/24%E7%82%B9%E8%A7%A3%E6%B3%95%E8%AE%A1%E7%AE%97%E5%99%A8">24点解法计算器</a>
-        <li><a href="/%E7%94%BB%E6%9D%BF">画板【自由绘图器】</a></li>
-        <li><a href="/%E8%B7%91%E5%88%86%E6%9C%BA">综合性能跑分器</a></li>
-        <li><a href="/Base64%E8%BD%AC%E5%9B%BE%E7%89%87">Base64转图片</a></li>
-        <li><a href="/%E5%9B%BE%E7%89%87%E8%BD%ACBase64">图片转Base64</a></li>
-        <li><a href="/BMI%E6%8C%87%E6%95%B0">BMI指数计算器</a></li>
-        <li><a href="/%E6%95%B0%E5%AD%A6%E7%AC%A6%E5%8F%B7%E5%A4%A7%E5%85%A8">数学符号大全</a></li>
-        <li><a href="/%E9%80%9F%E7%AE%97">速算练习器</a></li>
-        <li><a href="/%E9%9A%8F%E6%9C%BA%E6%95%B0">随机数生成器</a></li>
-        <li><a href="/Markdown%E9%A2%84%E8%A7%88">Markdown预览器</a></li>
-        <li><a href="/%E8%AE%A1%E6%97%B6%E5%99%A8">计时器</a></li>
-        <li><a href="/%E8%BF%9B%E5%88%B6%E8%BD%AC%E6%8D%A2%E5%99%A8">进制转换工具</a></li>
-        <li><a href="/%E8%B4%AA%E5%90%83%E8%9B%87">贪吃蛇游戏</a></li>
-        <li><a href="/%E6%B1%87%E7%8E%87%E8%BD%AC%E6%8D%A2%E5%99%A8">汇率转换器</a></li>
-        <li><a href="/%E8%BA%AB%E9%AB%98%E8%AE%A1%E7%AE%97%E5%99%A8">身高预测器</a></li>
-        <li><a href="/%E6%89%AB%E9%9B%B7%E6%B8%B8%E6%88%8F">扫雷游戏</a></li>
-        <li><a href="/%E5%8F%8D%E5%BA%94%E9%80%9F%E5%BA%A6%E6%B5%8B%E8%AF%95">反应速度测试器</a></li>
-        <li><a href="/%E6%89%8B%E9%80%9F%E6%B5%8B%E8%AF%95">手速测试器</a></li>
-        <li><a href="/%E7%A0%B8%E9%87%91%E8%9B%8B">砸金蛋</a></li>
-        <li><a href="/%E8%A7%A3%E6%96%B9%E7%A8%8B">解方程器</a></li>
-        <li><a href="/%E5%B1%8F%E5%B9%95%E5%BD%95%E5%88%B6">屏幕录制【电脑版】</a></li>
-        <li><a href="/%E4%BA%94%E5%AD%90%E6%A3%8B">五子棋游戏</a></li>
-        <li><a href="/%E6%B8%90%E5%8F%98%E8%89%B2">渐变色调节工具</a></li>
-        <li><a href="/%E9%A2%9C%E8%89%B2%E9%85%8D%E7%BD%AE%E5%99%A8">颜色配置器</a></li>
+		<li><a href="https://m9tvs7q4.rth1.xyz/%E6%95%B0%E7%8B%AC">数独练习</a>
+        </li><li><a href="https://m9tvs7q4.rth1.xyz/24%E7%82%B9%E8%A7%A3%E6%B3%95%E8%AE%A1%E7%AE%97%E5%99%A8">24点解法计算器</a>
+        </li><li><a href="https://m9tvs7q4.rth1.xyz/%E7%94%BB%E6%9D%BF">画板【自由绘图器】</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%B7%91%E5%88%86%E6%9C%BA">综合性能跑分器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/Base64%E8%BD%AC%E5%9B%BE%E7%89%87">Base64转图片</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E5%9B%BE%E7%89%87%E8%BD%ACBase64">图片转Base64</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/BMI%E6%8C%87%E6%95%B0">BMI指数计算器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E6%95%B0%E5%AD%A6%E7%AC%A6%E5%8F%B7%E5%A4%A7%E5%85%A8">数学符号大全</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E9%80%9F%E7%AE%97">速算练习器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E9%9A%8F%E6%9C%BA%E6%95%B0">随机数生成器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/Markdown%E9%A2%84%E8%A7%88">Markdown预览器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%AE%A1%E6%97%B6%E5%99%A8">计时器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%BF%9B%E5%88%B6%E8%BD%AC%E6%8D%A2%E5%99%A8">进制转换工具</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%B4%AA%E5%90%83%E8%9B%87">贪吃蛇游戏</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E6%B1%87%E7%8E%87%E8%BD%AC%E6%8D%A2%E5%99%A8">汇率转换器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%BA%AB%E9%AB%98%E8%AE%A1%E7%AE%97%E5%99%A8">身高预测器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E6%89%AB%E9%9B%B7%E6%B8%B8%E6%88%8F">扫雷游戏</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E5%8F%8D%E5%BA%94%E9%80%9F%E5%BA%A6%E6%B5%8B%E8%AF%95">反应速度测试器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E6%89%8B%E9%80%9F%E6%B5%8B%E8%AF%95">手速测试器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E7%A0%B8%E9%87%91%E8%9B%8B">砸金蛋</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E8%A7%A3%E6%96%B9%E7%A8%8B">解方程器</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E5%B1%8F%E5%B9%95%E5%BD%95%E5%88%B6">屏幕录制【电脑版】</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E4%BA%94%E5%AD%90%E6%A3%8B">五子棋游戏</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E6%B8%90%E5%8F%98%E8%89%B2">渐变色调节工具</a></li>
+        <li><a href="https://m9tvs7q4.rth1.xyz/%E9%A2%9C%E8%89%B2%E9%85%8D%E7%BD%AE%E5%99%A8">颜色配置器</a></li>
     </ul>
 
   <footer>
@@ -404,8 +610,86 @@
       document.getElementById('dark-mode-toggle').innerText = '夜';
     }
 
+    // 庆祝弹窗逻辑
+    function showCelebrationModal() {
+      // 检查用户是否选择不再显示
+      if (localStorage.getItem('dontShowCelebration') === 'true') {
+        return;
+      }
+      
+      const modal = document.getElementById('celebrationModal');
+      modal.classList.add('active');
+      
+      // 创建彩色纸屑效果
+      createConfetti();
+    }
+
+    function createConfetti() {
+      const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22'];
+      const container = document.getElementById('confettiContainer');
+      
+      // 清除现有的彩色纸屑
+      container.innerHTML = '';
+      
+      // 创建50个彩色纸屑
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // 随机位置
+        const left = Math.random() * 100;
+        
+        // 随机颜色
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        // 随机大小
+        const size = Math.random() * 10 + 5;
+        
+        // 随机形状
+        const isCircle = Math.random() > 0.5;
+        
+        // 随机延迟
+        const delay = Math.random() * 3;
+        
+        // 随机持续时间
+        const duration = Math.random() * 3 + 2;
+        
+        confetti.style.left = `${left}%`;
+        confetti.style.backgroundColor = color;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.borderRadius = isCircle ? '50%' : '0';
+        confetti.style.animationDelay = `${delay}s`;
+        confetti.style.animationDuration = `${duration}s`;
+        
+        container.appendChild(confetti);
+      }
+    }
+
+    function closeCelebrationModal() {
+      const modal = document.getElementById('celebrationModal');
+      modal.classList.remove('active');
+      
+      // 检查用户是否选择不再显示
+      const dontShowAgain = document.getElementById('dontShowAgain').checked;
+      if (dontShowAgain) {
+        localStorage.setItem('dontShowCelebration', 'true');
+      }
+    }
+
+    // 添加事件监听器
+    document.getElementById('closeCelebration').addEventListener('click', closeCelebrationModal);
+    document.getElementById('celebrateButton').addEventListener('click', () => {
+      closeCelebrationModal();
+    });
+
+    // 页面加载后显示庆祝弹窗
+    window.addEventListener('load', () => {
+      setTimeout(showCelebrationModal, 1000); // 延迟1秒显示
+    });
+
     setInterval(updateTime, 1000);
     updateTime();
   </script>
-</body>
-</html>
+
+</body></html>
