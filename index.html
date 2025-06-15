@@ -214,13 +214,12 @@
     }
 
     .dark-mode #search-button {
-      background-color: #f0e6d2; /* 米白色 */
-      color: #333; /* 深色文字 */
+      background-color: #f0e6d2;
+      color: #333;
     }
 
-    /* 将 li 的背景色由粉色改为米白色 */
     .dark-mode ul li {
-      background: #f0e6d2; /* 米白色 */
+      background: #f0e6d2;
       border: 1px solid #7f8c8d;
     }
 
@@ -243,8 +242,8 @@
       right: 20px;
       width: 30px;
       height: 30px;
-      background-color: black;  /* 亮色模式下为黑色 */
-      color: white;             /* 亮色模式下文字为白色 */
+      background-color: black;
+      color: white;
       border: none;
       border-radius: 50%;
       cursor: pointer;
@@ -256,8 +255,8 @@
     }
 
     body.dark-mode #dark-mode-toggle {
-      background-color: white;  /* 暗色模式下为白色 */
-      color: black;             /* 暗色模式下文字为黑色 */
+      background-color: white;
+      color: black;
     }
 
     #dark-mode-toggle.switching {
@@ -275,215 +274,9 @@
         transform: scale(1);
       }
     }
-
-    /* 庆祝弹窗样式 */
-    .celebration-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.5s ease;
-    }
-
-    .celebration-modal.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .celebration-content {
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 500px;
-      width: 90%;
-      text-align: center;
-      position: relative;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      transform: scale(0.7);
-      transition: transform 0.5s ease;
-      animation: glow 2s infinite alternate;
-    }
-
-    .celebration-modal.active .celebration-content {
-      transform: scale(1);
-    }
-
-    @keyframes glow {
-      from {
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-      }
-      to {
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6);
-      }
-    }
-
-    .celebration-title {
-      font-size: 2.5rem;
-      color: #e74c3c;
-      margin-bottom: 20px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-      100% {
-        transform: scale(1);
-      }
-    }
-
-    .celebration-message {
-      font-size: 1.2rem;
-      color: #2c3e50;
-      margin-bottom: 25px;
-      line-height: 1.6;
-    }
-
-    .celebration-highlight {
-      color: #e74c3c;
-      font-weight: bold;
-    }
-
-    .celebration-confetti {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    .confetti {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: #f00;
-      opacity: 0;
-      animation: confetti-fall 5s linear forwards;
-    }
-
-    @keyframes confetti-fall {
-      0% {
-        transform: translateY(-100px) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-      }
-    }
-
-    .close-celebration {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 1.5rem;
-      color: #7f8c8d;
-      cursor: pointer;
-      transition: color 0.3s;
-    }
-
-    .close-celebration:hover {
-      color: #e74c3c;
-    }
-
-    .dont-show-again {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 20px;
-      font-size: 0.9rem;
-      color: #7f8c8d;
-    }
-
-    .dont-show-again input {
-      margin-right: 8px;
-    }
-
-    .celebration-button {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 10px 25px;
-      font-size: 1rem;
-      border-radius: 25px;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 15px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .celebration-button:hover {
-      background-color: #c0392b;
-      transform: translateY(-3px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    /* 暗色模式下的庆祝弹窗 */
-    .dark-mode .celebration-content {
-      background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
-    }
-
-    .dark-mode .celebration-title {
-      color: #f0e6d2;
-    }
-
-    .dark-mode .celebration-message {
-      color: #ecf0f1;
-    }
-
-    .dark-mode .celebration-highlight {
-      color: #f0e6d2;
-    }
-
-    .dark-mode .close-celebration {
-      color: #bdc3c7;
-    }
-
-    .dark-mode .celebration-button {
-      background-color: #1abc9c;
-    }
-
-    .dark-mode .celebration-button:hover {
-      background-color: #16a085;
-    }
   </style>
 </head>
 <body>
-  <!-- 庆祝弹窗 -->
-  <div class="celebration-modal" id="celebrationModal">
-    <div class="celebration-content">
-      <span class="close-celebration" id="closeCelebration">&times;</span>
-      <div class="celebration-confetti" id="confettiContainer"></div>
-      <h2 class="celebration-title">🎉 半周年快乐！ 🎉</h2>
-      <p class="celebration-message">
-        亲爱的用户，感谢您一直以来的支持！<br>
-        今天是我们网站成立<span class="celebration-highlight">半周年</span>的特别日子！<br>
-        在这半年里，我们不断努力完善工具，优化体验。<br>
-        未来我们将继续为您提供更多优质服务！
-      </p>
-      <button class="celebration-button" id="celebrateButton">我已知晓</button>
-      <div class="dont-show-again">
-        <input type="checkbox" id="dontShowAgain">
-        <label for="dontShowAgain">不再显示此消息</label>
-      </div>
-    </div>
-  </div>
-
   <h1>欢迎来到"工具大全"导航页</h1>
   <p class="subtitle">目前我们正在不断完善工具，感谢您的耐心等待！</p>
   <div class="time" id="current-time"></div>
@@ -581,113 +374,26 @@
     // Dark mode toggle logic with added effect
     document.getElementById('dark-mode-toggle').addEventListener('click', () => {
       const button = document.getElementById('dark-mode-toggle');
-      
-      // Add "switching" animation effect to the button
       button.classList.add('switching');
-      
-      // Remove the effect after animation completes
       setTimeout(() => {
         button.classList.remove('switching');
-      }, 500); // duration of the animation
-      
-      // Toggle dark mode
+      }, 500);
       document.body.classList.toggle('dark-mode');
-      
-      // Update button text based on current mode
       if (document.body.classList.contains('dark-mode')) {
         button.innerText = '日';
       } else {
         button.innerText = '夜';
       }
-      
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     });
 
-    // Load dark mode preference from local storage
+    // Load dark mode preference
     if (localStorage.getItem('darkMode') === 'true') {
       document.body.classList.add('dark-mode');
       document.getElementById('dark-mode-toggle').innerText = '日';
     } else {
       document.getElementById('dark-mode-toggle').innerText = '夜';
     }
-
-    // 庆祝弹窗逻辑
-    function showCelebrationModal() {
-      // 检查用户是否选择不再显示
-      if (localStorage.getItem('dontShowCelebration') === 'true') {
-        return;
-      }
-      
-      const modal = document.getElementById('celebrationModal');
-      modal.classList.add('active');
-      
-      // 创建彩色纸屑效果
-      createConfetti();
-    }
-
-    function createConfetti() {
-      const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22'];
-      const container = document.getElementById('confettiContainer');
-      
-      // 清除现有的彩色纸屑
-      container.innerHTML = '';
-      
-      // 创建50个彩色纸屑
-      for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        
-        // 随机位置
-        const left = Math.random() * 100;
-        
-        // 随机颜色
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        // 随机大小
-        const size = Math.random() * 10 + 5;
-        
-        // 随机形状
-        const isCircle = Math.random() > 0.5;
-        
-        // 随机延迟
-        const delay = Math.random() * 3;
-        
-        // 随机持续时间
-        const duration = Math.random() * 3 + 2;
-        
-        confetti.style.left = `${left}%`;
-        confetti.style.backgroundColor = color;
-        confetti.style.width = `${size}px`;
-        confetti.style.height = `${size}px`;
-        confetti.style.borderRadius = isCircle ? '50%' : '0';
-        confetti.style.animationDelay = `${delay}s`;
-        confetti.style.animationDuration = `${duration}s`;
-        
-        container.appendChild(confetti);
-      }
-    }
-
-    function closeCelebrationModal() {
-      const modal = document.getElementById('celebrationModal');
-      modal.classList.remove('active');
-      
-      // 检查用户是否选择不再显示
-      const dontShowAgain = document.getElementById('dontShowAgain').checked;
-      if (dontShowAgain) {
-        localStorage.setItem('dontShowCelebration', 'true');
-      }
-    }
-
-    // 添加事件监听器
-    document.getElementById('closeCelebration').addEventListener('click', closeCelebrationModal);
-    document.getElementById('celebrateButton').addEventListener('click', () => {
-      closeCelebrationModal();
-    });
-
-    // 页面加载后显示庆祝弹窗
-    window.addEventListener('load', () => {
-      setTimeout(showCelebrationModal, 1000); // 延迟1秒显示
-    });
 
     setInterval(updateTime, 1000);
     updateTime();
