@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>解方程器</title>
+  <title>解方程器（改进版）</title>
   <!-- 保持原有图标 -->
   <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
   <!-- Google Fonts -->
@@ -123,7 +123,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>解方程器</h1>
+    <h1>解方程器（改进版）</h1>
     <div class="hint">支持：隐式乘法（<code>2x</code>）、函数（<code>sqrt</code>、<code>sin</code>、…）、Unicode 上标（<code>x²</code>）。仅返回实数解。新增高精度运算支持和改进扫描算法，可处理高次和超大系数方程。</div>
 
     <div class="form-group">
@@ -435,7 +435,8 @@
       const realRoots = [];
       for (const z of complexRoots) {
         if (typeof z.re === 'number' && typeof z.im === 'number') {
-          if (Math.abs(z.im) < 1e-8) {
+          // 将虚部绝对值小于阈值的根视为实根。阈值稍大，以捕获重根时出现的数值噪声。
+          if (Math.abs(z.im) < 1e-6) {
             realRoots.push(z.re);
           }
         }
@@ -443,10 +444,24 @@
       // 去重并排序
       realRoots.sort((p,q) => p - q);
       const uniq = [];
+      // 用于判断是否合并重复根的阈值
+      const absTol = 1e-7;
+      const relTol = 1e-4;
       for (const r of realRoots) {
-        if (uniq.length === 0 || Math.abs(r - uniq[uniq.length-1]) > SOLVER.mergeTol) {
+        if (uniq.length === 0) {
           uniq.push(r);
+          continue;
         }
+        const last = uniq[uniq.length - 1];
+        const diff = Math.abs(r - last);
+        // 计算相对差值基准，避免过小根导致合并不当。若两数的最大绝对值为 0，则直接比较绝对差值。
+        const denom = Math.max(Math.abs(r), Math.abs(last));
+        const relDiff = denom > 0 ? diff / denom : 0;
+        // 当绝对差值和相对差值均低于阈值时视为重复根
+        if (diff < absTol && relDiff < relTol) {
+          continue;
+        }
+        uniq.push(r);
       }
       return uniq;
     }
@@ -639,6 +654,17 @@
           if (realRoots.length > 0) {
             const list = realRoots.map(formatNumber);
             showResult(`实数解：${variable} = ${list.join('，')}`);
+            btn.disabled = false;
+            return;
+          }
+          // 如果 Durand-Kerner 未找到实数根，则尝试使用扫描+夹逼+牛顿法寻找实根
+          const fallbackRoots = solveRealRootsBig(
+            (x) => evalWithBig(x),
+            (x) => evalDerivWithBig(x)
+          );
+          if (fallbackRoots.length > 0) {
+            const list2 = fallbackRoots.map(formatNumber);
+            showResult(`实数解：${variable} = ${list2.join('，')}`);
           } else {
             showError('未找到实数解。');
           }
@@ -1124,6 +1150,12 @@
       }
       if (!isFiniteNumber(val)) return String(val);
       if (Math.abs(val) < 1e-12) return '0';
+      // 若值接近整数，则直接按整数输出，避免如 -1.000000000214 这类小偏差
+      const nearest = Math.round(val);
+      // 若接近整数阈值稍宽松，适应数值误差
+      if (Math.abs(val - nearest) < 1e-8) {
+        return String(nearest);
+      }
       return math.format(val, { precision: 12, lowerExp: -8, upperExp: 14 });
     }
 
