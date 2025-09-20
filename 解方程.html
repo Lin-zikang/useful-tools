@@ -492,37 +492,58 @@
         }
 
         let left = parts[0], right = parts[1];
-        // 在进一步解析前，尝试对形如 sqrt(expr)=0、cbrt(expr)=0、nthroot(expr,n)=0 的简单根式等式进行字符串层面的简化：
-        // 如果一边是根函数且另一边是 0，则将根函数替换为其内部参数，从而得到 expr=0。
+        // 在进一步解析前，尝试对形如 sqrt(expr)=0、cbrt(expr)=0、nthroot(expr,n)=0、root(expr,n)=0 的根式等式进行字符串层面的简化：
+        // 如果一边是根函数且另一边是 0，则将根函数替换为其内部主体参数，从而得到 expr=0。
+        // 为支持 nthroot 和 root，这里会解析括号内的第一个逗号之前的部分作为主体参数（忽略阶数参数）。
         (function simplifyRootString() {
           try {
             // 去除空白，用于匹配
             const ltrim = left.replace(/\s+/g, '');
             const rtrim = right.replace(/\s+/g, '');
-            // 正则匹配函数调用，例如 sqrt(...)
+            // 正则匹配根式函数调用，例如 sqrt(...), cbrt(...), nthroot(...), root(...)
             const rootRe = /^(sqrt|cbrt|nthroot|root)\((.*)\)$/i;
             function tryMatchRoot(str) {
               const m = str.match(rootRe);
               if (m) {
                 const fname = m[1].toLowerCase();
-                const arg = m[2];
-                return { fname, arg };
+                const argsStr = m[2];
+                return { fname, argsStr };
               }
               return null;
             }
-            // 情况 1：左侧为根函数，右侧为 0
+            // 辅助函数：提取逗号分隔参数中的第一个参数，支持括号嵌套
+            function extractFirstArg(str) {
+              let depth = 0;
+              for (let i = 0; i < str.length; i++) {
+                const ch = str[i];
+                if (ch === '(') depth++;
+                else if (ch === ')') depth--;
+                else if (ch === ',' && depth === 0) {
+                  return str.slice(0, i);
+                }
+              }
+              return str;
+            }
+            // 检查左侧和右侧
             const lmatch = tryMatchRoot(ltrim);
             if (lmatch && (rtrim === '0' || rtrim === '+0' || rtrim === '-0')) {
-              // 替换 left 为根的参数
-              left = lmatch.arg;
+              // 根据函数类型决定主体参数
+              let arg0 = lmatch.argsStr;
+              if (lmatch.fname === 'nthroot' || lmatch.fname === 'root') {
+                arg0 = extractFirstArg(lmatch.argsStr);
+              }
+              left = arg0;
               right = '0';
               return;
             }
-            // 情况 2：右侧为根函数，左侧为 0
             const rmatch = tryMatchRoot(rtrim);
             if (rmatch && (ltrim === '0' || ltrim === '+0' || ltrim === '-0')) {
+              let arg0 = rmatch.argsStr;
+              if (rmatch.fname === 'nthroot' || rmatch.fname === 'root') {
+                arg0 = extractFirstArg(rmatch.argsStr);
+              }
               right = '0';
-              left = rmatch.arg;
+              left = arg0;
               return;
             }
           } catch (_) {
@@ -750,6 +771,13 @@
           showError('未找到实数解。');
           btn.disabled = false; return;
         }
+        // 如果根的数量非常多，可能是周期函数（如 sin(x)=0），提示存在无穷多实根，仅展示部分
+        const MAX_DISPLAY_ROOTS = 20;
+        if (roots.length >= 50) {
+          const preview = roots.slice(0, MAX_DISPLAY_ROOTS).map(formatNumber);
+          showResult(`方程存在无穷多个实数解，${variable} 的部分解为：${preview.join('，')}，…`);
+          btn.disabled = false; return;
+        }
         const list = roots.map(formatNumber);
         showResult(`实数解：${variable} = ${list.join('，')}`);
       } catch (err) {
@@ -921,24 +949,50 @@
     }
 
     function trySolveLinearNumerically(f) {
-      // 选择 3 个点，检查二阶差分是否近 0：线性 <=> f(0)-2f(1)+f(2) ~ 0
+      /*
+       * 使用数值方法判定函数是否近似线性。
+       * 对若干组等间距采样点 [a,b,c] 计算二阶差分和斜率。
+       * 对线性函数 f(x) = m x + b，有：
+       *   二阶差分 = f(a) - 2f(b) + f(c) = 0
+       *   斜率 s = f(b) - f(a) = m (b-a)
+       *   对不同的采样区间（相同间距）应得到相同的斜率。
+       * 若所有候选区间均满足二阶差分接近 0，且斜率一致，则视为线性函数。
+       */
       const candidates = [
         [0,1,2],
         [-1,0,1],
         [1,2,3]
       ];
+      let firstSlope = null;
+      const secondTol = 1e-8;
+      const slopeTol  = 1e-6;
       for (const [a,b,c] of candidates) {
         const fa = f(a), fb = f(b), fc = f(c);
         if ([fa,fb,fc].every(isFiniteNumber)) {
           const second = fa - 2*fb + fc;
-          if (Math.abs(second) < 1e-8) {
-            const A = fb - fa;   // 近似斜率
-            const B = fa;        // 截距
-            return { status: 'linear', a: A, b: B };
+          if (Math.abs(second) > secondTol) {
+            return { status: 'nonlinear' };
           }
+          const slope = fb - fa;
+          if (firstSlope === null) {
+            firstSlope = slope;
+          } else {
+            if (Math.abs(slope - firstSlope) > slopeTol) {
+              return { status: 'nonlinear' };
+            }
+          }
+        } else {
+          // 任意一个点不可求值，则无法判定为线性
+          return { status: 'nonlinear' };
         }
       }
-      return { status: 'nonlinear' };
+      // 所有候选都满足近似线性
+      // 选择第一组的斜率和截距作为线性系数
+      const [a0,b0] = [candidates[0][0], candidates[0][1]];
+      const fa0 = f(a0);
+      const slope0 = f(b0) - fa0;
+      const intercept = fa0;
+      return { status: 'linear', a: slope0, b: intercept };
     }
 
     // ----------------- 求根（扫描 + 夹逼 + 牛顿） -----------------
@@ -1153,7 +1207,9 @@
       // 若值接近整数，则直接按整数输出，避免如 -1.000000000214 这类小偏差
       const nearest = Math.round(val);
       // 若接近整数阈值稍宽松，适应数值误差
-      if (Math.abs(val - nearest) < 1e-8) {
+      // 当数值距离最近整数极其接近时，将其直接显示为整数。阈值适度放宽到 1e-7，
+      // 以避免如 0.999999988984 与 1 相差约 1e-8 时不被归整的情况。
+      if (Math.abs(val - nearest) < 1e-7) {
         return String(nearest);
       }
       return math.format(val, { precision: 12, lowerExp: -8, upperExp: 14 });
