@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
   <title>工具大全</title>
   <style>
-    /* Light mode styles */
+    /* 全局平滑滚动 */
+    html { scroll-behavior: smooth; }
+
+    /* Light mode */
     body {
       font-family: 'Arial', sans-serif;
       background: #f0f4f8;
@@ -18,16 +25,28 @@
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    h1 {
-      font-size: 3.5rem;
-      margin: 40px 20px 10px 20px;
-      color: #2c3e50;
-      text-align: center;
-      position: relative;
+    /* 顶部横幅 */
+    .hero {
+      width: 100%;
+      max-width: 1100px;
+      padding: 24px 20px 0 20px;
+      box-sizing: border-box;
+    }
+    .hero img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
     }
 
+    /* 原 h1 隐藏（保留可回滚） */
+    h1 { display: none; }
+
+    /* —— 新：替换后的副标题 —— */
     .subtitle {
       font-size: 1.2rem;
       color: #7f8c8d;
@@ -58,7 +77,6 @@
       margin-right: 10px;
       outline: none;
     }
-
     #search-button {
       padding: 10px 20px;
       font-size: 1.1rem;
@@ -69,10 +87,7 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
-    #search-button:hover {
-      background-color: #2980b9;
-    }
+    #search-button:hover { background-color: #2980b9; }
 
     ul {
       list-style: none;
@@ -84,36 +99,22 @@
       gap: 20px;
       margin-top: 40px;
     }
-
     li {
       background: #ecf0f1;
       border: 1px solid #bdc3c7;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       transition: transform 0.3s, box-shadow 0.3s;
       text-align: center;
       font-size: 1.1rem;
       position: relative;
     }
+    li:hover { transform: translateY(-8px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    a { text-decoration: none; color: #2980b9; font-weight: bold; transition: color 0.3s; }
+    a:hover { color: #e74c3c; }
 
-    li:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    a {
-      text-decoration: none;
-      color: #2980b9;
-      font-weight: bold;
-      transition: color 0.3s;
-    }
-
-    a:hover {
-      color: #e74c3c;
-    }
-
-    /* Badge styles and pulse animation */
+    /* Badge */
     .badge {
       position: absolute;
       top: 8px;
@@ -126,20 +127,10 @@
       border-radius: 12px;
       animation: badgePulse 1.5s infinite ease-in-out;
     }
-
     @keyframes badgePulse {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 5px rgba(231, 76, 60, 0.8);
-      }
-      50% {
-        transform: scale(1.1);
-        box-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 5px rgba(231, 76, 60, 0.8);
-      }
+      0% { transform: scale(1); box-shadow: 0 0 5px rgba(231,76,60,.8); }
+      50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(231,76,60,.8); }
+      100% { transform: scale(1); box-shadow: 0 0 5px rgba(231,76,60,.8); }
     }
 
     footer {
@@ -152,136 +143,184 @@
       font-family: 'Arial', sans-serif;
       position: relative;
     }
-
     footer p {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #fff;
+      margin: 0; font-size: 1.5rem; font-weight: bold; color: #fff;
       animation: glowText 1.5s ease-in-out infinite alternate;
     }
-
-    footer p span {
-      color: #ffeb3b;
-    }
-
+    footer p span { color: #ffeb3b; }
     footer a {
-      color: #ffeb3b;
-      font-weight: bold;
-      text-decoration: none;
-      padding: 5px 10px;
-      border-radius: 8px;
-      transition: color 0.3s, transform 0.3s ease;
+      color: #ffeb3b; font-weight: bold; text-decoration: none;
+      padding: 5px 10px; border-radius: 8px; transition: color 0.3s, transform 0.3s ease;
     }
-
-    footer a:hover {
-      color: #fff;
-      background-color: rgba(255, 255, 255, 0.1);
-      transform: scale(1.2);
-    }
-
+    footer a:hover { color: #fff; background-color: rgba(255,255,255,.1); transform: scale(1.2); }
     @keyframes glowText {
-      0% {
-        text-shadow: 0 0 5px #ffeb3b, 0 0 10px #ffeb3b, 0 0 20px #ffeb3b;
-      }
-      100% {
-        text-shadow: 0 0 5px #f39c12, 0 0 10px #f39c12, 0 0 20px #f39c12;
-      }
+      0% { text-shadow: 0 0 5px #ffeb3b, 0 0 10px #ffeb3b, 0 0 20px #ffeb3b; }
+      100% { text-shadow: 0 0 5px #f39c12, 0 0 10px #f39c12, 0 0 20px #f39c12; }
     }
 
-    /* Dark Mode styles */
-    body.dark-mode {
-      background: #2c3e50;
-      color: #ecf0f1;
-    }
+    /* Dark Mode */
+    body.dark-mode { background: #2c3e50; color: #ecf0f1; }
+    .dark-mode .subtitle { color: #bdc3c7; }
+    .dark-mode .time { color: #1abc9c; }
+    .dark-mode #search-input { background: #34495e; border: 2px solid #1abc9c; color: #ecf0f1; }
+    .dark-mode #search-button { background-color: #f0e6d2; color: #333; }
+    .dark-mode ul li { background: #f0e6d2; border: 1px solid #7f8c8d; }
+    .dark-mode footer { background-color: #1a252f; }
+    .dark-mode footer p { color: #bdc3c7; }
+    .dark-mode footer a { color: #1abc9c; }
+    .dark-mode .hero img { box-shadow: 0 10px 24px rgba(0,0,0,0.35); }
 
-    .dark-mode h1 {
-      color: #ecf0f1;
-    }
-
-    .dark-mode .subtitle {
-      color: #bdc3c7;
-    }
-
-    .dark-mode .time {
-      color: #1abc9c;
-    }
-
-    .dark-mode #search-input {
-      background: #34495e;
-      border: 2px solid #1abc9c;
-      color: #ecf0f1;
-    }
-
-    .dark-mode #search-button {
-      background-color: #f0e6d2;
-      color: #333;
-    }
-
-    .dark-mode ul li {
-      background: #f0e6d2;
-      border: 1px solid #7f8c8d;
-    }
-
-    .dark-mode footer {
-      background-color: #1a252f;
-    }
-
-    .dark-mode footer p {
-      color: #bdc3c7;
-    }
-
-    .dark-mode footer a {
-      color: #1abc9c;
-    }
-
-    /* Dark Mode Toggle Button Styles */
+    /* Dark Mode Toggle */
     #dark-mode-toggle {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 30px;
-      height: 30px;
-      background-color: black;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: absolute; top: 20px; right: 20px; width: 30px; height: 30px;
+      background-color: black; color: white; border: none; border-radius: 50%;
+      cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,.2); font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    body.dark-mode #dark-mode-toggle { background-color: white; color: black; }
+    #dark-mode-toggle.switching { animation: bounce .5s ease-in-out; }
+    @keyframes bounce { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+    /* —— 一周年弹窗（隆重版） —— */
+    .modal-overlay {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 9999;
+      /* 背景加动态彩光 */
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(255,0,153,.20), transparent 50%),
+        radial-gradient(1200px 600px at 110% 110%, rgba(0,153,255,.20), transparent 50%),
+        rgba(0,0,0,.55);
+      animation: overlayPulse 5s ease-in-out infinite alternate;
+    }
+    @keyframes overlayPulse {
+      0% { background-position: 0 0, 0 0; }
+      100% { background-position: -40px -20px, 40px 20px; }
     }
 
-    body.dark-mode #dark-mode-toggle {
-      background-color: white;
-      color: black;
+    .modal {
+      width: min(560px, 92vw);
+      position: relative;
+      border-radius: 18px;
+      padding: 24px 22px 18px;
+      text-align: center;
+      color: #1f2d3d;
+      background: #ffffff;
+      box-shadow: 0 25px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.2) inset;
+      /* 带动感的霓虹描边 */
+      border: 2px solid transparent;
+      background-clip: padding-box, border-box;
+      background-origin: border-box;
+      background-image:
+        linear-gradient(#fff,#fff),
+        conic-gradient(from 0deg, #8a2be2, #00c2ff, #00e0a1, #ffd166, #ff4d8d, #8a2be2);
+      animation: borderSpin 6s linear infinite;
+    }
+    @keyframes borderSpin {
+      to { background-image:
+        linear-gradient(#fff,#fff),
+        conic-gradient(from 360deg, #8a2be2, #00c2ff, #00e0a1, #ffd166, #ff4d8d, #8a2be2);
+      }
     }
 
-    #dark-mode-toggle.switching {
-      animation: bounce 0.5s ease-in-out;
+    /* 顶部聚光扫过效果 */
+    .modal::before {
+      content: "";
+      position: absolute; left: -20%; top: -60px; width: 140%; height: 120px;
+      background: linear-gradient(95deg, rgba(255,255,255,.0), rgba(255,255,255,.45), rgba(255,255,255,0));
+      transform: rotate(2deg);
+      filter: blur(8px);
+      animation: sweep 3.2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes sweep {
+      0% { transform: translateX(-30%) rotate(2deg); opacity: .6; }
+      50% { transform: translateX(30%) rotate(2deg); opacity: .9; }
+      100% { transform: translateX(-30%) rotate(2deg); opacity: .6; }
     }
 
-    @keyframes bounce {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.1);
-      }
-      100% {
-        transform: scale(1);
-      }
+    .modal h2 {
+      margin: 6px 0 8px; font-size: 1.8rem;
+      text-shadow: 0 2px 14px rgba(255,105,180,.25);
     }
+    .modal p { margin: 6px 0 14px; color: #566573; }
+
+    .modal .actions {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px;
+    }
+    .btn {
+      border: none; cursor: pointer; border-radius: 10px; padding: 10px 16px; font-weight: bold;
+      transition: transform .08s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00c2ff, #8a2be2);
+      color: #fff; box-shadow: 0 8px 18px rgba(138,43,226,.35);
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-ghost { background: #ecf0f1; color: #2c3e50; }
+    .btn-danger {
+      background: #e74c3c; color: #fff; box-shadow: 0 8px 18px rgba(231,76,60,.35);
+    }
+
+    .modal .close-x {
+      position: absolute; top: 10px; right: 12px;
+      background: transparent; border: none; font-size: 22px; cursor: pointer; color: #7f8c8d;
+    }
+
+    /* 气球装饰 */
+    .balloons {
+      position: absolute; left: 0; right: 0; top: -24px; height: 60px; pointer-events: none;
+    }
+    .balloon {
+      position: absolute; width: 14px; height: 18px; border-radius: 50% 50% 45% 45%;
+      background: #ff6b6b; opacity: .9; transform: translateY(0);
+      animation: float 3.6s ease-in-out infinite;
+      box-shadow: inset -2px -4px 6px rgba(0,0,0,.15);
+    }
+    .balloon:nth-child(2){ left: 25%; background:#ffd166; animation-duration: 3.2s;}
+    .balloon:nth-child(3){ left: 50%; background:#00e0a1; animation-duration: 3.9s;}
+    .balloon:nth-child(4){ left: 75%; background:#8a2be2; animation-duration: 3.1s;}
+    .balloon::after {
+      content:""; position: absolute; bottom:-10px; left: 50%; width: 1px; height: 12px;
+      background: rgba(0,0,0,.15); transform: translateX(-50%);
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* 深色模式下弹窗 */
+    .dark-mode .modal {
+      background: #263443;
+      background-image:
+        linear-gradient(#263443,#263443),
+        conic-gradient(from 0deg, #8a2be2, #00c2ff, #00e0a1, #ffd166, #ff4d8d, #8a2be2);
+      color: #ecf0f1;
+    }
+    .dark-mode .modal p { color: #cfd8dc; }
+    .dark-mode .btn-ghost { background: #34495e; color: #ecf0f1; }
+
+    /* Confetti 画布 */
+    #confetti-canvas {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 10000; opacity: 0; transition: opacity .25s ease;
+    }
+    #confetti-canvas.show { opacity: 1; }
   </style>
 </head>
 <body>
-  <h1>欢迎来到"工具大全"导航页</h1>
-  <p class="subtitle">目前我们正在不断完善工具，感谢您的耐心等待！</p>
+  <!-- 顶部横幅 -->
+  <div class="hero">
+    <img
+      src="https://user-assets.sxlcdn.com/images/1209238/FhrOOKD_H2wyz2mIC877ZXN0CfsJ.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+      alt="useful-tools.top 横幅"
+    />
+  </div>
+
+  <!-- 新的副标题 -->
+  <p class="subtitle">探索常用小工具，让生活与工作更轻松！</p>
+
   <div class="time" id="current-time"></div>
 
-  <!-- Dark Mode Toggle Button -->
+  <!-- Dark Mode Toggle -->
   <button id="dark-mode-toggle">夜</button>
 
   <div class="search-container">
@@ -333,72 +372,162 @@
         <li><a href="/%E9%A2%9C%E8%89%B2%E9%85%8D%E7%BD%AE%E5%99%A8">颜色配置器</a></li>
     </ul>
 
+
   <footer>
     <p>© <span>零(LZK)</span> 版权所有 2025</p>
     <a href="mailto:useful-tools_service@outlook.com">联系邮箱：useful-tools_service@outlook.com</a>
   </footer>
 
+  <!-- 彩带特效画布（打开弹窗时触发） -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- 一周年弹窗（隆重版） -->
+  <div class="modal-overlay" id="anniversary-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="anniversary-title" aria-modal="true">
+      <div class="balloons">
+        <span class="balloon" style="left:12%"></span>
+        <span class="balloon" style="left:38%"></span>
+        <span class="balloon" style="left:62%"></span>
+        <span class="balloon" style="left:86%"></span>
+      </div>
+      <button class="close-x" id="anniversary-close" aria-label="关闭">×</button>
+      <h2 id="anniversary-title">🎉 useful-tools.top 一周年庆 🎉</h2>
+      <p>感谢一路支持与反馈！更多实用小工具持续更新中～</p>
+      <div style="font-size:.9rem;color:#999;margin:-6px 0 10px">（未勾选“以后不再显示”将每次打开弹出）</div>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin:6px 0 14px;cursor:pointer;">
+        <input type="checkbox" id="anniv-never" />
+        以后不再显示
+      </label>
+      <div class="actions">
+        <a class="btn btn-primary" href="#tools-list" id="go-browse">去逛逛</a>
+        <button class="btn btn-ghost" id="anniversary-ok">我知道了</button>
+        <button class="btn btn-danger" id="anniversary-close-btn">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    function getDayOfWeek() {
-      const days = ['星期天', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-      const today = new Date();
-      return days[today.getDay()];
+    /* 时间与搜索 */
+    function getDayOfWeek(){return ['星期天','星期一','星期二','星期三','星期四','星期五','星期六'][new Date().getDay()];}
+    function updateTime(){
+      const now=new Date(),y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate(),w=getDayOfWeek();
+      const hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0'),ss=String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('current-time').innerText=`${y}年${m}月${d}日 ${w} ${hh}:${mm}:${ss}`;
     }
-
-    function updateTime() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const date = now.getDate();
-      const dayOfWeek = getDayOfWeek();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
-      const timeString = `${year}年${month}月${date}日 ${dayOfWeek} ${hours}:${minutes}:${seconds}`;
-      
-      document.getElementById('current-time').innerText = timeString;
-    }
-
-    function searchTools() {
-      const searchInput = document.getElementById('search-input').value.toLowerCase();
-      const listItems = document.querySelectorAll('#tools-list li');
-      
-      listItems.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(searchInput)) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+    function searchTools(){
+      const q=document.getElementById('search-input').value.toLowerCase();
+      document.querySelectorAll('#tools-list li').forEach(li=>{
+        const text=li.textContent.toLowerCase();
+        li.style.display=text.includes(q)?'block':'none';
       });
     }
+    setInterval(updateTime,1000); updateTime();
 
-    // Dark mode toggle logic with added effect
-    document.getElementById('dark-mode-toggle').addEventListener('click', () => {
-      const button = document.getElementById('dark-mode-toggle');
-      button.classList.add('switching');
-      setTimeout(() => {
-        button.classList.remove('switching');
-      }, 500);
+    /* 暗色模式切换 */
+    const dmBtn=document.getElementById('dark-mode-toggle');
+    dmBtn.addEventListener('click',()=>{
+      dmBtn.classList.add('switching');
+      setTimeout(()=>dmBtn.classList.remove('switching'),500);
       document.body.classList.toggle('dark-mode');
-      if (document.body.classList.contains('dark-mode')) {
-        button.innerText = '日';
-      } else {
-        button.innerText = '夜';
-      }
-      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+      dmBtn.innerText=document.body.classList.contains('dark-mode')?'日':'夜';
+      localStorage.setItem('darkMode',document.body.classList.contains('dark-mode'));
     });
+    if(localStorage.getItem('darkMode')==='true'){document.body.classList.add('dark-mode'); dmBtn.innerText='日';}
+    else{dmBtn.innerText='夜';}
 
-    // Load dark mode preference
-    if (localStorage.getItem('darkMode') === 'true') {
-      document.body.classList.add('dark-mode');
-      document.getElementById('dark-mode-toggle').innerText = '日';
-    } else {
-      document.getElementById('dark-mode-toggle').innerText = '夜';
+    /* —— 彩带特效（简易版 confetti） —— */
+    function startConfetti(durationMs=2500){
+      const canvas=document.getElementById('confetti-canvas');
+      const ctx=canvas.getContext('2d');
+      const DPR=window.devicePixelRatio||1;
+      const resize=()=>{
+        canvas.width=window.innerWidth*DPR;
+        canvas.height=window.innerHeight*DPR;
+        ctx.setTransform(DPR,0,0,DPR,0,0);
+      };
+      resize(); window.addEventListener('resize',resize,{once:true});
+      canvas.classList.add('show');
+
+      const colors=['#ff4d8d','#ffd166','#00e0a1','#00c2ff','#8a2be2','#ff6b6b'];
+      const pieces=Array.from({length:180},()=>({
+        x: Math.random()*window.innerWidth,
+        y: -20 - Math.random()*80,
+        r: 4+Math.random()*6,
+        color: colors[(Math.random()*colors.length)|0],
+        tilt: Math.random()*10,
+        speedY: 2+Math.random()*3,
+        speedX: (-1+Math.random()*2)*1.2,
+        rot: Math.random()*Math.PI*2,
+        rotSpd: (-0.2+Math.random()*0.4)
+      }));
+
+      let start=null;
+      function tick(ts){
+        if(!start) start=ts;
+        const elapsed=ts-start;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(const p of pieces){
+          p.y+=p.speedY; p.x+=p.speedX; p.rot+=p.rotSpd; p.tilt+=0.15;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle=p.color;
+          ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2);
+          ctx.restore();
+          if(p.y>window.innerHeight+40){p.y=-20; p.x=Math.random()*window.innerWidth;}
+        }
+        if(elapsed<durationMs){ requestAnimationFrame(tick); }
+        else{
+          canvas.classList.remove('show');
+          setTimeout(()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); },250);
+        }
+      }
+      requestAnimationFrame(tick);
     }
 
-    setInterval(updateTime, 1000);
-    updateTime();
+    /* —— 一周年弹窗逻辑 —— */
+    (function anniversaryModal(){
+      const overlay=document.getElementById('anniversary-overlay');
+      const closeX=document.getElementById('anniversary-close');
+      const okBtn=document.getElementById('anniversary-ok');
+      const closeBtn=document.getElementById('anniversary-close-btn');
+      const goBtn=document.getElementById('go-browse');
+      const neverCkb=document.getElementById('anniv-never');
+
+      const KEY_NEVER='anniversaryNeverShow'; // 勾选“以后不再显示”后记录
+
+      function openModal(){
+        overlay.style.display='flex';
+        overlay.setAttribute('aria-hidden','false');
+        startConfetti(3000);
+      }
+      function closeModal(){
+        overlay.style.display='none';
+        overlay.setAttribute('aria-hidden','true');
+        // 如果勾选了“以后不再显示”，写入开关
+        if(neverCkb.checked){ localStorage.setItem(KEY_NEVER,'1'); }
+      }
+
+      // 逻辑：只有选择“以后不再显示”才不再弹，否则每次进入都弹
+      if(localStorage.getItem(KEY_NEVER)!=='1'){
+        setTimeout(openModal, 800);
+      }
+
+      overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+      closeX.addEventListener('click', closeModal);
+      closeBtn.addEventListener('click', closeModal);
+      okBtn.addEventListener('click', closeModal);
+
+      // 去逛逛：滚动到工具列表并关闭（不自动勾选不再显示）
+      goBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        document.getElementById('tools-list').scrollIntoView({ behavior:'smooth', block:'start' });
+        closeModal();
+      });
+
+      // Esc 关闭
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && overlay.style.display==='flex') closeModal(); });
+    })();
   </script>
 </body>
 </html>
