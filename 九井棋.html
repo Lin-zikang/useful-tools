@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+  <title>九井棋游戏【双人版】</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#0b1220ee;
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#94a3b8; /* slate-400 */
+      --accent:#38bdf8; /* sky-400 */
+      --x:#60a5fa; /* blue-400 */
+      --o:#f472b6; /* pink-400 */
+      --win:#22c55e; /* green-500 */
+      --can:#fbbf24; /* amber-400 for playable */
+      --shadow: 0 10px 30px rgba(2,8,23,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 800px at 10% 0%, #0b122b, #0f172a 40%) fixed;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      color:var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:16px; display:grid; gap:16px}
+
+    header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .title{font-weight:800; letter-spacing:.4px}
+    .title span{opacity:.75; font-weight:600}
+
+    .panel{background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:12px; position:relative}
+
+    /* ===== Pretty Controls ===== */
+    .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .chip{display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#0c1428,#0a1020); border:1px solid #1f2937; padding:10px 12px; border-radius:14px; color:var(--text); box-shadow: var(--shadow)}
+    .chip label{opacity:.9}
+
+    select,.btn{appearance:none; font:inherit}
+
+    /* Select beautify */
+    .select{position:relative}
+    .select select{background:#0f1a33; color:var(--text); border:1px solid #1f2937; border-radius:10px; padding:7px 36px 7px 10px; outline:none}
+    .select::after{content:""; position:absolute; right:10px; top:50%; width:10px; height:10px; border-right:2px solid #6b7280; border-bottom:2px solid #6b7280; transform:translateY(-70%) rotate(45deg); pointer-events:none}
+
+    /* Buttons beautify */
+    .btn{cursor:pointer; position:relative; overflow:hidden; border:none; border-radius:12px; padding:10px 14px; color:white; font-weight:700; letter-spacing:.3px; transition:transform .08s ease, filter .2s ease, box-shadow .2s ease}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:linear-gradient(135deg, #0ea5e9, #8b5cf6); box-shadow: var(--shadow)}
+    .btn.ghost{background:linear-gradient(180deg,#0e1326,#0a1020); color:var(--text); border:1px solid #1f2937}
+    .btn:hover{filter:brightness(1.05); box-shadow:0 12px 30px rgba(2,8,23,.45)}
+
+    /* Ripple ink */
+    .ripple-ink{position:absolute; border-radius:999px; transform:translate(-50%,-50%) scale(0); opacity:.35; background:currentColor; pointer-events:none; animation:ripple .6s ease-out}
+    @keyframes ripple{to{transform:translate(-50%,-50%) scale(12); opacity:0}}
+
+    /* ===== Layout ===== */
+    .layout{display:grid; grid-template-columns:1fr minmax(300px, 360px); gap:16px}
+    @media (max-width: 960px){ .layout{grid-template-columns:1fr} }
+
+    .status{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .badges{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .badge{border-radius:999px; padding:6px 10px; border:1px solid #1f2937; background:#0b1220; color:var(--text); font-size:.9rem}
+    .badge.x{border-color:var(--x)}
+    .badge.o{border-color:var(--o)}
+    .turn{font-weight:700}
+
+    /* ===== Board ===== */
+    .boardWrap{display:grid; gap:12px}
+    .board{aspect-ratio:1/1; width:min(94vw, 680px); max-width:100%; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+    .mini{position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:8px; border-radius:14px; background:linear-gradient(180deg,#0b1024,#0b1220); border:2px solid #1f2937; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease}
+    .mini.active{border-color:var(--accent); box-shadow:0 0 0 3px #0ea5e955}
+    .mini.won-x{background:linear-gradient(180deg,#0b1220,#0b1a33); border-color:var(--x)}
+    .mini.won-o{background:linear-gradient(180deg,#0b1220,#2a0f2a); border-color:var(--o)}
+    .mini.full{opacity:.85}
+    .cell{aspect-ratio:1/1; display:grid; place-items:center; border-radius:10px; background:#0a1222; border:1px solid #1f2937; cursor:pointer; user-select:none; font-size:clamp(20px, 6vw, 40px); font-weight:800; letter-spacing:.5px; transition:transform .08s ease, background .2s; position:relative; overflow:hidden}
+    .cell:hover{transform:translateY(-1px)}
+    .cell:active{transform:scale(.98)}
+    .cell.disabled{cursor:not-allowed; opacity:.45}
+    .mark-x{color:var(--x)}
+    .mark-o{color:var(--o)}
+    .flash{animation:flash 420ms ease}
+    @keyframes flash{0%{box-shadow:0 0 0 0 rgba(56,189,248,.0);} 30%{box-shadow:0 0 0 8px rgba(56,189,248,.18);} 100%{box-shadow:0 0 0 0 rgba(56,189,248,.0);}}
+
+    /* 黄色可下提示 */
+    .cell.playable{box-shadow: inset 0 0 0 2px rgba(251,191,36,.8), 0 0 0 2px rgba(251,191,36,.22);} 
+    .cell.playable::before{content:""; position:absolute; inset:2px; border-radius:8px; background:radial-gradient(circle at 50% 50%, rgba(251,191,36,.22), rgba(251,191,36,.04) 60%, transparent 70%)}
+
+    .mini .winnerBadge{position:absolute; inset:auto 8px 8px auto; font-size:.9rem; padding:4px 8px; border-radius:999px; border:1px solid #1f2937; background:#0b1220aa}
+
+    .rules{line-height:1.65}
+    .rules h3{margin:.3rem 0 .4rem; font-size:1.1rem}
+    .rules ol{margin:.4rem 0 .6rem 1.3rem}
+    .rules .tip{margin-top:.4rem; color:var(--muted)}
+
+    footer{opacity:.8; font-size:.9rem; text-align:center}
+
+    @media (max-width:600px){
+      .controls{gap:8px}
+      .board{gap:8px}
+      .mini{gap:4px; padding:6px}
+      .cell{border-radius:8px}
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important}
+      .ripple-ink{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <div style="font-size:clamp(20px,3.5vw,28px)">九井棋 <span>（Ultimate Tic‑Tac‑Toe / Tic‑Tac‑Ku）</span></div>
+        <div class="hint">双人对弈，按钮美化与涟漪、手机端优化</div>
+      </div>
+      <div class="controls panel">
+        <div class="chip select"><label>胜负条件：</label>
+          <select id="ruleset">
+            <option value="line">大盘连成一线（经典）</option>
+            <option value="five">先赢任意五个小盘（Tic‑Tac‑Ku）</option>
+          </select>
+        </div>
+        <div class="chip select"><label>先手：</label>
+          <select id="first">
+            <option value="X">X（先手）</option>
+            <option value="O">O（先手）</option>
+          </select>
+        </div>
+        <button class="btn ghost" id="undoBtn" title="悔棋（撤回最近一步）">悔棋</button>
+        <button class="btn primary" id="restartBtn">重新开局</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="boardWrap">
+        <section class="panel status" id="statusBar">
+          <div class="badges">
+            <span class="badge x">X</span>
+            <span class="badge o">O</span>
+          </div>
+          <div class="turn" id="turnText">轮到：X</div>
+          <div class="hint" id="targetText">自由落点（首手可下任意处）</div>
+        </section>
+        <main class="board" id="board" aria-label="九井棋棋盘"></main>
+      </section>
+
+      <aside class="panel rules">
+        <h3>怎么玩（简要）</h3>
+        <ol>
+          <li>棋盘由 3×3 个<strong>小盘</strong>组成，每个小盘也是 3×3 的井字格，总 81 格。</li>
+          <li>落子：<strong>必须在对手上一手所在小盘的对应位置</strong>指向的那个小盘内落子。若该目标小盘已结束或无空位，则可在<strong>任意</strong>小盘落子。</li>
+          <li>小盘胜利：某方在一个小盘内先连成三（行/列/斜）即赢得该小盘。</li>
+          <li>对局胜利：经典（大盘三连）或 Tic‑Tac‑Ku（任意五盘）。</li>
+        </ol>
+        <div class="tip">提示：高亮小盘为<strong>可落子</strong>区域；黄色方框即为<strong>可下处</strong>。</div>
+      </aside>
+    </div>
+
+    <footer>© 九井棋演示（双人对弈版）。</footer>
+  </div>
+
+<script>
+(function(){
+  const boardEl = document.getElementById('board');
+  const firstEl = document.getElementById('first');
+  const rulesetEl = document.getElementById('ruleset');
+  const turnText = document.getElementById('turnText');
+  const targetText = document.getElementById('targetText');
+  const restartBtn = document.getElementById('restartBtn');
+  const undoBtn = document.getElementById('undoBtn');
+
+  function attachRipple(el){
+    el.addEventListener('click', (e)=>{
+      const r = el.getBoundingClientRect();
+      const span = document.createElement('span');
+      span.className='ripple-ink';
+      const point = e.touches? e.touches[0] : e;
+      const x = point.clientX - r.left; const y = point.clientY - r.top;
+      span.style.left = x+'px'; span.style.top = y+'px';
+      el.appendChild(span);
+      span.addEventListener('animationend', ()=> span.remove());
+    }, {passive:true});
+  }
+  [restartBtn, undoBtn].forEach(attachRipple);
+
+  // ===== State =====
+  let S = createInitialState();
+  let history = [];
+
+  // UI build
+  const miniEls = [];
+  const cellEls = [];
+  for(let m=0;m<9;m++){
+    const mini = document.createElement('div');
+    mini.className = 'mini';
+    mini.dataset.idx = m;
+    const winnerBadge = document.createElement('div');
+    winnerBadge.className = 'winnerBadge';
+    winnerBadge.style.display = 'none';
+    mini.appendChild(winnerBadge);
+
+    const cells=[];
+    for(let c=0;c<9;c++){
+      const cell = document.createElement('div');
+      cell.className='cell';
+      cell.dataset.m = m;
+      cell.dataset.c = c;
+      cell.addEventListener('click', onCellClick, {passive:true});
+      mini.appendChild(cell);
+      cells.push(cell);
+    }
+    boardEl.appendChild(mini);
+    miniEls.push(mini);
+    cellEls.push(cells);
+  }
+
+  function createInitialState(){
+    return {
+      cells: Array(81).fill(0), // 0 empty, 1 X, -1 O
+      mini: Array(9).fill(0),   // 0 ongoing, 1 X, -1 O, 2 draw/full
+      target: -1,               // next target mini [0..8] or -1 any
+      player: 1,                // 1 X, -1 O
+      winner: 0,                // 0 none, 1 X, -1 O, 2 draw
+      ruleset: 'line',
+      lastMove: null,
+    };
+  }
+
+  function coordToIndex(m,c){
+    const rowBig = Math.floor(m/3), colBig = m%3; const row = Math.floor(c/3), col = c%3;
+    return (rowBig*27) + (row*9) + (colBig*3) + col;
+  }
+  // 正确反解：先取全局行/列，再拆大盘/小盘
+  function indexToMiniAndCell(idx){
+    const gr = Math.floor(idx/9); // global row 0..8
+    const gc = idx % 9;           // global col 0..8
+    const rowBig = Math.floor(gr/3), colBig = Math.floor(gc/3);
+    const row = gr % 3, col = gc % 3;
+    const m = rowBig*3 + colBig; const c = row*3 + col; return [m,c];
+  }
+  function miniStartIndex(m){ const rowBig = Math.floor(m/3), colBig = m%3; return rowBig*27 + colBig*3; }
+
+  function playableCells(state){
+    const res=[]; const target = state.target;
+    const addIfPlayable = (m,c)=>{
+      if(state.mini[m]!==0 && state.mini[m]!==2) return; // 已被X/O赢的小盘不可再下
+      const idx = coordToIndex(m,c); if(state.cells[idx]===0) res.push(idx);
+    };
+    if(target===-1 || state.mini[target]!==0){
+      for(let m=0;m<9;m++) if(state.mini[m]===0 || state.mini[m]===2){ for(let c=0;c<9;c++) addIfPlayable(m,c); }
+    }else{ for(let c=0;c<9;c++) addIfPlayable(target,c); }
+    return res;
+  }
+
+  function checkMiniWinner(state, m){
+    const start = miniStartIndex(m);
+    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
+    const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(const [a,b,c] of lines){ const s=g[a]+g[b]+g[c]; if(s===3) return 1; if(s===-3) return -1; }
+    if(g.every(v=>v!==0)) return 2; return 0;
+  }
+
+  function checkBigWinner(state){
+    if(state.ruleset==='five'){
+      const xCount = state.mini.filter(v=>v===1).length; const oCount = state.mini.filter(v=>v===-1).length;
+      if(xCount>=5) return 1; if(oCount>=5) return -1;
+    } else {
+      const b = state.mini.map(v=> v===1?1:(v===-1?-1:0));
+      const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for(const [a,b1,c] of L){ const s=b[a]+b[b1]+b[c]; if(s===3) return 1; if(s===-3) return -1; }
+    }
+    if(state.mini.every(v=>v!==0)) return 2; return 0;
+  }
+
+  function move(state, idx){
+    const ns = JSON.parse(JSON.stringify(state)); if(ns.winner || ns.cells[idx]!==0) return ns;
+    const [m,c] = indexToMiniAndCell(idx);
+    if(!(ns.target===-1 || ns.mini[ns.target]!==0 || m===ns.target)) return ns; // 非法
+
+    ns.cells[idx] = ns.player; ns.lastMove = idx;
+    const winMini = checkMiniWinner(ns, m); if(winMini!==ns.mini[m]) ns.mini[m]=winMini;
+    ns.target = c; if(ns.mini[ns.target]!==0) ns.target = -1;
+    ns.winner = checkBigWinner(ns); ns.player *= -1; return ns;
+  }
+
+  function setRuleset(rs){ S.ruleset = rs; S.winner = checkBigWinner(S); render(); }
+
+  // ===== Rendering =====
+  function render(){
+    const playable = new Set(playableCells(S));
+    for(let m=0;m<9;m++){
+      const mini = miniEls[m]; mini.classList.toggle('active', S.target===-1 ? (S.mini[m]===0 || S.mini[m]===2) : m===S.target);
+      mini.classList.toggle('won-x', S.mini[m]===1); mini.classList.toggle('won-o', S.mini[m]===-1); mini.classList.toggle('full', S.mini[m]===2);
+      const badge = mini.querySelector('.winnerBadge');
+      if(S.mini[m]===1){ badge.textContent='X 赢'; badge.style.display='block'; }
+      else if(S.mini[m]===-1){ badge.textContent='O 赢'; badge.style.display='block'; }
+      else if(S.mini[m]===2){ badge.textContent='和'; badge.style.display='block'; }
+      else badge.style.display='none';
+
+      for(let c=0;c<9;c++){
+        const cell = cellEls[m][c]; const idx = coordToIndex(m,c); const v = S.cells[idx];
+        cell.textContent = v===1?'X':(v===-1?'O':'');
+        cell.className = 'cell'+(v===1?' mark-x':v===-1?' mark-o':'');
+        const enabled = playable.has(idx) && S.winner===0;
+        cell.classList.toggle('disabled', !enabled);
+        cell.classList.toggle('playable', enabled);
+        if(idx===S.lastMove) cell.classList.add('flash'); else cell.classList.remove('flash');
+      }
+    }
+    turnText.textContent = S.winner? (S.winner===2? '平局' : `胜者：${S.winner===1?'X':'O'}`) : `轮到：${S.player===1?'X':'O'}`;
+    targetText.textContent = S.target===-1 ? '可在任意未结束的小盘落子' : `请在第 ${S.target+1} 个小盘中落子`;
+  }
+
+  function resetGame(){
+    S = createInitialState(); S.ruleset = rulesetEl.value; history.length = 0; if(firstEl.value==='O'){ S.player = -1; }
+    render();
+  }
+  function undo(){ if(history.length===0) return; S = history.pop(); render(); }
+
+  function onCellClick(e){
+    const idx = coordToIndex(+e.currentTarget.dataset.m, +e.currentTarget.dataset.c);
+    const legalSet = new Set(playableCells(S)); if(!legalSet.has(idx) || S.winner) return;
+    history.push(JSON.parse(JSON.stringify(S))); S = move(S, idx); render();
+  }
+
+  // Wire controls
+  firstEl.addEventListener('change', resetGame);
+  rulesetEl.addEventListener('change', ()=>{ setRuleset(rulesetEl.value); });
+  restartBtn.addEventListener('click', resetGame);
+  undoBtn.addEventListener('click', undo);
+
+  // Initial
+  resetGame(); render();
+})();
+</script>
+</body>
+</html>
