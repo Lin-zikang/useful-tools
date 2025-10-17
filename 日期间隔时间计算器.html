@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>日期间隔时间计算器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc); /* 渐变背景 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            text-align: center;
+            transform: scale(0);
+            animation: fadeIn 0.6s forwards;
+        }
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input[type="date"] {
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            margin: 10px 0;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        input[type="date"]:focus {
+            border-color: #2575fc;
+            box-shadow: 0 0 5px rgba(37, 117, 252, 0.6);
+        }
+        button {
+            background-color: #2575fc;
+            color: white;
+            padding: 14px;
+            font-size: 16px;
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #1a5bbf;
+            transform: scale(1.1);
+        }
+        .result {
+            margin-top: 30px;
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+            opacity: 0;
+            animation: slideIn 0.5s 0.3s forwards;
+        }
+        .error {
+            color: red;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>日期间隔时间计算器</h1>
+    <label for="date1">开始日期:</label>
+    <input type="date" id="date1" required>
+
+    <label for="date2">结束日期:</label>
+    <input type="date" id="date2" required>
+
+    <button onclick="calculateDifference()">计算日期差</button>
+
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    function calculateDifference() {
+        // 获取输入的日期
+        const date1 = document.getElementById('date1').value;
+        const date2 = document.getElementById('date2').value;
+
+        // 检查是否所有输入项都已填写
+        if (!date1 || !date2) {
+            document.getElementById('result').innerHTML = '<span class="error">请输入所有字段！</span>';
+            return;
+        }
+
+        // 创建日期对象
+        const startDate = new Date(date1);
+        const endDate = new Date(date2);
+
+        // 判断日期是否合法
+        if (isNaN(startDate) || isNaN(endDate)) {
+            document.getElementById('result').innerHTML = '<span class="error">无效的日期！</span>';
+            return;
+        }
+
+        // 计算时间差
+        const diffInMs = endDate - startDate;
+        if (diffInMs < 0) {
+            document.getElementById('result').innerHTML = '<span class="error">结束日期不能早于开始日期！</span>';
+            return;
+        }
+
+        // 转换时间差为天数
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+        // 显示结果并添加动画效果
+        const resultElement = document.getElementById('result');
+        resultElement.innerHTML = `${diffInDays} 天`;
+        resultElement.style.animation = "slideIn 0.5s forwards";
+    }
+</script>
+
+</body>
+</html>

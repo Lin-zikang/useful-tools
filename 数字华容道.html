@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>数字华容道</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+<style>
+:root {
+  --bg-start: #ccd9d2;
+  --bg-end:   #b4c4bd;
+  --tile-bg:  #f2f7f2;
+  --tile-hover: #e0ede0;
+  --accent:   #4CAF50;
+  --text:     #333;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+body {
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  min-height: 100vh;
+  color: var(--text);
+}
+h1 {
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #2a2a2a;
+}
+#game {
+  display: grid;
+  grid-template: repeat(4, 80px) / repeat(4, 80px);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.tile {
+  background: var(--tile-bg);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.3s, transform 0.2s ease;
+}
+.tile:hover {
+  background: var(--tile-hover);
+  transform: scale(1.05);
+}
+.empty {
+  background: transparent !important; /* 确保空格格子是完全透明的 */
+  box-shadow: none;
+  cursor: default;
+}
+#controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+}
+button:hover:enabled {
+  background: #45a049;
+}
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+#status {
+  min-height: 1.2em;
+  font-size: 0.95rem;
+  color: #444;
+  margin-top: 5px;
+}
+</style>
+</head>
+<body>
+
+<h1>数字华容道</h1>
+<div id="game"></div>
+
+<div id="controls">
+  <button id="shuffleBtn">重新洗牌</button>
+  <button id="solveBtn">AI 自动破解</button>
+</div>
+<div id="status"></div>
+
+<script>
+const SIZE = 4, N = SIZE * SIZE;
+let state = [];
+
+function isSolvable(arr) {
+  let inv = 0;
+  for (let i = 0; i < N; i++) {
+    if (arr[i] === 0) continue;
+    for (let j = i + 1; j < N; j++) {
+      if (arr[j] !== 0 && arr[i] > arr[j]) inv++;
+    }
+  }
+  const row = Math.floor(arr.indexOf(0) / SIZE) + 1;
+  return (SIZE % 2 === 1) ? (inv % 2 === 0) : ((inv + row) % 2 === 0);
+}
+
+function shuffle() {
+  do {
+    state = Array.from({length: N}, (_, i) => i);
+    for (let i = N-1; i > 0; i--) {
+      const j = Math.random() * (i+1) | 0;
+      [state[i], state[j]] = [state[j], state[i]];
+    }
+  } while (!isSolvable(state) || isGoal(state));
+  render();
+}
+
+function render() {
+  const game = document.getElementById('game');
+  game.innerHTML = '';
+  state.forEach((v, i) => {
+    const div = document.createElement('div');
+    div.className = 'tile' + (v === 0 ? ' empty' : '');
+    div.textContent = v === 0 ? '' : v;
+    if (v !== 0) div.addEventListener('click', () => tryMove(i));
+    game.appendChild(div);
+  });
+  if (isGoal(state)) {
+    setTimeout(() => alert('恭喜！拼图已完成 🎉'), 100);
+  }
+}
+
+function tryMove(idx) {
+  const x = idx % SIZE, y = Math.floor(idx / SIZE);
+  [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy]) => {
+    const nx = x + dx, ny = y + dy;
+    if (nx>=0 && nx<SIZE && ny>=0 && ny<SIZE) {
+      const ni = ny*SIZE + nx;
+      if (state[ni] === 0) {
+        [state[idx], state[ni]] = [state[ni], state[idx]];
+        render();
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function isGoal(arr) {
+  return arr.every((v,i) => (i < N-1 ? v === i+1 : v === 0));
+}
+
+function manhattan(arr) {
+  return arr.reduce((sum, v, i) => {
+    if (v === 0) return sum;
+    const tx = (v-1) % SIZE, ty = Math.floor((v-1)/SIZE);
+    const cx = i % SIZE, cy = Math.floor(i/SIZE);
+    return sum + Math.abs(tx-cx) + Math.abs(ty-cy);
+  }, 0);
+}
+
+function neighbors(arr) {
+  const res = [];
+  const z = arr.indexOf(0), zx = z % SIZE, zy = Math.floor(z/SIZE);
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy]) => {
+    const nx = zx + dx, ny = zy + dy;
+    if (nx>=0 && nx<SIZE && ny>=0 && ny<SIZE) {
+      const ni = ny*SIZE + nx;
+      const copy = arr.slice();
+      [copy[z], copy[ni]] = [copy[ni], copy[z]];
+      res.push({state: copy, move: copy[z]});
+    }
+  });
+  return res;
+}
+
+// 改用 A* 版本，速度快
+function solveAStar() {
+  const start = state.slice();
+  const pq = new MinHeap((a, b) => (a.g + a.h) - (b.g + b.h));
+  pq.push({state: start, g: 0, h: manhattan(start), path: [start]});
+  const visited = new Set();
+
+  while (!pq.isEmpty()) {
+    const node = pq.pop();
+    const hash = node.state.join(',');
+    if (visited.has(hash)) continue;
+    visited.add(hash);
+
+    if (isGoal(node.state)) return node.path;
+
+    for (const {state: next} of neighbors(node.state)) {
+      pq.push({
+        state: next,
+        g: node.g + 1,
+        h: manhattan(next),
+        path: node.path.concat([next])
+      });
+    }
+  }
+  throw new Error('无解');
+}
+
+// 小堆实现
+class MinHeap {
+  constructor(cmp) { this.data = []; this.cmp = cmp; }
+  push(item) {
+    this.data.push(item);
+    this._up(this.data.length - 1);
+  }
+  pop() {
+    if (this.data.length === 1) return this.data.pop();
+    const top = this.data[0];
+    this.data[0] = this.data.pop();
+    this._down(0);
+    return top;
+  }
+  isEmpty() {
+    return this.data.length === 0;
+  }
+  _up(i) {
+    const {data, cmp} = this;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (cmp(data[i], data[p]) >= 0) break;
+      [data[i], data[p]] = [data[p], data[i]];
+      i = p;
+    }
+  }
+  _down(i) {
+    const {data, cmp} = this;
+    const n = data.length;
+    while (true) {
+      let j = i * 2 + 1;
+      if (j >= n) break;
+      if (j + 1 < n && cmp(data[j + 1], data[j]) < 0) j++;
+      if (cmp(data[i], data[j]) <= 0) break;
+      [data[i], data[j]] = [data[j], data[i]];
+      i = j;
+    }
+  }
+}
+
+const shuffleBtn = document.getElementById('shuffleBtn');
+const solveBtn = document.getElementById('solveBtn');
+const statusDiv = document.getElementById('status');
+
+shuffleBtn.addEventListener('click', () => {
+  shuffle();
+  statusDiv.textContent = '';
+});
+
+solveBtn.addEventListener('click', async () => {
+  if (isGoal(state)) {
+    alert('已经完成，无需破解！');
+    return;
+  }
+  shuffleBtn.disabled = true;
+  solveBtn.disabled = true;
+  statusDiv.textContent = '正在开始破解…';
+  await new Promise(r => setTimeout(r, 100)); // 让按钮立刻灰掉
+  
+  try {
+    const path = solveAStar();
+    statusDiv.textContent = '破解中，请稍候…';
+    for (let i = 1; i < path.length; i++) {
+      state = path[i];
+      render();
+      await new Promise(r => setTimeout(r, 150)); // 调整速度：150ms
+    }
+    statusDiv.textContent = '破解完成 🎉';
+  } catch (err) {
+    alert('破解失败：' + err.message);
+    statusDiv.textContent = '破解失败';
+  } finally {
+    shuffleBtn.disabled = false;
+    solveBtn.disabled = false;
+  }
+});
+
+// 打开就乱局
+shuffle();
+render();
+</script>
+
+</body>
+</html>

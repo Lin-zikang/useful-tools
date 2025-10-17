@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+<head>
+    <meta charset="UTF-8">
+    <title>计时器</title>
+    <style>
+        body {
+            background: linear-gradient(45deg, #ff6b6b, #f7c7b6);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .timer-container {
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 40px;
+            width: 300px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        #showTime {
+            font-size: 60px;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+        }
+
+        #startBn,
+        #restBn {
+            width: 100px;
+            height: 40px;
+            margin: 10px;
+            font-size: 16px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #startBn:hover,
+        #restBn:hover {
+            background: #ff4c4c;
+            transform: scale(1.1);
+        }
+
+        #startBn:active,
+        #restBn:active {
+            transform: scale(0.9);
+        }
+
+        .a {
+            text-align: center;
+        }
+
+        /* 大标题样式 */
+        h1 {
+            font-size: 48px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- 大标题 -->
+    <h1>计时器</h1>
+
+    <div class="timer-container">
+        <div id="showTime">00:00:00</div>
+        <button id="startBn">启动</button>
+        <button id="restBn">复位</button>
+        <a href="../" style="color: #fff; display: block; margin-top: 20px;">返回主页（工具大全）</a>
+    </div>
+
+    <script>
+        var time, showTime, startBn, restBn, bool = false, pauseTime = 0, pauseDate;
+
+        init();
+
+        function init() {
+            showTime = document.getElementById("showTime");
+            startBn = document.getElementById("startBn");
+            restBn = document.getElementById("restBn");
+
+            startBn.addEventListener("click", clickHandler); // Start/Pause button
+            restBn.addEventListener("click", clickHandler); // Reset button
+
+            setInterval(animation, 16);
+        }
+
+        function animation() {
+            if (!bool) return;
+
+            var times = new Date().getTime() - time - pauseTime;
+            var minutes = Math.floor(times / 60000);
+            var seconds = Math.floor((times - minutes * 60000) / 1000);
+            var ms = Math.floor((times - minutes * 60000 - seconds * 1000) / 10);
+            showTime.innerHTML = formatTime(times);
+        }
+
+        function formatTime(ms) {
+            var minutes = Math.floor(ms / 60000);
+            var seconds = Math.floor((ms - minutes * 60000) / 1000);
+            var milliseconds = Math.floor((ms - minutes * 60000 - seconds * 1000) / 10);
+            return (minutes < 10 ? "0" + minutes : minutes) + ":" +
+                (seconds < 10 ? "0" + seconds : seconds) + ":" +
+                (milliseconds < 10 ? "0" + milliseconds : milliseconds);
+        }
+
+        function clickHandler(e) {
+            e = e || window.event;
+
+            if (this === startBn) {
+                bool = !bool;
+
+                if (bool) {
+                    this.innerHTML = "暂停";
+
+                    pauseTime += (!pauseDate ? 0 : new Date().getTime() - pauseDate);
+
+                    if (time) return;
+
+                    time = new Date().getTime();
+                    return;
+                }
+
+                this.innerHTML = "启动";
+                pauseDate = new Date().getTime();
+                return;
+            }
+
+            // Reset logic
+            startBn.innerHTML = "启动";
+            pauseTime = 0;
+            pauseDate = null;
+            bool = false;
+            time = 0;
+            showTime.innerHTML = "00:00:00";
+        }
+    </script>
+
+</body>
+
+</html>

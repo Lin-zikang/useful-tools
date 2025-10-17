@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>解方程器（改进版）</title>
+  <!-- 保持原有图标 -->
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <!-- 引入 math.js 库（用于数学运算） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+  <style>
+    /* 样式与原始版本基本一致，只修改标题以示区分 */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: backgroundAnimation 15s infinite alternate;
+    }
+    @keyframes backgroundAnimation {
+      0% { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+      100% { background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); }
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(8.5px);
+      -webkit-backdrop-filter: blur(8.5px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      width: 92%;
+      max-width: 560px;
+      text-align: center;
+      animation: fadeIn 0.9s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 2rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,.45);
+      letter-spacing: .5px;
+    }
+    .hint {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      opacity: .9;
+    }
+    .form-group { margin: 18px 0 14px; text-align: left; }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 1.05rem;
+      transition: box-shadow .25s ease;
+    }
+    input[type="text"]::placeholder { color: rgba(0,0,0,.35); }
+    input[type="text"]:focus {
+      outline: none;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(45deg, #ff6a00, #ee0979);
+      border: none;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s, opacity .18s;
+    }
+    button:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(255,106,0,.4); }
+    button:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(255,106,0,.4); }
+    button:disabled { opacity: .7; cursor: not-allowed; }
+    .result, .error, .info {
+      margin-top: 18px;
+      padding: 14px 15px;
+      border-radius: 8px;
+      font-size: 1rem;
+      line-height: 1.55;
+      animation: slideIn .45s ease-in-out;
+      text-align: left;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .result { background-color: rgba(34,193,195,.85); border-left: 6px solid #22c1c3; color: #fff; }
+    .error  { background-color: rgba(255, 0, 0, .78); border-left: 6px solid #ff0000; color: #fff; }
+    .info   { background-color: rgba(255,255,255, .22); border-left: 6px solid rgba(255,255,255, .65); color: #fff; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .foot {
+      margin-top: 10px;
+      font-size: .9rem;
+      opacity: .9;
+      text-align: left;
+    }
+    code.kbd {
+      background: rgba(255,255,255,.25);
+      padding: 1px 6px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>解方程器（改进版）</h1>
+    <div class="hint">支持：隐式乘法（<code>2x</code>）、函数（<code>sqrt</code>、<code>sin</code>、…）、Unicode 上标（<code>x²</code>）。仅返回实数解。新增高精度运算支持和改进扫描算法，可处理高次和超大系数方程。</div>
+
+    <div class="form-group">
+      <label for="equation">输入方程：</label>
+      <input type="text" id="equation" placeholder="例如：2x + 3 = 0、x² - 3x + 2 = 0、sqrt(x-9) = 0、sin(x)=0">
+    </div>
+    <button id="solveBtn">解 方程</button>
+
+    <div id="output" class="info">提示：按 <code class="kbd">Enter</code> 也可求解。</div>
+
+    <div class="foot">
+      注意：若方程对所有实数恒成立会显示“无数解”；若为矛盾等式（如 <code>2=3</code>）则“无解”。复杂方程仅做实根数值求解。高精度运算在某些函数（如三角函数）下可能退化为普通精度。
+    </div>
+  </div>
+
+  <script>
+    // ---------- 可调参数（根据需要可调整） ----------
+    const SOLVER = {
+      minInit: -1000,        // 初始扫描下界
+      maxInit:  1000,        // 初始扫描上界
+      refineTol: 1e-12,      // 收敛容差（函数值），提高精度
+      mergeTol: 1e-9,        // 根去重阈值
+      samplePoints: 6000,    // 扫描采样点数（适当增加，提升高次方程稳定性）
+      maxExpansions: 10,     // 最多扩展几次扫描区间（扩大可搜索范围）
+      nearZeroHint: 1e-8,    // 近零阈值（触发牛顿法）
+      maxNewtonSteps: 40,    // 牛顿法最大迭代步
+      maxBisectionSteps: 100,// 二分/夹逼最大步数
+      maxRoots: 200          // 安全阈值：最多返回多少个根
+    };
+
+    // 一些常量&函数名集合，帮助处理隐式乘法和变量识别
+    const KNOWN_CONSTS = new Set([
+      'e','pi','tau','phi','E','PI','TAU','Infinity','NaN','i','I','true','false','null'
+    ]);
+    const KNOWN_FUNCS = new Set([
+      // 常见初等函数
+      'sin','cos','tan','cot','sec','csc',
+      'asin','acos','atan','acot','asec','acsc',
+      'sinh','cosh','tanh','asinh','acosh','atanh',
+      'exp','log','ln','log10','log2',
+      'sqrt','cbrt','abs','sign',
+      'ceil','floor','round','trunc',
+      'min','max','sum','prod','mean','median','mode','std','variance','mad',
+      'pow','hypot','atan2',
+      're','im','arg','conj',
+      'mod','gcd','lcm',
+      'factorial','gamma','erf',
+      'nthroot','root',
+      // 其他 math.js 里常用的
+      'unit','complex','matrix','det','inv','transpose','trace','size'
+    ]);
+
+    // 绑定事件
+    document.getElementById('solveBtn').addEventListener('click', solveEquation);
+    document.getElementById('equation').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') solveEquation();
+    });
+
+    /**
+     * 尝试将表达式解析为关于指定变量的多项式。
+     * 返回多项式系数数组（从常数项开始），或 null 表示不是多项式。
+     * 使用 BigNumber 以提高处理大系数时的精度。
+     * 如果表达式包含非整数指数、函数或除以变量等复杂结构，则返回 null。
+     */
+    function parsePolynomial(node, variable) {
+      // 内部递归函数，返回系数数组或 null
+      function poly(n) {
+        if (!n || typeof n !== 'object') return null;
+        switch (n.type) {
+          case 'ConstantNode': {
+            // 常数值
+            let val;
+            try {
+              // n.value 可能是 string 或 number
+              val = math.bignumber(n.value);
+            } catch (_) {
+              return null;
+            }
+            return [val];
+          }
+          case 'SymbolNode': {
+            if (n.name === variable) {
+              // x -> [0,1]
+              return [math.bignumber(0), math.bignumber(1)];
+            }
+            // 其它符号视为未知非数字常量，无法确定多项式
+            return null;
+          }
+          case 'ParenthesisNode': {
+            return poly(n.content);
+          }
+          case 'OperatorNode': {
+            const op = n.op;
+            const args = n.args;
+            if (op === '+') {
+              const p = poly(args[0]);
+              const q = poly(args[1]);
+              if (!p || !q) return null;
+              return polyAdd(p, q);
+            }
+            if (op === '-') {
+              if (args.length === 1) {
+                const p = poly(args[0]);
+                if (!p) return null;
+                return polyScale(p, math.bignumber(-1));
+              } else {
+                const p = poly(args[0]);
+                const q = poly(args[1]);
+                if (!p || !q) return null;
+                return polyAdd(p, polyScale(q, math.bignumber(-1)));
+              }
+            }
+            if (op === '*') {
+              const p = poly(args[0]);
+              const q = poly(args[1]);
+              if (!p || !q) return null;
+              return polyMul(p, q);
+            }
+            if (op === '/') {
+              const p = poly(args[0]);
+              const q = poly(args[1]);
+              if (!p || !q) return null;
+              // 仅当除数是常数项时支持
+              if (q.length !== 1) return null;
+              const denom = q[0];
+              // 如果除数为 0，则不支持
+              if (denom.isZero && denom.isZero()) return null;
+              const inv = math.divide(math.bignumber(1), denom);
+              return polyScale(p, inv);
+            }
+            if (op === '^') {
+              // 幂运算：左侧必须是多项式，右侧必须是常数且为非负整数
+              const base = poly(args[0]);
+              const expPoly = poly(args[1]);
+              if (!base || !expPoly) return null;
+              // expPoly 应该是常数项
+              if (expPoly.length !== 1) return null;
+              const exponent = expPoly[0];
+              // BigNumber.isInteger() 检查是否为整数
+              let nInt;
+              if (math.isBigNumber(exponent) && exponent.isInteger && exponent.isInteger()) {
+                nInt = exponent.toNumber();
+              } else {
+                // 也可能是普通数字
+                const tmp = toNumber(exponent);
+                if (!Number.isFinite(tmp) || Math.abs(tmp - Math.round(tmp)) > 1e-12) return null;
+                nInt = Math.round(tmp);
+              }
+              if (nInt < 0 || nInt > 20) {
+                // 指数为负或过大时不处理
+                return null;
+              }
+              return polyPow(base, nInt);
+            }
+            // 其他运算符暂不支持
+            return null;
+          }
+          default:
+            return null;
+        }
+      }
+      const coeffs = poly(node);
+      if (!coeffs) return null;
+      // 去除高位多余 0
+      let res = coeffs.slice();
+      while (res.length > 1) {
+        const last = res[res.length - 1];
+        if (math.isBigNumber(last) ? last.isZero() : last === 0) {
+          res.pop();
+        } else break;
+      }
+      return res;
+    }
+
+    // 多项式系数运算辅助函数
+    function polyAdd(p, q) {
+      const m = Math.max(p.length, q.length);
+      const result = new Array(m);
+      for (let i = 0; i < m; i++) {
+        const a = i < p.length ? p[i] : math.bignumber(0);
+        const b = i < q.length ? q[i] : math.bignumber(0);
+        result[i] = math.add(a, b);
+      }
+      return result;
+    }
+
+    function polyScale(p, c) {
+      return p.map(coef => math.multiply(coef, c));
+    }
+
+    function polyMul(p, q) {
+      const result = new Array(p.length + q.length - 1).fill(math.bignumber(0));
+      for (let i = 0; i < p.length; i++) {
+        for (let j = 0; j < q.length; j++) {
+          const prod = math.multiply(p[i], q[j]);
+          result[i + j] = math.add(result[i + j], prod);
+        }
+      }
+      return result;
+    }
+
+    function polyPow(p, n) {
+      // 多项式 p 的 n 次幂，n 为非负整数
+      if (n === 0) return [math.bignumber(1)];
+      if (n === 1) return p.slice();
+      let result = [math.bignumber(1)];
+      let base = p.slice();
+      let exp = n;
+      while (exp > 0) {
+        if (exp % 2 === 1) {
+          result = polyMul(result, base);
+        }
+        exp = Math.floor(exp / 2);
+        if (exp > 0) {
+          base = polyMul(base, base);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Durand-Kerner 算法，求多项式的所有（复数）根。
+     * coeffs 为 BigNumber 系数数组，从常数项到最高次项。
+     * 返回复数根数组。
+     */
+    function durandKerner(coeffs, maxIter = 64, tol = 1e-12) {
+      const n = coeffs.length - 1;
+      if (n < 1) return [];
+      // 将系数转换为普通数值，若非常大则缩放
+      const a = coeffs.map(coef => {
+        if (math.isBigNumber && math.isBigNumber(coef)) {
+          const str = coef.toString();
+          return parseFloat(str);
+        }
+        return coef;
+      });
+      // 移除最高位系数为 0 的情况
+      while (a.length > 1 && Math.abs(a[a.length - 1]) < 1e-16) {
+        a.pop();
+      }
+      const degree = a.length - 1;
+      if (degree < 1) return [];
+      // 归一化为首项系数为 1 的多项式（不改变根），提升数值稳定性
+      const leading = a[degree];
+      if (Math.abs(leading) > 1e-16) {
+        for (let i = 0; i <= degree; i++) {
+          a[i] = a[i] / leading;
+        }
+      }
+      // 初始猜测：在半径 R 的圆上均匀分布
+      // 为提高收敛性，选择 R = 1 + max(|a_i/a_n|)^(1/degree)，其中 a_n 为最高次项系数
+      let roots = new Array(degree);
+      let radius = 1;
+      try {
+        // 计算最大系数比值，用于推测根的幅度
+        const an = a[degree];
+        let maxRatio = 0;
+        for (let i = 0; i < degree; i++) {
+          const ai = a[i];
+          if (Math.abs(an) > 1e-16) {
+            const ratio = Math.abs(ai / an);
+            if (ratio > maxRatio) maxRatio = ratio;
+          }
+        }
+        radius = 1 + Math.pow(maxRatio, 1 / degree);
+        if (!isFinite(radius) || radius <= 0) radius = 1;
+      } catch (_) {
+        radius = 1;
+      }
+      for (let k = 0; k < degree; k++) {
+        const angle = 2 * Math.PI * k / degree;
+        roots[k] = math.complex({ re: radius * Math.cos(angle), im: radius * Math.sin(angle) });
+      }
+      function polyVal(x) {
+        // 计算多项式在复数 x 上的值
+        let result = math.complex(0);
+        for (let i = degree; i >= 0; i--) {
+          result = math.add(math.multiply(result, x), a[i]);
+        }
+        return result;
+      }
+      for (let iter = 0; iter < maxIter; iter++) {
+        let converged = true;
+        for (let i = 0; i < degree; i++) {
+          let xi = roots[i];
+          // 计算分母 = ∏_{j ≠ i}(xi - roots[j])
+          let denom = math.complex(1);
+          for (let j = 0; j < degree; j++) {
+            if (j === i) continue;
+            denom = math.multiply(denom, math.subtract(xi, roots[j]));
+          }
+          const fxi = polyVal(xi);
+          const delta = math.divide(fxi, denom);
+          const xnew = math.subtract(xi, delta);
+          // 检查是否收敛
+          const diff = math.subtract(xnew, xi);
+          if (math.abs(diff) > tol) converged = false;
+          roots[i] = xnew;
+        }
+        if (converged) break;
+      }
+      return roots;
+    }
+
+    /**
+     * 从 Durand-Kerner 得到的复数根中过滤出实数根
+     */
+    function filterRealRoots(complexRoots) {
+      const realRoots = [];
+      for (const z of complexRoots) {
+        if (typeof z.re === 'number' && typeof z.im === 'number') {
+          // 将虚部绝对值小于阈值的根视为实根。阈值稍大，以捕获重根时出现的数值噪声。
+          if (Math.abs(z.im) < 1e-6) {
+            realRoots.push(z.re);
+          }
+        }
+      }
+      // 去重并排序
+      realRoots.sort((p,q) => p - q);
+      const uniq = [];
+      // 用于判断是否合并重复根的阈值
+      const absTol = 1e-7;
+      const relTol = 1e-4;
+      for (const r of realRoots) {
+        if (uniq.length === 0) {
+          uniq.push(r);
+          continue;
+        }
+        const last = uniq[uniq.length - 1];
+        const diff = Math.abs(r - last);
+        // 计算相对差值基准，避免过小根导致合并不当。若两数的最大绝对值为 0，则直接比较绝对差值。
+        const denom = Math.max(Math.abs(r), Math.abs(last));
+        const relDiff = denom > 0 ? diff / denom : 0;
+        // 当绝对差值和相对差值均低于阈值时视为重复根
+        if (diff < absTol && relDiff < relTol) {
+          continue;
+        }
+        uniq.push(r);
+      }
+      return uniq;
+    }
+
+    /**
+     * 求解方程入口函数
+     */
+    function solveEquation() {
+      const out = document.getElementById('output');
+      const btn = document.getElementById('solveBtn');
+      const raw = document.getElementById('equation').value;
+
+      clearOutput();
+
+      if (!raw || raw.trim() === '') return showError('请输入一个方程。');
+
+      btn.disabled = true;
+
+      try {
+        // 1) 预处理输入
+        const normalized = preprocessEquation(raw);
+
+        // 2) 必须且只允许一个“=”
+        const parts = normalized.split('=');
+        if (parts.length !== 2) {
+          showError('方程格式不正确：必须且只能包含一个“=”。');
+          btn.disabled = false; return;
+        }
+
+        let left = parts[0], right = parts[1];
+        // 在进一步解析前，尝试对形如 sqrt(expr)=0、cbrt(expr)=0、nthroot(expr,n)=0、root(expr,n)=0 的根式等式进行字符串层面的简化：
+        // 如果一边是根函数且另一边是 0，则将根函数替换为其内部主体参数，从而得到 expr=0。
+        // 为支持 nthroot 和 root，这里会解析括号内的第一个逗号之前的部分作为主体参数（忽略阶数参数）。
+        (function simplifyRootString() {
+          try {
+            // 去除空白，用于匹配
+            const ltrim = left.replace(/\s+/g, '');
+            const rtrim = right.replace(/\s+/g, '');
+            // 正则匹配根式函数调用，例如 sqrt(...), cbrt(...), nthroot(...), root(...)
+            const rootRe = /^(sqrt|cbrt|nthroot|root)\((.*)\)$/i;
+            function tryMatchRoot(str) {
+              const m = str.match(rootRe);
+              if (m) {
+                const fname = m[1].toLowerCase();
+                const argsStr = m[2];
+                return { fname, argsStr };
+              }
+              return null;
+            }
+            // 辅助函数：提取逗号分隔参数中的第一个参数，支持括号嵌套
+            function extractFirstArg(str) {
+              let depth = 0;
+              for (let i = 0; i < str.length; i++) {
+                const ch = str[i];
+                if (ch === '(') depth++;
+                else if (ch === ')') depth--;
+                else if (ch === ',' && depth === 0) {
+                  return str.slice(0, i);
+                }
+              }
+              return str;
+            }
+            // 检查左侧和右侧
+            const lmatch = tryMatchRoot(ltrim);
+            if (lmatch && (rtrim === '0' || rtrim === '+0' || rtrim === '-0')) {
+              // 根据函数类型决定主体参数
+              let arg0 = lmatch.argsStr;
+              if (lmatch.fname === 'nthroot' || lmatch.fname === 'root') {
+                arg0 = extractFirstArg(lmatch.argsStr);
+              }
+              left = arg0;
+              right = '0';
+              return;
+            }
+            const rmatch = tryMatchRoot(rtrim);
+            if (rmatch && (ltrim === '0' || ltrim === '+0' || ltrim === '-0')) {
+              let arg0 = rmatch.argsStr;
+              if (rmatch.fname === 'nthroot' || rmatch.fname === 'root') {
+                arg0 = extractFirstArg(rmatch.argsStr);
+              }
+              right = '0';
+              left = arg0;
+              return;
+            }
+          } catch (_) {
+            // 忽略简化错误
+          }
+        })();
+
+        // 3) 组合为 f(x)=0
+        const exprStr = `(${left}) - (${right})`;
+
+        // 4) 解析 AST 并识别变量
+        let node;
+        try { node = math.parse(exprStr); }
+        catch (err) { showError('无法解析表达式，请检查括号/运算符是否正确。'); btn.disabled=false; return; }
+
+        const variables = detectVariables(node);
+        if (variables.size === 0) {
+          // 常数等式：直接判定
+          const val = safeEval(node, {});
+          if (isFiniteNumber(val) && Math.abs(val) < SOLVER.refineTol) {
+            showResult('方程对所有实数都成立，无数解。'); btn.disabled = false; return;
+          }
+          showError('方程为常数等式且不成立，故无解。'); btn.disabled = false; return;
+        }
+        if (variables.size > 1) {
+          showError(`检测到多个变量：${Array.from(variables).join(', ')}。目前仅支持单变量方程。`);
+          btn.disabled = false; return;
+        }
+        const variable = Array.from(variables)[0];
+
+        // 针对某些形如 sqrt(expr)=0、cbrt(expr)=0、nthroot(expr,n)=0 的根式等式，
+        // 若表达式形式为根号函数且右边为 0，则可以简化为 expr=0，以便多项式解析。
+        // 这里检测差表达式 node 是否为单参数根式函数，如果是则替换 node。
+        (function simplifyRootExpression() {
+          try {
+            // 定义一个辅助函数，用于从根式函数节点中提取其“主体”参数
+            function extractRootArg(fnNode) {
+              const fname = fnNode && fnNode.fn && fnNode.fn.name ? String(fnNode.fn.name).toLowerCase() : '';
+              if (fname === 'sqrt' || fname === 'cbrt') {
+                return fnNode.args && fnNode.args.length > 0 ? fnNode.args[0] : null;
+              }
+              if (fname === 'nthroot' || fname === 'root') {
+                // nthroot(x,n) 或 root(x,n)：第一个参数是表达式
+                return fnNode.args && fnNode.args.length > 0 ? fnNode.args[0] : null;
+              }
+              return null;
+            }
+            // 如果差表达式是函数本身 sqrt(...) 之类（即没有减号），则直接处理
+            if (node && node.type === 'FunctionNode') {
+              const arg = extractRootArg(node);
+              if (arg) {
+                const newExprStr = `(${arg.toString()}) - 0`;
+                node = math.parse(newExprStr);
+                return;
+              }
+            }
+            // 如果差表达式是二元运算 a - b
+            if (node && node.type === 'OperatorNode' && node.op === '-' && Array.isArray(node.args) && node.args.length === 2) {
+              const left = node.args[0];
+              const right = node.args[1];
+              // 情况 1：左侧为根式，右侧为常数 0
+              if (right && right.type === 'ConstantNode' && (right.value === 0 || right.value === '0')) {
+                if (left && left.type === 'FunctionNode') {
+                  const arg = extractRootArg(left);
+                  if (arg) {
+                    const newExprStr = `(${arg.toString()}) - 0`;
+                    node = math.parse(newExprStr);
+                    return;
+                  }
+                }
+              }
+              // 情况 2：左侧为常数 0，右侧为根式
+              if (left && left.type === 'ConstantNode' && (left.value === 0 || left.value === '0')) {
+                if (right && right.type === 'FunctionNode') {
+                  const arg = extractRootArg(right);
+                  if (arg) {
+                    // 注意此时表达式为 0 - root(arg)，其等于 -(root(arg))，方程 -root(arg)=0 即 root(arg)=0
+                    const newExprStr = `(${arg.toString()}) - 0`;
+                    node = math.parse(newExprStr);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (_) {
+            // 忽略简化错误
+          }
+        })();
+
+        // 5) 编译 f(x) 与 f'(x)
+        const compiled = node.compile();
+        let derivCompiled = null;
+        try {
+          const dnode = math.derivative(node, variable);
+          derivCompiled = dnode.compile();
+        } catch (_) {
+          derivCompiled = null; // 某些函数不可导时，后续会自动降级
+        }
+
+        /*
+         * 在尝试数值求解之前，优先检查表达式是否为单变量多项式。
+         * 如果是，则使用多项式根求解算法（Durand-Kerner）求出所有复数根，并筛选出实数根。
+         */
+        const polyCoeffs = parsePolynomial(node, variable);
+        if (polyCoeffs) {
+          // 去除最高位多余零后的阶数
+          const degree = polyCoeffs.length - 1;
+          if (degree < 0) {
+            // 多项式恒为 0
+            showResult('方程对所有实数都成立，无数解。');
+            btn.disabled = false;
+            return;
+          }
+          if (degree === 0) {
+            // 常数多项式，判断是否为 0
+            const c0 = polyCoeffs[0];
+            const isZeroConst = (math.isBigNumber(c0) ? c0.isZero() : (Math.abs(c0) < SOLVER.refineTol));
+            if (isZeroConst) {
+              showResult('方程对所有实数都成立，无数解。');
+            } else {
+              showError('方程无解。');
+            }
+            btn.disabled = false;
+            return;
+          }
+          // 使用 Durand-Kerner 算法求根
+          const complexRoots = durandKerner(polyCoeffs);
+          const realRoots = filterRealRoots(complexRoots);
+          if (realRoots.length > 0) {
+            const list = realRoots.map(formatNumber);
+            showResult(`实数解：${variable} = ${list.join('，')}`);
+            btn.disabled = false;
+            return;
+          }
+          // 如果 Durand-Kerner 未找到实数根，则尝试使用扫描+夹逼+牛顿法寻找实根
+          const fallbackRoots = solveRealRootsBig(
+            (x) => evalWithBig(x),
+            (x) => evalDerivWithBig(x)
+          );
+          if (fallbackRoots.length > 0) {
+            const list2 = fallbackRoots.map(formatNumber);
+            showResult(`实数解：${variable} = ${list2.join('，')}`);
+          } else {
+            showError('未找到实数解。');
+          }
+          btn.disabled = false;
+          return;
+        }
+
+        // 高精度求值包装器：尝试使用 BigNumber 计算，失败时退化为普通数值
+        function evalWithBig(x) {
+          try {
+            // 使用 BigNumber 传入变量，提高大数运算精度
+            const scope = {}; scope[variable] = math.bignumber(x);
+            return compiled.evaluate(scope);
+          } catch (_) {
+            // 某些函数不支持 BigNumber，退化为普通数值
+            try {
+              const scope2 = {}; scope2[variable] = x;
+              return compiled.evaluate(scope2);
+            } catch (err) {
+              return NaN;
+            }
+          }
+        }
+        function evalDerivWithBig(x) {
+          if (!derivCompiled) return NaN;
+          try {
+            const scope = {}; scope[variable] = math.bignumber(x);
+            return derivCompiled.evaluate(scope);
+          } catch (_) {
+            try {
+              const scope2 = {}; scope2[variable] = x;
+              return derivCompiled.evaluate(scope2);
+            } catch (err) {
+              return NaN;
+            }
+          }
+        }
+
+        // 判断是否恒等 0（可靠版）
+        function isAlwaysZeroBig() {
+          const pts = [-2, -1, 0, 1, 2, 10];
+          let count = 0;
+          for (const t of pts) {
+            const v = evalWithBig(t);
+            if (isFiniteVal(v)) {
+              if (!isNearZero(v, 1e-9)) return false;
+              count++;
+            }
+          }
+          return count >= 4;
+        }
+
+        if (isAlwaysZeroBig()) {
+          showResult('方程对所有实数都成立，无数解。'); btn.disabled=false; return;
+        }
+
+        // 数值判定是否线性，并在可行时给出解析解
+        const linRes = trySolveLinearNumerically((x) => {
+          // 对于线性测试，使用普通数值判断即可
+          const val = evalWithBig(x);
+          return toNumber(val);
+        });
+        if (linRes.status === 'linear') {
+          if (linRes.a === 0 && Math.abs(linRes.b) < SOLVER.refineTol) {
+            showResult('方程对所有实数都成立，无数解。'); btn.disabled=false; return;
+          }
+          if (linRes.a === 0) {
+            showError('方程无解。'); btn.disabled=false; return;
+          }
+          const root = -linRes.b / linRes.a;
+          const pretty = formatNumber(root);
+          showResult(`实数解：${variable} = ${pretty}`);
+          btn.disabled = false; return;
+        }
+
+        // 构造求解器函数 f 和 f'，能够处理 BigNumber
+        const f = (x) => evalWithBig(x);
+        const df = (x) => evalDerivWithBig(x);
+
+        // 使用扫描 + 夹逼 + 牛顿方法寻找实根
+        const roots = solveRealRootsBig(f, df);
+        if (roots.length === 0) {
+          showError('未找到实数解。');
+          btn.disabled = false; return;
+        }
+        // 如果根的数量非常多，可能是周期函数（如 sin(x)=0），提示存在无穷多实根，仅展示部分
+        const MAX_DISPLAY_ROOTS = 20;
+        if (roots.length >= 50) {
+          const preview = roots.slice(0, MAX_DISPLAY_ROOTS).map(formatNumber);
+          showResult(`方程存在无穷多个实数解，${variable} 的部分解为：${preview.join('，')}，…`);
+          btn.disabled = false; return;
+        }
+        const list = roots.map(formatNumber);
+        showResult(`实数解：${variable} = ${list.join('，')}`);
+      } catch (err) {
+        console.error(err);
+        showError('求解时发生错误，请检查输入格式或尝试简化方程。');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ----------------- 预处理与解析 -----------------
+
+    function preprocessEquation(input) {
+      // 标准化：去空白 -> 替换本地化字符 -> 处理上标 -> 插入隐式乘号 -> 标准幂符号
+      let s = input.trim();
+
+      // 全角/本地化与符号统一
+      s = s
+        .replace(/（/g, '(').replace(/）/g, ')')
+        .replace(/【/g, '[').replace(/】/g, ']')
+        .replace(/，/g, ',')
+        .replace(/[＋+]/g, '+')
+        .replace(/[－–—−]/g, '-') // 各种减号
+        .replace(/[×·•⋅]/g, '*')
+        .replace(/÷/g, '/');
+
+      // 幂的 JS 写法 -> 数学写法
+      s = s.replace(/\*\*/g, '^');
+
+      // 去多余空白
+      s = s.replace(/\s+/g, '');
+
+      // 把 Unicode 上标（⁰¹²³⁴⁵⁶⁷⁸⁹ 以及 ²³¹）转成 ^(digits)
+      s = convertSuperscriptsToPowers(s);
+
+      // 插入隐式乘号（注意不要破坏函数调用，如 sin(x) 不能变成 s*i*n*(x)）
+      s = insertImplicitMultiplication(s);
+
+      return s;
+    }
+
+    function convertSuperscriptsToPowers(s) {
+      const map = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+      // 把形如 aⁿ 或 )ⁿ 或 数字ⁿ 变为 a^(n)
+      return s.replace(/([A-Za-z0-9\)\]])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, (_, base, sup) => {
+        const digits = sup.split('').map(ch => map[ch] ?? '').join('');
+        return `${base}^(${digits})`;
+      });
+    }
+
+    function insertImplicitMultiplication(s) {
+      // 1) 数字 与 变量/括号: 2x -> 2*x, 3(x+1)->3*(x+1)
+      s = s.replace(/(\d)([A-Za-z_\(])/g, '$1*$2');
+
+      // 2) 括号) 与 数字/变量: (x+1)2 -> (x+1)*2, (x) y -> (x)*y
+      s = s.replace(/(\))(\d|[A-Za-z_])/g, '$1*$2');
+
+      // 3) 变量名 token 与 "(":仅在 token 不是函数名时插入乘号
+      s = s.replace(/([A-Za-z_][A-Za-z0-9_]*)\(/g, (m, name) => {
+        const lname = name.toLowerCase();
+        return KNOWN_FUNCS.has(lname) ? `${name}(` : `${name}*(`;
+      });
+
+      return s;
+    }
+
+    function detectVariables(astNode) {
+      const set = new Set();
+      (function walk(n) {
+        if (!n || typeof n !== 'object') return;
+        switch (n.type) {
+          case 'SymbolNode':
+            set.add(n.name);
+            break;
+          case 'FunctionNode':
+            // 只遍历参数，跳过 n.fn，避免把函数名当作变量
+            n.args.forEach(walk);
+            break;
+          case 'ParenthesisNode':
+            walk(n.content);
+            break;
+          case 'AccessorNode':
+            walk(n.object);
+            walk(n.index);
+            break;
+          default:
+            if (Array.isArray(n.args)) n.args.forEach(walk);
+        }
+      })(astNode);
+
+      // 过滤内建常量与已知函数名
+      for (const name of Array.from(set)) {
+        const lname = String(name).toLowerCase();
+        if (KNOWN_CONSTS.has(name) || KNOWN_CONSTS.has(lname) || KNOWN_FUNCS.has(lname)) {
+          set.delete(name);
+        }
+      }
+      return set;
+    }
+
+    // ----------------- 安全求值 -----------------
+
+    function isFiniteNumber(x) { return typeof x === 'number' && isFinite(x); }
+
+    // 检测 BigNumber 或普通数是否有限
+    function isFiniteVal(x) {
+      if (typeof x === 'number') return isFiniteNumber(x);
+      if (math && math.isBigNumber && math.isBigNumber(x)) {
+        // 对于 BigNumber，检查 NaN 状态即可；BigNumber 不会表示 Infinity
+        try { return !x.isNaN(); } catch (_) { return true; }
+      }
+      // 复数/NaN 等认为非有限
+      if (x && typeof x === 'object' && 're' in x && 'im' in x) {
+        return isFiniteNumber(x.re) && isFiniteNumber(x.im);
+      }
+      return false;
+    }
+
+    function toNumber(val) {
+      if (isFiniteNumber(val)) return val;
+      // math.js BigNumber: 使用 toNumber()（若超出范围将返回 Infinity）
+      if (math && math.isBigNumber && math.isBigNumber(val)) {
+        try { return val.toNumber(); } catch (_) { return NaN; }
+      }
+      // math.js Complex
+      if (val && typeof val === 'object' && 're' in val && 'im' in val) {
+        return Math.abs(val.im) < 1e-14 ? val.re : NaN;
+      }
+      return NaN;
+    }
+
+    function safeEval(astNode, scope) {
+      try { return toNumber(astNode.compile().evaluate(scope)); }
+      catch (_) { return NaN; }
+    }
+
+    function safeEvalCompiled(compiled, variable, x) {
+      const scope = {}; scope[variable] = x;
+      try { return toNumber(compiled.evaluate(scope)); }
+      catch (_) { return NaN; }
+    }
+
+    // ----------------- 判定恒等/线性 -----------------
+
+    function isNearZero(val, tol) {
+      // 判断 val 是否在 tol 范围内接近 0；支持 BigNumber 与普通数
+      if (val === null || val === undefined) return false;
+      if (math && math.isBigNumber && math.isBigNumber(val)) {
+        return val.abs().lt(math.bignumber(tol));
+      }
+      if (typeof val === 'number') return Math.abs(val) < tol;
+      if (val && typeof val === 'object' && 're' in val && 'im' in val) {
+        return Math.abs(val.re) < tol && Math.abs(val.im) < tol;
+      }
+      return false;
+    }
+
+    function isAlwaysZero(f) {
+      const pts = [-2, -1, 0, 1, 2, 10];
+      let count = 0;
+      for (const t of pts) {
+        const v = f(t);
+        if (isFiniteNumber(v)) {
+          if (Math.abs(v) > 1e-9) return false;
+          count++;
+        }
+      }
+      return count >= 4; // 至少 4 个有限点近 0 才信
+    }
+
+    function trySolveLinearNumerically(f) {
+      /*
+       * 使用数值方法判定函数是否近似线性。
+       * 对若干组等间距采样点 [a,b,c] 计算二阶差分和斜率。
+       * 对线性函数 f(x) = m x + b，有：
+       *   二阶差分 = f(a) - 2f(b) + f(c) = 0
+       *   斜率 s = f(b) - f(a) = m (b-a)
+       *   对不同的采样区间（相同间距）应得到相同的斜率。
+       * 若所有候选区间均满足二阶差分接近 0，且斜率一致，则视为线性函数。
+       */
+      const candidates = [
+        [0,1,2],
+        [-1,0,1],
+        [1,2,3]
+      ];
+      let firstSlope = null;
+      const secondTol = 1e-8;
+      const slopeTol  = 1e-6;
+      for (const [a,b,c] of candidates) {
+        const fa = f(a), fb = f(b), fc = f(c);
+        if ([fa,fb,fc].every(isFiniteNumber)) {
+          const second = fa - 2*fb + fc;
+          if (Math.abs(second) > secondTol) {
+            return { status: 'nonlinear' };
+          }
+          const slope = fb - fa;
+          if (firstSlope === null) {
+            firstSlope = slope;
+          } else {
+            if (Math.abs(slope - firstSlope) > slopeTol) {
+              return { status: 'nonlinear' };
+            }
+          }
+        } else {
+          // 任意一个点不可求值，则无法判定为线性
+          return { status: 'nonlinear' };
+        }
+      }
+      // 所有候选都满足近似线性
+      // 选择第一组的斜率和截距作为线性系数
+      const [a0,b0] = [candidates[0][0], candidates[0][1]];
+      const fa0 = f(a0);
+      const slope0 = f(b0) - fa0;
+      const intercept = fa0;
+      return { status: 'linear', a: slope0, b: intercept };
+    }
+
+    // ----------------- 求根（扫描 + 夹逼 + 牛顿） -----------------
+
+    /**
+     * 根据 f 和 df 寻找所有实根，支持高精度运算。
+     * @param {function} f 返回数学值（可能是 BigNumber/number/Complex）
+     * @param {function} df 返回导数值（可能是 BigNumber/number/Complex）
+     */
+    function solveRealRootsBig(f, df) {
+      let min = SOLVER.minInit, max = SOLVER.maxInit;
+      const roots = [];
+
+      for (let expand = 0; expand <= SOLVER.maxExpansions; expand++) {
+        const brackets = [];
+        const nearZeros = [];
+
+        // 扫描
+        const N = SOLVER.samplePoints;
+        const step = (max - min) / N;
+        let xPrev = null, fPrev = null, sPrev = null;
+
+        for (let i = 0; i <= N; i++) {
+          const x = min + i * step;
+          const fx = f(x);
+          const finite = isFiniteVal(fx);
+          const sign = finite ? signOf(fx) : null;
+
+          if (finite) {
+            // 捕获近零点提示（重根/平台根）
+            if (isNearZero(fx, SOLVER.nearZeroHint)) {
+              nearZeros.push(x);
+            }
+            // 捕获符号变化（普通根）
+            if (xPrev !== null && fPrev !== null && sPrev !== null) {
+              if (sign !== null && sPrev !== null && sign * sPrev <= 0) {
+                brackets.push([xPrev, x]);
+              }
+            }
+            xPrev = x; fPrev = fx; sPrev = sign;
+          } else {
+            // 断点：重置前一个点
+            xPrev = null; fPrev = null; sPrev = null;
+          }
+        }
+
+        // 先用夹逼法 refine
+        for (const [a,b] of brackets) {
+          const r = refineBracketBig(f, a, b);
+          if (r !== null) roots.push(r);
+          if (roots.length >= SOLVER.maxRoots) break;
+        }
+
+        // 再用牛顿法从近零点出发（抓重根/切触）
+        for (const x0 of nearZeros) {
+          const r = newtonRefineBig(f, df, x0, step);
+          if (r !== null) roots.push(r);
+          if (roots.length >= SOLVER.maxRoots) break;
+        }
+
+        // 去重
+        const uniq = dedupeRoots(roots);
+        if (uniq.length > 0) return uniq;
+
+        // 没找到根则扩大区间再试
+        const range = (max - min);
+        min -= range;
+        max += range;
+      }
+      return dedupeRoots(roots);
+    }
+
+    /**
+     * 判断数值的符号；返回 -1, 0, 1 或 null（不可判断）
+     */
+    function signOf(val) {
+      if (val === null || val === undefined) return null;
+      // BigNumber
+      if (math && math.isBigNumber && math.isBigNumber(val)) {
+        if (val.isZero()) return 0;
+        return val.isNegative() ? -1 : 1;
+      }
+      // 普通数
+      if (typeof val === 'number') {
+          if (!isFinite(val)) return null;
+          return val > 0 ? 1 : (val < 0 ? -1 : 0);
+      }
+      // 复数
+      if (val && typeof val === 'object' && 're' in val && 'im' in val) {
+        const im = val.im;
+        const re = val.re;
+        // 仅当虚部足够小才以实部判断符号
+        if (Math.abs(im) < 1e-12) {
+          if (re > 0) return 1;
+          if (re < 0) return -1;
+          return 0;
+        }
+        return null;
+      }
+      return null;
+    }
+
+    /**
+     * 夹逼法细化区间，适应 BigNumber 运算
+     */
+    function refineBracketBig(f, a0, b0) {
+      let a = a0, b = b0;
+      let fa = f(a), fb = f(b);
+      if (!isFiniteVal(fa) || !isFiniteVal(fb)) return null;
+
+      // 端点即根
+      if (isNearZero(fa, SOLVER.refineTol)) return a;
+      if (isNearZero(fb, SOLVER.refineTol)) return b;
+
+      let sa = signOf(fa), sb = signOf(fb);
+      if (sa === null || sb === null || sa * sb > 0) return null; // 没有符号变化
+
+      let mid = null, fmid = null;
+      for (let i = 0; i < SOLVER.maxBisectionSteps; i++) {
+        mid = 0.5 * (a + b);
+        fmid = f(mid);
+        if (!isFiniteVal(fmid)) {
+          // 中点不可用时轻微偏移
+          mid = (3*a + b)/4;
+          fmid = f(mid);
+          if (!isFiniteVal(fmid)) return null;
+        }
+        if (isNearZero(fmid, SOLVER.refineTol)) return mid;
+        const sm = signOf(fmid);
+        if (sm === null) return null;
+        if (sa * sm < 0) {
+          b = mid; fb = fmid; sb = sm;
+        } else {
+          a = mid; fa = fmid; sa = sm;
+        }
+      }
+      // 校验中点是否真的接近 0，防极点误报
+      if (isNearZero(fmid, 1e-7)) return mid;
+      return null;
+    }
+
+    /**
+     * Newton 法细化，兼容 BigNumber
+     */
+    function newtonRefineBig(f, df, x0, h) {
+      // 如果无导数函数，则降级为微小区间二分法
+      if (!df) {
+        const a = x0 - 2*h, b = x0 + 2*h;
+        return refineBracketBig(f, a, b);
+      }
+      // 初始值转成 BigNumber，后续迭代保持 BigNumber
+      let x = math.bignumber(x0);
+      const tol = math.bignumber(SOLVER.refineTol);
+      for (let i = 0; i < SOLVER.maxNewtonSteps; i++) {
+        let fx = f(x);
+        let dfx = df(x);
+        // 若返回普通数或复数，则转换为 BigNumber；若不可转换则直接失败
+        if (!isFiniteVal(fx) || !isFiniteVal(dfx)) return null;
+        if (!math.isBigNumber(fx)) {
+          try { fx = math.bignumber(toNumber(fx)); } catch (_) { return null; }
+        }
+        if (!math.isBigNumber(dfx)) {
+          try { dfx = math.bignumber(toNumber(dfx)); } catch (_) { return null; }
+        }
+        // 收敛检测
+        if (fx.abs().lte(tol)) return x;
+        if (dfx.abs().lte(math.bignumber('1e-20'))) return null; // 斜率过小
+        // Newton 更新：x1 = x - fx/dfx
+        const ratio = math.divide(fx, dfx);
+        const x1 = math.subtract(x, ratio);
+        // 判断是否收敛
+        if (math.isBigNumber(x1) && math.subtract(x1, x).abs().lte(math.bignumber('1e-20'))) {
+          return isNearZero(f(x1), 1e-7) ? x1 : null;
+        }
+        x = x1;
+      }
+      return isNearZero(f(x), 1e-7) ? x : null;
+    }
+
+    function dedupeRoots(arr) {
+      // 将 BigNumber 转换为普通数用于排序；极大或极小值会变成 Infinity，但比较时不影响去重
+      const conv = arr.filter(v => v !== null && v !== undefined).map(v => {
+        if (math && math.isBigNumber && math.isBigNumber(v)) {
+          try { return v.toNumber(); } catch (_) { return NaN; }
+        }
+        return v;
+      }).filter(isFiniteNumber);
+      const a = conv.slice().sort((p,q)=>p-q);
+      const out = [];
+      for (const x of a) {
+        if (out.length === 0 || Math.abs(x - out[out.length-1]) > SOLVER.mergeTol) {
+          out.push(x);
+        }
+      }
+      // 去 -0
+      return out.map(v => (Object.is(v, -0) ? 0 : v));
+    }
+
+    function formatNumber(x) {
+      // x 可能是 BigNumber 或普通数
+      let val = x;
+      if (math && math.isBigNumber && math.isBigNumber(x)) {
+        // 使用 math.format 输出 BigNumber
+        try {
+          return math.format(x, { precision: 14, lowerExp: -12, upperExp: 20 });
+        } catch (_) {
+          try { val = x.toNumber(); } catch (_) { return String(x); }
+        }
+      }
+      if (!isFiniteNumber(val)) return String(val);
+      if (Math.abs(val) < 1e-12) return '0';
+      // 若值接近整数，则直接按整数输出，避免如 -1.000000000214 这类小偏差
+      const nearest = Math.round(val);
+      // 若接近整数阈值稍宽松，适应数值误差
+      // 当数值距离最近整数极其接近时，将其直接显示为整数。阈值适度放宽到 1e-7，
+      // 以避免如 0.999999988984 与 1 相差约 1e-8 时不被归整的情况。
+      if (Math.abs(val - nearest) < 1e-7) {
+        return String(nearest);
+      }
+      return math.format(val, { precision: 12, lowerExp: -8, upperExp: 14 });
+    }
+
+    // ----------------- UI 辅助 -----------------
+
+    function clearOutput() { document.getElementById('output').innerHTML = ''; }
+    function showResult(msg) { document.getElementById('output').innerHTML = `<div class="result">${msg}</div>`; }
+    function showError(msg) { document.getElementById('output').innerHTML = `<div class="error">${msg}</div>`; }
+
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

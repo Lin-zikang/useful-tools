@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>贪吃蛇游戏</title>
+    <link rel="stylesheet" href="https://cdn.rthe.cn/cached-b970b0520c77f088cf97f8e4516a9cc6-avif/hywel.com.cn/game/sk/game.css">
+</head>
+<body>
+    <canvas>
+        您的浏览器不支持canvas
+    </canvas>
+    <div>
+        <h1>贪吃蛇</h1>
+        <br>
+        <h2>得分：<span id="score">0</span></h2>
+        <h2>长度：<span id="len">5</span></h2>
+        <br>
+        <br>
+        <h2 class="ap" id="dem">
+            <h1 id="gameover">GameOver!!!</h1>
+            <span id="t">三秒后重新开始</span>
+            <pre>
+                游戏说明：
+                <br>
+                1. 按方向键控制蛇的移动
+                <br>
+                2. 达到屏幕边缘会穿墙（试试）
+                <br>
+                3. 吃到食物会变长
+                <br>
+                4. 吃到自己身体游戏结束
+				<a href="../">返回主页（工具大全）</a>
+            </pre>
+        </h2>
+		<div id="qwerty">
+			<button onclick="Au()">⇧</button><br>
+			<button onclick="Al()" id="NO">⇦</button>
+			<goes> </goes>
+			<button onclick="Ar()">⇨</button><br>
+			<button onclick="Ad()">⇩</button>
+		</div>
+    </div>
+</body>
+</html>
+<html>
+<script src="https://cdn.rthe.cn/cached-671936ba6cf0c6b0f01bfcf0181fd5fd-avif/hywel.com.cn/game/sk/game.js"></script>
+</html>

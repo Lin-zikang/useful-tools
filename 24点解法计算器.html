@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>24点解法计算器</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        /* 样式保持不变，保持原有设计 */
+        body {
+            background: linear-gradient(135deg, #f2f2f2, #d9f9d9);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2e7d32;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            width: 80px;
+            height: 40px;
+            text-align: center;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 40px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        #result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 100px;
+        }
+
+        .solution {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>24点解法计算器</h1>
+        <div class="input-group">
+            <input type="text" class="number-input" placeholder="数字" maxlength="2">
+            <input type="text" class="number-input" placeholder="数字" maxlength="2">
+            <input type="text" class="number-input" placeholder="数字" maxlength="2">
+            <input type="text" class="number-input" placeholder="数字" maxlength="2">
+        </div>
+        <button onclick="calculate24()">计算解法</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function parseInput(value) {
+            const input = value.trim().toUpperCase();
+            if (!input) throw new Error("空输入");
+            
+            if (input === 'J') return 11;
+            if (input === 'Q') return 12;
+            if (input === 'K') return 13;
+            
+            const num = parseInt(input);
+            if (isNaN(num) || num < 1 || num > 13) {
+                throw new Error("无效输入");
+            }
+            return num;
+        }
+
+        function generatePermutations(arr) {
+            const result = [];
+            const used = new Array(arr.length).fill(false);
+            arr.sort((a, b) => a - b);
+            
+            function backtrack(path) {
+                if (path.length === arr.length) {
+                    result.push([...path]);
+                    return;
+                }
+                for (let i = 0; i < arr.length; i++) {
+                    if (used[i] || (i > 0 && arr[i] === arr[i-1] && !used[i-1])) continue;
+                    used[i] = true;
+                    path.push(arr[i]);
+                    backtrack(path);
+                    path.pop();
+                    used[i] = false;
+                }
+            }
+            
+            backtrack([]); 
+            return result;
+        }
+
+        function generateOperators() {
+            const ops = ['+', '-', '×', '÷'];
+            const result = [];
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    for (let k = 0; k < 4; k++) {
+                        result.push([ops[i], ops[j], ops[k]]);
+                    }
+                }
+            }
+            return result;
+        }
+
+        function calculate(a, op, b) {
+            switch(op) {
+                case '+': return a + b;
+                case '-': return a - b;
+                case '×': return a * b;
+                case '÷': 
+                    if (b === 0) throw new Error();
+                    return a / b;
+            }
+        }
+
+        function normalizeExpression(a, aExpr, op, b, bExpr) {
+            if (['+', '×'].includes(op)) {
+                const numA = typeof a === 'number' ? a : parseFloat(a);
+                const numB = typeof b === 'number' ? b : parseFloat(b);
+                return numA <= numB ? `(${aExpr} ${op} ${bExpr})` : `(${bExpr} ${op} ${aExpr})`;
+            }
+            return `(${aExpr} ${op} ${bExpr})`;
+        }
+
+        function normalizeSolution(expr) {
+            const numbers = [];
+            const numberMatches = expr.match(/\d+/g);
+            if (!numberMatches) return expr;
+            numbers.push(...numberMatches.map(num => parseInt(num, 10)));
+
+            const ops = expr.split(/[\d()]+/g)
+                .filter(op => op.trim() !== '')
+                .map(op => op.trim());
+
+            const allAdd = ops.every(op => op === '+');
+            const allMultiply = ops.every(op => op === '×');
+
+            if (allAdd) {
+                numbers.sort((a, b) => a - b);
+                return numbers.join(' + ');
+            } else if (allMultiply) {
+                numbers.sort((a, b) => a - b);
+                return numbers.join(' × ');
+            }
+            return expr;
+        }
+
+        function solve24(numbers) {
+            const solutions = new Set();
+            const permutations = generatePermutations(numbers);
+            const operators = generateOperators();
+
+            for (const nums of permutations) {
+                for (const ops of operators) {
+                    // 结构1：((a op1 b) op2 c) op3 d
+                    try {
+                        const expr1 = normalizeExpression(nums[0], nums[0], ops[0], nums[1], nums[1]);
+                        const val1 = calculate(nums[0], ops[0], nums[1]);
+                        
+                        const expr2 = normalizeExpression(val1, expr1, ops[1], nums[2], nums[2]);
+                        const val2 = calculate(val1, ops[1], nums[2]);
+                        
+                        const finalExpr1 = normalizeExpression(val2, expr2, ops[2], nums[3], nums[3]);
+                        const finalVal1 = calculate(val2, ops[2], nums[3]);
+                        
+                        if (Math.abs(finalVal1 - 24) < 1e-6) {
+                            solutions.add(normalizeSolution(finalExpr1.slice(1, -1)));
+                        }
+                    } catch {}
+
+                    // 结构2：a op1 (b op2 (c op3 d))
+                    try {
+                        const innerExpr = normalizeExpression(nums[2], nums[2], ops[2], nums[3], nums[3]);
+                        const innerVal = calculate(nums[2], ops[2], nums[3]);
+                        
+                        const middleExpr = normalizeExpression(nums[1], nums[1], ops[1], innerVal, innerExpr);
+                        const middleVal = calculate(nums[1], ops[1], innerVal);
+                        
+                        const finalExpr2 = normalizeExpression(nums[0], nums[0], ops[0], middleVal, middleExpr);
+                        const finalVal2 = calculate(nums[0], ops[0], middleVal);
+                        
+                        if (Math.abs(finalVal2 - 24) < 1e-6) {
+                            solutions.add(normalizeSolution(finalExpr2.slice(1, -1)));
+                        }
+                    } catch {}
+
+                    // 新增结构3：(a op1 b) op3 (c op2 d)
+                    try {
+                        const leftExpr = normalizeExpression(nums[0], nums[0], ops[0], nums[1], nums[1]);
+                        const leftVal = calculate(nums[0], ops[0], nums[1]);
+                        
+                        const rightExpr = normalizeExpression(nums[2], nums[2], ops[1], nums[3], nums[3]);
+                        const rightVal = calculate(nums[2], ops[1], nums[3]);
+                        
+                        const finalExpr3 = normalizeExpression(leftVal, leftExpr, ops[2], rightVal, rightExpr);
+                        const finalVal3 = calculate(leftVal, ops[2], rightVal);
+                        
+                        if (Math.abs(finalVal3 - 24) < 1e-6) {
+                            solutions.add(normalizeSolution(finalExpr3.slice(1, -1)));
+                        }
+                    } catch {}
+                }
+            }
+            return Array.from(solutions).sort();
+        }
+
+        function calculate24() {
+            const inputs = document.querySelectorAll('.number-input');
+            try {
+                const numbers = Array.from(inputs).map(input => {
+                    if (!input.value.trim()) throw new Error("有空输入");
+                    return parseInput(input.value);
+                });
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = "计算中...";
+
+                setTimeout(() => {
+                    const solutions = solve24(numbers);
+                    if (solutions.length > 0) {
+                        resultDiv.innerHTML = `<strong>找到 ${solutions.length} 种解法：</strong><br>` +
+                            solutions.map((sol, i) => `<div class="solution">${i+1}. ${sol}</div>`).join('');
+                    } else {
+                        resultDiv.innerHTML = "<div style='color:#d32f2f'>无可行解法</div>";
+                    }
+                }, 50);
+            } catch (error) {
+                alert("请输入4个有效数字（1-13）或J/Q/K");
+            }
+        }
+
+        // 初始化输入验证
+        document.querySelectorAll('.number-input').forEach(input => {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9jqk]/gi, '').toUpperCase();
+            });
+        });
+    </script>
+</body>
+</html>

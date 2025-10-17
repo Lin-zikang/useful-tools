@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>反应力测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 20px;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            flex-direction: column; /* 使游戏区域和其他元素垂直排列 */
+            padding-top: 10%; /* 增加上方空间 */
+        }
+
+        .intro-text {
+            font-size: 1.5rem;
+            color: white;
+            text-align: center;
+            margin-bottom: 20px; /* 增加介绍词和游戏区域之间的距离 */
+        }
+
+        .reaction-area {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .reaction-area.active {
+            background: radial-gradient(circle, #ff5f6d, #ffc371);
+            box-shadow: 0 0 30px #ff5f6d, 0 0 60px rgba(255, 95, 109, 0.6);
+        }
+
+        .reaction-area.clicked {
+            background: radial-gradient(circle, #34e89e, #0f3443);
+            box-shadow: 0 0 30px #34e89e, 0 0 60px rgba(52, 232, 158, 0.6);
+        }
+
+        .reaction-area.early-clicked {
+            background: radial-gradient(circle, #ff4b1f, #1f1c18);
+            box-shadow: 0 0 30px #ff4b1f, 0 0 60px rgba(255, 75, 31, 0.6);
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.05);
+            }
+        }
+
+        .message {
+            font-size: 2rem;
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+        }
+
+        .reaction-time {
+            font-size: 2rem;
+            color: white;
+            position: absolute;
+            top: 5%; /* 让反应时间显示在上方 */
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        .cheating-message {
+            font-size: 1.5rem;
+            color: #ff4b1f;
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        .restart-btn {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1f4037, #99f2c8);
+            color: #fff;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            transform: translateX(-50%) scale(1.1);
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        }
+
+        .start-btn {
+            position: absolute;
+            bottom: 20%; /* 将开始按钮放置在底部并避免与介绍词重叠 */
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1f4037, #99f2c8);
+            color: #fff;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            transform: translateX(-50%) scale(1.1);
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="intro-text">欢迎来到反应力测试！在屏幕上点击按钮，测试您的反应速度。准备好了吗？</div>
+        <div class="reaction-area" id="reactionArea">
+            <div class="message" id="message">准备好...</div>
+            <div class="reaction-time" id="reactionTime"></div>
+            <div class="cheating-message" id="cheatingMessage">提前点击，作弊无效！</div>
+        </div>
+        <button class="start-btn" id="startBtn">开始测试</button>
+        <button class="restart-btn" id="restartBtn">重新开始</button>
+    </div>
+
+    <script>
+        const reactionArea = document.getElementById('reactionArea');
+        const message = document.getElementById('message');
+        const reactionTime = document.getElementById('reactionTime');
+        const cheatingMessage = document.getElementById('cheatingMessage');
+        const restartBtn = document.getElementById('restartBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        let startTime, endTime;
+        let isActive = false;
+        let timeout;
+
+        // 游戏开始
+        function startGame() {
+            startBtn.style.display = 'none'; // 隐藏开始按钮
+            resetUI();
+            message.textContent = "准备中...";
+            message.style.display = 'block';
+
+            const randomDelay = Math.random() * 5000 + 1000; // 1到5秒随机延迟
+            timeout = setTimeout(() => {
+                reactionArea.classList.add('active');
+                message.textContent = "点击！";
+                startTime = Date.now();
+                isActive = true;
+            }, randomDelay);
+        }
+
+        // 停止游戏
+        function stopGame() {
+            if (!isActive) return;
+
+            endTime = Date.now();
+            const reactionDuration = endTime - startTime;
+            reactionTime.textContent = `反应时间: ${reactionDuration} 毫秒`;
+            reactionTime.style.display = 'block';
+            reactionArea.classList.add('clicked');
+            isActive = false;
+
+            // 显示重新开始按钮
+            restartBtn.style.display = 'block';
+        }
+
+        // 处理作弊点击
+        function handleCheating() {
+            clearTimeout(timeout);
+            resetUI();
+
+            cheatingMessage.textContent = "提前点击，作弊无效！";
+            cheatingMessage.style.display = 'block';
+
+            reactionArea.classList.add('early-clicked');
+            isActive = false;
+
+            // 显示重新开始按钮
+            restartBtn.style.display = 'block';
+        }
+
+        // 重置UI
+        function resetUI() {
+            reactionArea.classList.remove('active', 'clicked', 'early-clicked');
+            message.style.display = 'none';
+            reactionTime.style.display = 'none';
+            cheatingMessage.style.display = 'none';
+            restartBtn.style.display = 'none';
+        }
+
+        // 点击反应区域
+        reactionArea.addEventListener('click', () => {
+            if (isActive) {
+                stopGame();
+            } else {
+                handleCheating();
+            }
+        });
+
+        // 点击重新开始按钮
+        restartBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        // 点击开始测试按钮
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+    </script>
+</body>
+</html>

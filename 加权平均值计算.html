@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>加权平均计算器</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f3f5;
+        }
+        .calculator {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+        input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 120px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #2196F3;
+            outline: none;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h2>🔢 智能加权平均计算器</h2>
+        
+        <div class="input-row">
+            <button onclick="addRow()">➕ 添加行</button>
+            <button onclick="calculate()">🚀 开始计算</button>
+        </div>
+ 
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>数值 (X)</th>
+                    <th>权重 (W)</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="number" step="0.01" placeholder="例如：85"></td>
+                    <td><input type="number" step="0.01" min="0" placeholder="例如：0.3"></td>
+                    <td><button onclick="deleteRow(this)" style="background:#ff5252">🗑️ 删除</button></td>
+                </tr>
+            </tbody>
+        </table>
+ 
+        <div class="result" id="result"></div>
+    </div>
+ 
+    <script>
+        let rowCount = 1;
+ 
+        // 添加数据行（支持连续添加）
+        function addRow() {
+            const tbody = document.querySelector('#dataTable  tbody');
+            const newRow = document.createElement('tr'); 
+            newRow.innerHTML  = `
+                <td><input type="number" step="0.01"></td>
+                <td><input type="number" step="0.01" min="0"></td>
+                <td><button onclick="deleteRow(this)" style="background:#ff5252">🗑️ 删除</button></td>
+            `;
+            tbody.appendChild(newRow); 
+        }
+ 
+        // 删除行（自动聚焦前一行）
+        function deleteRow(btn) {
+            const row = btn.closest('tr'); 
+            row.remove(); 
+        }
+ 
+        // 核心计算逻辑（参考[2]()[3]()）
+        function calculate() {
+            const inputs = document.querySelectorAll('input[type="number"]'); 
+            let sumXW = 0, sumW = 0;
+            let hasError = false;
+ 
+            // 遍历输入数据 
+            for(let i=0; i<inputs.length;  i+=2) {
+                const x = parseFloat(inputs[i].value);
+                const w = parseFloat(inputs[i+1].value);
+                
+                // 输入验证（参考[3]()的标准化权重验证）
+                if (isNaN(x) || isNaN(w) || w < 0) {
+                    inputs[i].style.borderColor  = '#ff5252';
+                    inputs[i+1].style.borderColor  = '#ff5252';
+                    hasError = true;
+                    continue;
+                }
+                
+                // 重置样式 
+                inputs[i].style.borderColor  = '#ddd';
+                inputs[i+1].style.borderColor  = '#ddd';
+                
+                sumXW += x * w;
+                sumW += w;
+            }
+ 
+            // 错误处理（参考[7]()的权重验证）
+            if (hasError) {
+                showResult('❌ 存在无效输入（数值需为数字，权重≥0）', 'error');
+                return;
+            }
+            if (sumW === 0) {
+                showResult('⚠️ 总权重不能为零', 'warning');
+                return;
+            }
+ 
+            const weightedAvg = sumXW / sumW;
+            showResult(`✅ 加权平均值 = ${weightedAvg.toFixed(2)}`); 
+        }
+ 
+        // 结果显示（支持多状态）
+        function showResult(msg, type = 'success') {
+            const resultDiv = document.getElementById('result'); 
+            resultDiv.innerHTML  = msg;
+            resultDiv.style.color  = type === 'error' ? '#ff5252' : 
+                                  type === 'warning' ? '#ffa726' : '#2e7d32';
+        }
+    </script>
+</body>
+</html>
