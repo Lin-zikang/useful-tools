@@ -33,8 +33,9 @@
             margin-bottom: 10px;
             position: absolute;
             left: 50%;
-            bottom: 20px;
-            transform: translateX(-50%);
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
         }
 
         .btn-wrap div {
@@ -67,20 +68,6 @@
             margin-top: 0px;
         }
 
-        .start-options {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .start-options div {
-            margin: 0 15px;
-        }
-
         @media (max-width: 600px) {
             .btn-wrap {
                 flex-direction: row;
@@ -111,18 +98,7 @@
 <body>
     <canvas id="chess" width="450px" height="450px"></canvas>
     <div id="result-wrap">--益智五子棋--</div>
-    <div class="start-options">
-        <div id="player-first">
-            <span>玩家先手</span>
-        </div>
-        <div id="ai-first">
-            <span>AI先手</span>
-        </div>
-    </div>
-    <div class="btn-wrap" style="display: none;">
-        <div id="undo" class="undo">
-            <span>悔棋</span>
-        </div>
+    <div class="btn-wrap">
         <div id="restart" class="restart">
             <span>重新开始</span>
         </div>
@@ -130,18 +106,14 @@
 
     <script>
         var over = false;
-        var me = false; // 默认false，防止未选择模式前落子
-        var playerColor = 1; // 玩家颜色：1黑，2白
-        var aiColor = 2; // AI颜色：2白，1黑
+        var me = true; // 我方下棋
         var _nowi = 0, _nowj = 0; // 记录自己下棋的坐标
         var _compi = 0, _compj = 0; // 记录计算机当前下棋的坐标
-        var lastMoveI = -1, lastMoveJ = -1; // 最后AI下棋位置，用于光环
         var chessBoard = [];  // 棋盘
         var myWin = [];
         var computerWin = [];
         var count = 0;  // 赢法总数
         var wins = [];  // 赢法
-        var moveHistory = []; // 移动历史，用于悔棋
 
         for (var i = 0; i < 15; i++) {
             chessBoard[i] = [];
@@ -206,12 +178,10 @@
 
         var chess = document.getElementById("chess");
         var context = chess.getContext('2d');
-        context.strokeStyle = '#bfbfbf'; // 恢复原灰色网格线
+        context.strokeStyle = '#bfbfbf';
 
         // 画棋盘
         function drawChessBoard() {
-            context.clearRect(0, 0, chess.width, chess.height);
-            context.strokeStyle = '#bfbfbf'; // 确保每次绘制时都是灰色
             for (var i = 0; i < 15; i++) {
                 context.moveTo(15 + i * 30, 15);
                 context.lineTo(15 + i * 30, 435);
@@ -222,188 +192,38 @@
             }
         }
 
-        // 重新绘制整个棋盘和棋子
-        function redrawBoard() {
-            drawChessBoard();
-            for (var i = 0; i < 15; i++) {
-                for (var j = 0; j < 15; j++) {
-                    if (chessBoard[i][j] === 1) {
-                        oneStep(i, j, true, false); // 黑棋
-                    } else if (chessBoard[i][j] === 2) {
-                        oneStep(i, j, false, true); // 白棋
-                    }
-                }
-            }
-            // 如果有最后AI移动，绘制光环
-            if (lastMoveI !== -1 && lastMoveJ !== -1) {
-                drawHighlight(lastMoveI, lastMoveJ);
-            }
-        }
-
         // 画棋子
-        function oneStep(i, j, isBlack, isWhite) {
+        function oneStep(i, j, isMe, isAI) {
             context.beginPath();
             context.arc(15 + i * 30, 15 + j * 30, 13, 0, 2 * Math.PI);
             context.closePath();
 
             var gradient = context.createRadialGradient(15 + i * 30 + 2, 15 + j * 30 - 2, 13, 15 + i * 30 + 2, 15 + j * 30 - 2, 0);
-            if (isWhite) {
-                gradient.addColorStop(0, '#d1d1d1');
+            if (isAI) {
+                // AI下的棋子为白色
+                gradient.addColorStop(0, '#d1d1d1'); // 白色
                 gradient.addColorStop(1, '#f9f9f9');
-            } else if (isBlack) {
-                gradient.addColorStop(0, '#0a0a0a');
+            } else if (isMe) {
+                // 玩家黑棋
+                gradient.addColorStop(0, '#0a0a0a'); 
                 gradient.addColorStop(1, '#636766');
+            } else {
+                // 空白位置或已经下过的棋子
+                gradient.addColorStop(0, '#d1d1d1'); 
+                gradient.addColorStop(1, '#f9f9f9');
             }
             context.fillStyle = gradient;
             context.fill();
         }
 
-        // 绘制黄色光环
-        function drawHighlight(i, j) {
-            context.beginPath();
-            context.arc(15 + i * 30, 15 + j * 30, 15, 0, 2 * Math.PI);
-            context.closePath();
-            context.strokeStyle = 'yellow';
-            context.lineWidth = 2;
-            context.stroke();
-            context.strokeStyle = '#bfbfbf'; // 重设回灰色
-        }
-
-        // 绘制获胜红线
-        function drawWinLine(winIndex) {
-            var points = [];
-            for (var x = 0; x < 15; x++) {
-                for (var y = 0; y < 15; y++) {
-                    if (wins[x][y][winIndex]) {
-                        points.push({x: 15 + x * 30, y: 15 + y * 30});
-                    }
-                }
-            }
-            if (points.length >= 5) {
-                context.beginPath();
-                context.moveTo(points[0].x, points[0].y);
-                context.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-                context.strokeStyle = 'red';
-                context.lineWidth = 3;
-                context.stroke();
-                context.strokeStyle = '#bfbfbf'; // 重设回灰色
-            }
-        }
-
-        // 启动时绘制棋盘，但隐藏按钮直到选择
+        // 启动时绘制棋盘
         window.onload = function () {
             drawChessBoard();
-            document.querySelector(".start-options").style.display = 'flex';
-            document.querySelector(".btn-wrap").style.display = 'none';
         };
-
-        // 玩家先手
-        document.getElementById("player-first").onclick = function () {
-            startGame(true);
-        };
-
-        // AI先手
-        document.getElementById("ai-first").onclick = function () {
-            startGame(false);
-        };
-
-        // 开始游戏
-        function startGame(playerFirst) {
-            document.querySelector(".start-options").style.display = 'none';
-            document.querySelector(".btn-wrap").style.display = 'flex';
-            over = false;
-            me = playerFirst;
-            playerColor = playerFirst ? 1 : 2;
-            aiColor = playerFirst ? 2 : 1;
-            resetBoard();
-            if (!playerFirst) {
-                computerAI();
-            }
-        }
-
-        // 重置棋盘
-        function resetBoard() {
-            for (var i = 0; i < 15; i++) {
-                for (var j = 0; j < 15; j++) {
-                    chessBoard[i][j] = 0;
-                }
-            }
-            for (var i = 0; i < count; i++) {
-                myWin[i] = 0;
-                computerWin[i] = 0;
-            }
-            moveHistory = [];
-            lastMoveI = -1;
-            lastMoveJ = -1;
-            document.getElementById('result-wrap').innerHTML = '--益智五子棋--';
-            redrawBoard();
-        }
 
         // 重新开始
         document.getElementById("restart").onclick = function () {
             window.location.reload();
-        };
-
-        // 悔棋
-        document.getElementById("undo").onclick = function () {
-            if (over || moveHistory.length === 0 || !me) return; // 只允许玩家回合悔棋
-
-            // 回退最后一步（AI的）
-            var lastMove = moveHistory.pop();
-            chessBoard[lastMove.i][lastMove.j] = 0;
-            for (var k = 0; k < count; k++) {
-                if (wins[lastMove.i][lastMove.j][k]) {
-                    if (lastMove.who === 1) {
-                        myWin[k]--;
-                        if (myWin[k] <= 0) {
-                            myWin[k] = 0;
-                            computerWin[k] = 0;
-                        }
-                    } else {
-                        computerWin[k]--;
-                        if (computerWin[k] <= 0) {
-                            computerWin[k] = 0;
-                            myWin[k] = 0;
-                        }
-                    }
-                }
-            }
-
-            // 如果还有移动，回退玩家的上一步
-            if (moveHistory.length > 0) {
-                lastMove = moveHistory.pop();
-                chessBoard[lastMove.i][lastMove.j] = 0;
-                for (var k = 0; k < count; k++) {
-                    if (wins[lastMove.i][lastMove.j][k]) {
-                        if (lastMove.who === 1) {
-                            myWin[k]--;
-                            if (myWin[k] <= 0) {
-                                myWin[k] = 0;
-                                computerWin[k] = 0;
-                            }
-                        } else {
-                            computerWin[k]--;
-                            if (computerWin[k] <= 0) {
-                                computerWin[k] = 0;
-                                myWin[k] = 0;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 更新最后AI移动的光环
-            if (moveHistory.length > 0 && moveHistory[moveHistory.length - 1].who === aiColor) {
-                var lastAIMove = moveHistory[moveHistory.length - 1];
-                lastMoveI = lastAIMove.i;
-                lastMoveJ = lastAIMove.j;
-            } else {
-                lastMoveI = -1;
-                lastMoveJ = -1;
-            }
-
-            redrawBoard();
-            me = true; // 轮到玩家
         };
 
         // 处理点击事件
@@ -437,32 +257,23 @@
             if (i < 0 || i >= 15 || j < 0 || j >= 15) return;
 
             if (chessBoard[i][j] == 0) {
-                oneStep(i, j, playerColor === 1, playerColor === 2);
-                chessBoard[i][j] = playerColor;
-                moveHistory.push({i: i, j: j, who: playerColor});
-
-                var winArray = playerColor === 1 ? myWin : computerWin;
-                var oppWinArray = playerColor === 1 ? computerWin : myWin;
-                var winText = '恭喜，你赢了！';
+                oneStep(i, j, me, false);
+                chessBoard[i][j] = 1;
 
                 for (var k = 0; k < count; k++) {
                     if (wins[i][j][k]) {
-                        winArray[k]++;
-                        oppWinArray[k] = 6;
-                        if (winArray[k] === 5) {
-                            document.getElementById('result-wrap').innerHTML = winText;
+                        myWin[k]++;
+                        computerWin[k] = 6;
+                        if (myWin[k] == 5) {
+                            document.getElementById('result-wrap').innerHTML = '恭喜，你赢了！';
                             over = true;
-                            drawWinLine(k);
-                            document.querySelector(".undo").style.display = 'none'; // 结束时隐藏悔棋
+                            document.querySelector(".btn-wrap").style.display = 'flex';
                         }
                     }
                 }
 
                 if (!over) {
                     me = !me;
-                    lastMoveI = -1; // 清除光环直到AI下
-                    lastMoveJ = -1;
-                    redrawBoard(); // 重新绘制以清除旧光环
                     computerAI();
                 }
             }
@@ -474,91 +285,77 @@
 
         // 计算机下棋
         function computerAI() {
+            var myScore = [];
+            var computerScore = [];
+            var max = 0;
             var u = 0, v = 0;
+            var bestMoves = []; // 存储多个最高分的位置
 
-            // AI先手第一步下天元 (7,7)
-            if (moveHistory.length === 0) {
-                u = 7;
-                v = 7;
-            } else {
-                var myScore = [];
-                var computerScore = [];
-                var max = 0;
-                var bestMoves = []; // 存储多个最高分的位置
-
-                for (var i = 0; i < 15; i++) {
-                    myScore[i] = [];
-                    computerScore[i] = [];
-                    for (var j = 0; j < 15; j++) {
-                        myScore[i][j] = 0;
-                        computerScore[i][j] = 0;
-                    }
-                }
-
-                // 计算每个位置的得分
-                for (var i = 0; i < 15; i++) {
-                    for (var j = 0; j < 15; j++) {
-                        if (chessBoard[i][j] == 0) {
-                            for (var k = 0; k < count; k++) {
-                                if (wins[i][j][k]) {
-                                    if (myWin[k] == 1) myScore[i][j] += 200;
-                                    else if (myWin[k] == 2) myScore[i][j] += 400;
-                                    else if (myWin[k] == 3) myScore[i][j] += 2000;
-                                    else if (myWin[k] == 4) myScore[i][j] += 10000;
-
-                                    if (computerWin[k] == 1) computerScore[i][j] += 220;
-                                    else if (computerWin[k] == 2) computerScore[i][j] += 420;
-                                    else if (computerWin[k] == 3) computerScore[i][j] += 2100;
-                                    else if (computerWin[k] == 4) computerScore[i][j] += 20000;
-                                }
-                            }
-
-                            var score = aiColor === 1 ? myScore[i][j] : computerScore[i][j];
-                            var oppScore = aiColor === 1 ? computerScore[i][j] : myScore[i][j];
-
-                            var totalScore = Math.max(score, oppScore);
-
-                            if (totalScore > max) {
-                                max = totalScore;
-                                bestMoves = [{ i: i, j: j }];
-                            } else if (totalScore == max) {
-                                bestMoves.push({ i: i, j: j });
-                            }
-                        }
-                    }
-                }
-
-                // 如果有多个最佳位置，随机选择一个
-                if (bestMoves.length > 0) {
-                    var randomIndex = Math.floor(Math.random() * bestMoves.length);
-                    u = bestMoves[randomIndex].i;
-                    v = bestMoves[randomIndex].j;
+            for (var i = 0; i < 15; i++) {
+                myScore[i] = [];
+                computerScore[i] = [];
+                for (var j = 0; j < 15; j++) {
+                    myScore[i][j] = 0;
+                    computerScore[i][j] = 0;
                 }
             }
 
-            // 延迟AI下棋
-            setTimeout(() => {
-                oneStep(u, v, aiColor === 1, aiColor === 2);
-                chessBoard[u][v] = aiColor;
-                moveHistory.push({i: u, j: v, who: aiColor});
-                lastMoveI = u;
-                lastMoveJ = v;
-                drawHighlight(u, v);
+            // 计算每个位置的得分
+            for (var i = 0; i < 15; i++) {
+                for (var j = 0; j < 15; j++) {
+                    if (chessBoard[i][j] == 0) {
+                        for (var k = 0; k < count; k++) {
+                            if (wins[i][j][k]) {
+                                if (myWin[k] == 1) myScore[i][j] += 200;
+                                if (myWin[k] == 2) myScore[i][j] += 400;
+                                if (myWin[k] == 3) myScore[i][j] += 2000;
+                                if (myWin[k] == 4) myScore[i][j] += 10000;
 
-                var winArray = aiColor === 1 ? myWin : computerWin;
-                var oppWinArray = aiColor === 1 ? computerWin : myWin;
-                var winText = '计算机赢了，继续加油哦！';
+                                if (computerWin[k] == 1) computerScore[i][j] += 220;
+                                if (computerWin[k] == 2) computerScore[i][j] += 420;
+                                if (computerWin[k] == 3) computerScore[i][j] += 2100;
+                                if (computerWin[k] == 4) computerScore[i][j] += 20000;
+                            }
+                        }
+
+                        if (myScore[i][j] > max) {
+                            max = myScore[i][j];
+                            bestMoves = [{ i: i, j: j }];
+                        } else if (myScore[i][j] == max) {
+                            bestMoves.push({ i: i, j: j });
+                        }
+
+                        if (computerScore[i][j] > max) {
+                            max = computerScore[i][j];
+                            bestMoves = [{ i: i, j: j }];
+                        } else if (computerScore[i][j] == max) {
+                            bestMoves.push({ i: i, j: j });
+                        }
+                    }
+                }
+            }
+
+            // 如果有多个最佳位置，随机选择一个
+            if (bestMoves.length > 0) {
+                var randomIndex = Math.floor(Math.random() * bestMoves.length);
+                u = bestMoves[randomIndex].i;
+                v = bestMoves[randomIndex].j;
+            }
+
+            // 延迟AI下棋并标记为白色
+            setTimeout(() => {
+                oneStep(u, v, false, true); // AI下的棋子为白色
+                chessBoard[u][v] = 2; // 计算机棋子
 
                 // 检查AI是否获胜
                 for (var k = 0; k < count; k++) {
                     if (wins[u][v][k]) {
-                        winArray[k]++;
-                        oppWinArray[k] = 6;
-                        if (winArray[k] === 5) {
-                            document.getElementById('result-wrap').innerHTML = winText;
+                        computerWin[k]++;
+                        myWin[k] = 6;
+                        if (computerWin[k] == 5) {
+                            document.getElementById('result-wrap').innerHTML = '计算机赢了，继续加油哦！';
                             over = true;
-                            drawWinLine(k);
-                            document.querySelector(".undo").style.display = 'none'; // 结束时隐藏悔棋
+                            document.querySelector(".btn-wrap").style.display = 'flex';
                         }
                     }
                 }
