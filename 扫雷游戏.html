@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>扫雷游戏</title>
-    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png" />
     <style>
         body {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -41,10 +41,7 @@
             transform-style: preserve-3d;
             transition: transform 0.2s, background 0.3s;
         }
-        .cell:hover {
-            transform: scale(1.1);
-            background: #34495e;
-        }
+        .cell:hover { transform: scale(1.1); background: #34495e; }
         .cell.revealed {
             background: #bdc3c7;
             cursor: default;
@@ -53,15 +50,11 @@
             font-weight: bold;
             font-size: 20px;
             color: #2c3e50;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        .content {
-            color: inherit;
-        }
-        .cell.flagged {
-            background: #e74c3c;
-            color: #fff;
-        }
+        .content { color: inherit; }
+        .cell.flagged { background: #e74c3c; color: #fff; }
+
         #reset {
             margin-top: 20px;
             padding: 10px 20px;
@@ -73,32 +66,20 @@
             cursor: pointer;
             transition: background 0.3s, transform 0.2s;
         }
-        #reset:hover {
-            background: #2980b9;
-            transform: scale(1.05);
-        }
-        #reset:active {
-            background: #1c5980;
-            transform: scale(0.95);
-        }
+        #reset:hover { background: #2980b9; transform: scale(1.05); }
+        #reset:active { background: #1c5980; transform: scale(0.95); }
+
         /* Mine and Flag Icons */
-        .mine::before {
-            content: '💣';
-            font-size: 24px;
-        }
-        .flag::before {
-            content: '🚩';
-            font-size: 24px;
-        }
+        .mine::before { content: '💣'; font-size: 24px; }
+        .flag::before { content: '🚩'; font-size: 24px; }
+
         /* 弹窗样式美化 */
         #modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.6);
-            display: flex;
+            display: flex; /* 初次进入即显示（无叉叉） */
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -113,16 +94,11 @@
             max-width: 400px;
             width: 90%;
             animation: modalAppear 0.5s ease-out;
+            position: relative; /* 为右上角叉叉定位 */
         }
         @keyframes modalAppear {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         #modalContent input {
             width: 100%;
@@ -133,10 +109,7 @@
             border-radius: 6px;
             transition: border-color 0.3s;
         }
-        #modalContent input:focus {
-            border-color: #3498db;
-            outline: none;
-        }
+        #modalContent input:focus { border-color: #3498db; outline: none; }
         .modalButtons button {
             margin: 5px;
             padding: 10px 20px;
@@ -146,27 +119,39 @@
             border-radius: 6px;
             transition: background 0.3s, transform 0.2s;
         }
-        .modalButtons button#setupBtn {
-            background: #2ecc71;
-            color: #fff;
+        .modalButtons button#setupBtn { background: #2ecc71; color: #fff; }
+        .modalButtons button#setupBtn:hover { background: #27ae60; }
+        .modalButtons button#defaultBtn { background: #3498db; color: #fff; }
+        .modalButtons button#defaultBtn:hover { background: #2980b9; }
+
+        /* ★ 右上角叉叉按钮（默认隐藏；仅“重新开始”时显示） */
+        .modalClose {
+            position: absolute;
+            top: 10px; right: 12px;
+            font-size: 22px;
+            line-height: 22px;
+            width: 28px; height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            display: none; /* 关键：初次进入不显示 */
         }
-        .modalButtons button#setupBtn:hover {
-            background: #27ae60;
-        }
-        .modalButtons button#defaultBtn {
-            background: #3498db;
-            color: #fff;
-        }
-        .modalButtons button#defaultBtn:hover {
-            background: #2980b9;
-        }
+        .modalClose:hover { color: #333; transform: scale(1.05); }
+        .modalClose:active { transform: scale(0.95); }
+        .modalClose.visible { display: inline-block; } /* 通过添加此类来显示叉叉 */
     </style>
 </head>
 <body>
     <h1>扫雷游戏</h1>
+
     <!-- 弹窗：设置雷数 -->
     <div id="modal">
         <div id="modalContent">
+            <!-- ★ 右上角关闭按钮（默认不显示，通过JS在“重新开始”时添加 .visible 类） -->
+            <button id="closeModal" class="modalClose" aria-label="关闭设置窗口" title="关闭">×</button>
+
             <h2>设置雷数</h2>
             <p>请输入雷数：</p>
             <input type="number" id="mineInput" min="1" placeholder="雷数" />
@@ -241,11 +226,11 @@
                 // 确保第一次点击的位置不生成地雷
                 if (!grid[r][c].isMine && !(r === excludeR && c === excludeC)) {
                     grid[r][c].isMine = true;
-                    mineLocations.push({r, c});
+                    mineLocations.push({ r, c });
                     minesPlaced++;
                 }
             }
-            // 计算每个单元格的相邻地雷数
+            // 计算相邻雷数
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
                     if (!grid[r][c].isMine) {
@@ -262,9 +247,7 @@
                     if (dr === 0 && dc === 0) continue;
                     const nr = r + dr;
                     const nc = c + dc;
-                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc].isMine) {
-                        count++;
-                    }
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc].isMine) count++;
                 }
             }
             return count;
@@ -323,9 +306,7 @@
                             const nr = r + dr;
                             const nc = c + dc;
                             if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-                                if (!grid[nr][nc].revealed) {
-                                    revealCell(nr, nc);
-                                }
+                                if (!grid[nr][nc].revealed) revealCell(nr, nc);
                             }
                         }
                     }
@@ -357,7 +338,7 @@
         }
 
         function revealAllMines() {
-            mineLocations.forEach(({r, c}) => {
+            mineLocations.forEach(({ r, c }) => {
                 const cell = getCellElement(r, c);
                 const content = cell.querySelector('.content');
                 if (!grid[r][c].revealed) {
@@ -369,7 +350,7 @@
         }
 
         function showMineLocations() {
-            const locations = mineLocations.map(({r, c}) => `(${r + 1}, ${c + 1})`).join(', ');
+            const locations = mineLocations.map(({ r, c }) => `(${r + 1}, ${c + 1})`).join(', ');
             alert(`地雷位置: ${locations}`);
         }
 
@@ -395,17 +376,16 @@
             return colors[number] || '#2c3e50';
         }
 
-        resetButton.addEventListener('click', () => {
-            // 重新开始时显示弹窗重新设置雷数
-            const modal = document.getElementById('modal');
-            modal.style.display = 'flex';
-        });
-
-        // 弹窗逻辑
+        // ===== 弹窗逻辑（含“只在重新开始时显示叉叉”） =====
         const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modalContent');
         const setupBtn = document.getElementById('setupBtn');
         const defaultBtn = document.getElementById('defaultBtn');
         const mineInput = document.getElementById('mineInput');
+        const closeModalBtn = document.getElementById('closeModal');
+
+        // 初次进入：显示弹窗，但不显示右上角叉叉
+        closeModalBtn.classList.remove('visible');
 
         setupBtn.addEventListener('click', () => {
             const value = parseInt(mineInput.value);
@@ -422,6 +402,35 @@
             MINES = 10;
             modal.style.display = 'none';
             init();
+        });
+
+        // ★ 点击“重新开始”：打开弹窗，并显示右上角叉叉
+        resetButton.addEventListener('click', () => {
+            modal.style.display = 'flex';
+            closeModalBtn.classList.add('visible'); // 只在重新开始时显示
+            mineInput.value = ''; // 清空上次输入
+            mineInput.focus();
+        });
+
+        // ★ 右上角叉叉：仅当可见时可关闭弹窗（不改变当前局面）
+        closeModalBtn.addEventListener('click', () => {
+            if (closeModalBtn.classList.contains('visible')) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // 可选：点击遮罩不关闭，防误触；如需点击空白关闭，可解除注释
+        // modal.addEventListener('click', (e) => {
+        //     if (e.target === modal && closeModalBtn.classList.contains('visible')) {
+        //         modal.style.display = 'none';
+        //     }
+        // });
+
+        // 可选：Esc 关闭（仅“重新开始”模式且叉叉可见时）
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display !== 'none' && closeModalBtn.classList.contains('visible')) {
+                modal.style.display = 'none';
+            }
         });
     </script>
 </body>
