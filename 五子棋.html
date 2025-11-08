@@ -1,370 +1,445 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>五子棋</title>
     <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
     <style>
-        body {
-            background: linear-gradient(135deg, #a2c2e5, #f3d9b1);
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            height: 100vh;
+        body{
+            background: linear-gradient(135deg,#a2c2e5,#f3d9b1);
+            font-family: Arial, sans-serif;
+            margin:0; padding:0;
+            overflow:hidden;
+            display:flex; flex-direction:column; justify-content:flex-start;
+            height:100vh;
         }
-
-        canvas {
-            display: block;
-            margin: 40px auto;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            background-color: #fff;
-            border-radius: 10px;
+        canvas{
+            display:block; margin:12px auto 8px;
+            box-shadow:0 4px 10px rgba(0,0,0,.1);
+            cursor:pointer; background:#fff; border-radius:10px;
         }
-
-        .btn-wrap {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
+        #result-wrap{
+            text-align:center; font-size:22px; font-weight:bold; color:#333;
+            margin:0 0 4px;
         }
-
-        .btn-wrap div {
-            margin: 0 15px;
+        .controls{
+            display:flex; justify-content:center; align-items:center;
+            gap:14px; padding:6px 0 0; margin:8px 0 12px;
         }
-
-        div > span {
-            display: inline-block;
-            padding: 12px 25px;
-            color: #fff;
-            background-color: #6a85b3;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
+        .btn{
+            display:inline-block; padding:10px 20px;
+            color:#fff; background:#6a85b3; border-radius:8px;
+            font-size:14px; font-weight:bold; cursor:pointer;
+            transition: background-color .25s, transform .25s;
+            user-select:none;
+            box-shadow:0 4px 10px rgba(0,0,0,.12);
         }
-
-        div > span:hover {
-            background-color: #4e6498;
-            transform: scale(1.1);
-        }
-
-        #result-wrap {
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 30px;
-            margin-top: 0px;
-        }
-
-        @media (max-width: 600px) {
-            .btn-wrap {
-                flex-direction: row;
-                justify-content: center;
-                margin-bottom: 10px;
-            }
-
-            .btn-wrap div {
-                margin-right: 15px;
-            }
-
-            .btn-wrap div:last-child {
-                margin-right: 0;
-            }
-
-            canvas {
-                width: 90%;
-                height: auto;
-            }
-
-            #result-wrap {
-                font-size: 18px;
-                margin-top: 0px;
-            }
+        .btn:hover{ background:#4e6498; transform: scale(1.06); }
+        .btn-wrap{ display:none; justify-content:center; position:absolute;
+            left:50%; top:50%; transform:translate(-50%,-50%); }
+        .btn-wrap div{ margin:0 15px; }
+        .btn-wrap span{ display:inline-block; padding:12px 25px;
+            color:#fff; background:#6a85b3; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+            transition: background-color .3s, transform .3s; }
+        .btn-wrap span:hover{ background:#4e6498; transform:scale(1.1); }
+        @media (max-width:600px){
+            canvas{ width:90%; height:auto; }
+            #result-wrap{ font-size:18px; }
+            .btn{ padding:9px 16px; font-size:13px; }
         }
     </style>
 </head>
 <body>
-    <canvas id="chess" width="450px" height="450px"></canvas>
+    <canvas id="chess" width="450" height="450"></canvas>
     <div id="result-wrap">--益智五子棋--</div>
+
+    <div id="controls" class="controls">
+        <span id="undo" class="btn">悔棋</span>
+        <span id="restartTop" class="btn">重新开始</span>
+    </div>
+
     <div class="btn-wrap">
-        <div id="restart" class="restart">
-            <span>重新开始</span>
-        </div>
+        <div id="restart" class="restart"><span>重新开始</span></div>
     </div>
 
     <script>
-        var over = false;
-        var me = true; // 我方下棋
-        var _nowi = 0, _nowj = 0; // 记录自己下棋的坐标
-        var _compi = 0, _compj = 0; // 记录计算机当前下棋的坐标
-        var chessBoard = [];  // 棋盘
-        var myWin = [];
-        var computerWin = [];
-        var count = 0;  // 赢法总数
-        var wins = [];  // 赢法
+    // --------- 基本状态 ----------
+    var over = false;
+    var me = true; // 我先手
+    var chessBoard = Array.from({length:15},()=>Array(15).fill(0));
+
+    // 赢法统计
+    var myWin=[], computerWin=[], wins=[], count=0;
+    for(let i=0;i<15;i++){
+        wins[i]=[];
+        for(let j=0;j<15;j++){ wins[i][j]=[]; }
+    }
+    // 横
+    for(let i=0;i<15;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[i][j+k][count]=true;
+            count++;
+        }
+    }
+    // 竖
+    for(let i=0;i<15;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[j+k][i][count]=true;
+            count++;
+        }
+    }
+    // 正斜
+    for(let i=0;i<11;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[i+k][j+k][count]=true;
+            count++;
+        }
+    }
+    // 反斜
+    for(let i=0;i<11;i++){
+        for(let j=14;j>3;j--){
+            for(let k=0;k<5;k++) wins[i+k][j-k][count]=true;
+            count++;
+        }
+    }
+    for(let i=0;i<count;i++){ myWin[i]=0; computerWin[i]=0; }
+
+    // --------- 画布与特效（保持不变） ----------
+    var chess = document.getElementById('chess');
+    var ctx = chess.getContext('2d');
+    ctx.strokeStyle = '#bfbfbf';
+
+    var moveHistory = [];
+    var lastAIMove = null;   // 上一步AI坐标，用于金色光环
+    var aiTimer = null;
+    var justUndid = false;
+    var winLine = null;      // 胜利连线
+
+    function setControlsVisible(visible){
+        var c=document.getElementById('controls');
+        if(c) c.style.display = visible ? 'flex' : 'none';
+    }
+
+    function drawChessBoard(){
+        ctx.beginPath();
+        for(let i=0;i<15;i++){
+            ctx.moveTo(15 + i*30, 15);  ctx.lineTo(15 + i*30, 435);
+            ctx.moveTo(15, 15 + i*30);  ctx.lineTo(435, 15 + i*30);
+        }
+        ctx.stroke();
+    }
+    function drawPiece(i,j,isMe,isAI){
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 13, 0, Math.PI*2);
+        ctx.closePath();
+        var g = ctx.createRadialGradient(15+i*30+2,15+j*30-2,13, 15+i*30+2,15+j*30-2,0);
+        if(isAI){
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9'); // 白子
+        }else if(isMe){
+            g.addColorStop(0,'#0a0a0a'); g.addColorStop(1,'#636766'); // 黑子
+        }else{
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9');
+        }
+        ctx.fillStyle=g; ctx.fill();
+    }
+    function drawAIHalo(i,j){
+        if(i==null||j==null) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 18, 0, Math.PI*2);
+        ctx.strokeStyle='rgba(255,215,0,0.45)';
+        ctx.lineWidth=6;
+        ctx.shadowColor='rgba(255,215,0,0.5)';
+        ctx.shadowBlur=10;
+        ctx.stroke();
+        ctx.restore();
+    }
+    function getWinningLine(i,j,player){
+        const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+        let best=null;
+        for(const [di,dj] of dirs){
+            let si=i, sj=j;
+            while(si-di>=0 && si-di<15 && sj-dj>=0 && sj-dj<15 && chessBoard[si-di][sj-dj]===player){
+                si-=di; sj-=dj;
+            }
+            let cells=[];
+            let ci=si, cj=sj;
+            while(ci>=0 && ci<15 && cj>=0 && cj<15 && chessBoard[ci][cj]===player){
+                cells.push({i:ci,j:cj});
+                ci+=di; cj+=dj;
+            }
+            if(cells.length>=5){
+                if(!best || cells.length>best.cells.length) best={cells};
+            }
+        }
+        return best;
+    }
+    function drawWinHighlight(line){
+        if(!line || !line.cells || line.cells.length<5) return;
+        var first=line.cells[0], last=line.cells[line.length-1] || line.cells[line.cells.length-1];
+        var x1=15+first.i*30, y1=15+first.j*30;
+        var x2=15+last.i*30,  y2=15+last.j*30;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+        ctx.lineWidth=4;
+        ctx.strokeStyle='rgba(220,20,60,0.9)';
+        ctx.shadowColor='rgba(220,20,60,0.7)';
+        ctx.shadowBlur=10;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.lineWidth=3;
+        ctx.strokeStyle='rgba(220,20,60,0.95)';
+        for(const c of line.cells){
+            ctx.beginPath();
+            ctx.arc(15+c.i*30, 15+c.j*30, 9.5, 0, Math.PI*2);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    function redrawAll(){
+        ctx.clearRect(0,0,chess.width,chess.height);
+        drawChessBoard();
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                if(chessBoard[i][j]===1) drawPiece(i,j,true,false);
+                if(chessBoard[i][j]===2) drawPiece(i,j,false,true);
+            }
+        }
+        drawAIHalo(lastAIMove?.i, lastAIMove?.j);
+        drawWinHighlight(winLine);
+    }
+
+    window.onload = function(){ drawChessBoard(); };
+
+    // 重新计算赢法统计（用于悔棋/模拟后恢复）
+    function recomputeWins(){
+        myWin = Array(count).fill(0);
+        computerWin = Array(count).fill(0);
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                let p = chessBoard[i][j];
+                if(p===0) continue;
+                for(let k=0;k<count;k++){
+                    if(wins[i][j][k]){
+                        if(p===1){
+                            myWin[k]++;
+                            computerWin[k]=6;
+                        }else{
+                            computerWin[k]++;
+                            myWin[k]=6;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // --------- 下子与胜负 ----------
+    function handleMove(e){
+        if(over) return;
+        if(!me) return;
+
+        e.preventDefault();
+        let clientX, clientY;
+        if(e.type==='touchstart'){
+            const t=e.touches[0]; clientX=t.clientX; clientY=t.clientY;
+        }else{ clientX=e.clientX; clientY=e.clientY; }
+
+        const rect=chess.getBoundingClientRect();
+        const scaleX=chess.width/rect.width, scaleY=chess.height/rect.height;
+        const x=(clientX-rect.left)*scaleX, y=(clientY-rect.top)*scaleY;
+        const i=Math.floor(x/30), j=Math.floor(y/30);
+        if(i<0||i>=15||j<0||j>=15) return;
+
+        if(chessBoard[i][j]===0){
+            const resultEl = document.getElementById('result-wrap');
+            if(resultEl.textContent.includes('不能连续悔棋')){
+                resultEl.textContent = '--益智五子棋--';
+            }
+            justUndid = false;
+
+            chessBoard[i][j]=1;
+            moveHistory.push({i,j,player:1});
+            winLine=null;
+
+            for(let k=0;k<count;k++){
+                if(wins[i][j][k]){
+                    myWin[k]++; computerWin[k]=6;
+                    if(myWin[k]===5){
+                        document.getElementById('result-wrap').innerHTML='恭喜，你赢了！';
+                        over=true;
+                        winLine = getWinningLine(i,j,1);
+                        document.querySelector('.btn-wrap').style.display='flex';
+                    }
+                }
+            }
+            redrawAll();
+
+            if(!over){
+                me=false;
+                computerAI(); // —— 按“原样”算法执行AI —— 
+            }
+        }
+    }
+    chess.addEventListener('click', handleMove);
+    chess.addEventListener('touchstart', handleMove, {passive:false});
+
+    // --------- 计算机下棋（按“原样”算法） ----------
+    function computerAI(){
+        var myScore = [];
+        var computerScore = [];
+        var max = 0;
+        var u = 0, v = 0;
+        var bestMoves = [];
 
         for (var i = 0; i < 15; i++) {
-            chessBoard[i] = [];
+            myScore[i] = [];
+            computerScore[i] = [];
             for (var j = 0; j < 15; j++) {
-                chessBoard[i][j] = 0;
+                myScore[i][j] = 0;
+                computerScore[i][j] = 0;
             }
         }
 
-        // 初始化赢法
         for (var i = 0; i < 15; i++) {
-            wins[i] = [];
             for (var j = 0; j < 15; j++) {
-                wins[i][j] = [];
-            }
-        }
-
-        // 横线
-        for (var i = 0; i < 15; i++) {
-            for (var j = 0; j < 11; j++) {
-                for (var k = 0; k < 5; k++) {
-                    wins[i][j + k][count] = true;
-                }
-                count++;
-            }
-        }
-
-        // 竖线
-        for (var i = 0; i < 15; i++) {
-            for (var j = 0; j < 11; j++) {
-                for (var k = 0; k < 5; k++) {
-                    wins[j + k][i][count] = true;
-                }
-                count++;
-            }
-        }
-
-        // 正斜线
-        for (var i = 0; i < 11; i++) {
-            for (var j = 0; j < 11; j++) {
-                for (var k = 0; k < 5; k++) {
-                    wins[i + k][j + k][count] = true;
-                }
-                count++;
-            }
-        }
-
-        // 反斜线
-        for (var i = 0; i < 11; i++) {
-            for (var j = 14; j > 3; j--) {
-                for (var k = 0; k < 5; k++) {
-                    wins[i + k][j - k][count] = true;
-                }
-                count++;
-            }
-        }
-
-        // 初始化赢法统计
-        for (var i = 0; i < count; i++) {
-            myWin[i] = 0;
-            computerWin[i] = 0;
-        }
-
-        var chess = document.getElementById("chess");
-        var context = chess.getContext('2d');
-        context.strokeStyle = '#bfbfbf';
-
-        // 画棋盘
-        function drawChessBoard() {
-            for (var i = 0; i < 15; i++) {
-                context.moveTo(15 + i * 30, 15);
-                context.lineTo(15 + i * 30, 435);
-                context.stroke();
-                context.moveTo(15, 15 + i * 30);
-                context.lineTo(435, 15 + i * 30);
-                context.stroke();
-            }
-        }
-
-        // 画棋子
-        function oneStep(i, j, isMe, isAI) {
-            context.beginPath();
-            context.arc(15 + i * 30, 15 + j * 30, 13, 0, 2 * Math.PI);
-            context.closePath();
-
-            var gradient = context.createRadialGradient(15 + i * 30 + 2, 15 + j * 30 - 2, 13, 15 + i * 30 + 2, 15 + j * 30 - 2, 0);
-            if (isAI) {
-                // AI下的棋子为白色
-                gradient.addColorStop(0, '#d1d1d1'); // 白色
-                gradient.addColorStop(1, '#f9f9f9');
-            } else if (isMe) {
-                // 玩家黑棋
-                gradient.addColorStop(0, '#0a0a0a'); 
-                gradient.addColorStop(1, '#636766');
-            } else {
-                // 空白位置或已经下过的棋子
-                gradient.addColorStop(0, '#d1d1d1'); 
-                gradient.addColorStop(1, '#f9f9f9');
-            }
-            context.fillStyle = gradient;
-            context.fill();
-        }
-
-        // 启动时绘制棋盘
-        window.onload = function () {
-            drawChessBoard();
-        };
-
-        // 重新开始
-        document.getElementById("restart").onclick = function () {
-            window.location.reload();
-        };
-
-        // 处理点击事件
-        function handleMove(e) {
-            if (over) return;
-            if (!me) return;
-
-            e.preventDefault();
-            var clientX, clientY;
-
-            if (e.type === 'touchstart') {
-                var touch = e.touches[0];
-                clientX = touch.clientX;
-                clientY = touch.clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            var rect = chess.getBoundingClientRect();
-            var scaleX = chess.width / rect.width;
-            var scaleY = chess.height / rect.height;
-
-            var x = (clientX - rect.left) * scaleX;
-            var y = (clientY - rect.top) * scaleY;
-
-            var i = Math.floor(x / 30);
-            var j = Math.floor(y / 30);
-
-            // 边界检查
-            if (i < 0 || i >= 15 || j < 0 || j >= 15) return;
-
-            if (chessBoard[i][j] == 0) {
-                oneStep(i, j, me, false);
-                chessBoard[i][j] = 1;
-
-                for (var k = 0; k < count; k++) {
-                    if (wins[i][j][k]) {
-                        myWin[k]++;
-                        computerWin[k] = 6;
-                        if (myWin[k] == 5) {
-                            document.getElementById('result-wrap').innerHTML = '恭喜，你赢了！';
-                            over = true;
-                            document.querySelector(".btn-wrap").style.display = 'flex';
+                if (chessBoard[i][j] === 0) {
+                    for (var k = 0; k < count; k++) {
+                        if (wins[i][j][k]) {
+                            // 防守权重
+                            if (myWin[k] === 1) myScore[i][j] += 200;
+                            if (myWin[k] === 2) myScore[i][j] += 400;
+                            if (myWin[k] === 3) myScore[i][j] += 2000;
+                            if (myWin[k] === 4) myScore[i][j] += 10000;
+                            // 进攻权重
+                            if (computerWin[k] === 1) computerScore[i][j] += 220;
+                            if (computerWin[k] === 2) computerScore[i][j] += 420;
+                            if (computerWin[k] === 3) computerScore[i][j] += 2100;
+                            if (computerWin[k] === 4) computerScore[i][j] += 20000;
                         }
                     }
-                }
+                    // 记录当前最大分及候选点（原样：并列随机）
+                    if (myScore[i][j] > max) { max = myScore[i][j]; bestMoves = [{i:i, j:j}]; }
+                    else if (myScore[i][j] === max) { bestMoves.push({i:i, j:j}); }
 
-                if (!over) {
-                    me = !me;
-                    computerAI();
+                    if (computerScore[i][j] > max) { max = computerScore[i][j]; bestMoves = [{i:i, j:j}]; }
+                    else if (computerScore[i][j] === max) { bestMoves.push({i:i, j:j}); }
                 }
             }
         }
 
-        // 绑定事件监听器
-        chess.addEventListener('click', handleMove);
-        chess.addEventListener('touchstart', handleMove);
+        if (bestMoves.length > 0) {
+            var randomIndex = Math.floor(Math.random() * bestMoves.length);
+            u = bestMoves[randomIndex].i;
+            v = bestMoves[randomIndex].j;
+        }
 
-        // 计算机下棋
-        function computerAI() {
-            var myScore = [];
-            var computerScore = [];
-            var max = 0;
-            var u = 0, v = 0;
-            var bestMoves = []; // 存储多个最高分的位置
+        aiTimer = setTimeout(function(){
+            aiTimer = null;
 
-            for (var i = 0; i < 15; i++) {
-                myScore[i] = [];
-                computerScore[i] = [];
-                for (var j = 0; j < 15; j++) {
-                    myScore[i][j] = 0;
-                    computerScore[i][j] = 0;
-                }
-            }
+            chessBoard[u][v] = 2;               // 落子
+            moveHistory.push({i:u, j:v, player:2});
+            lastAIMove = {i:u, j:v};            // 金色光环坐标
+            winLine = null;
 
-            // 计算每个位置的得分
-            for (var i = 0; i < 15; i++) {
-                for (var j = 0; j < 15; j++) {
-                    if (chessBoard[i][j] == 0) {
-                        for (var k = 0; k < count; k++) {
-                            if (wins[i][j][k]) {
-                                if (myWin[k] == 1) myScore[i][j] += 200;
-                                if (myWin[k] == 2) myScore[i][j] += 400;
-                                if (myWin[k] == 3) myScore[i][j] += 2000;
-                                if (myWin[k] == 4) myScore[i][j] += 10000;
-
-                                if (computerWin[k] == 1) computerScore[i][j] += 220;
-                                if (computerWin[k] == 2) computerScore[i][j] += 420;
-                                if (computerWin[k] == 3) computerScore[i][j] += 2100;
-                                if (computerWin[k] == 4) computerScore[i][j] += 20000;
-                            }
-                        }
-
-                        if (myScore[i][j] > max) {
-                            max = myScore[i][j];
-                            bestMoves = [{ i: i, j: j }];
-                        } else if (myScore[i][j] == max) {
-                            bestMoves.push({ i: i, j: j });
-                        }
-
-                        if (computerScore[i][j] > max) {
-                            max = computerScore[i][j];
-                            bestMoves = [{ i: i, j: j }];
-                        } else if (computerScore[i][j] == max) {
-                            bestMoves.push({ i: i, j: j });
-                        }
+            for (var k = 0; k < count; k++) {
+                if (wins[u][v][k]) {
+                    computerWin[k]++; myWin[k] = 6;
+                    if (computerWin[k] === 5) {
+                        document.getElementById('result-wrap').innerHTML = '计算机赢了，继续加油哦！';
+                        over = true;
+                        winLine = getWinningLine(u, v, 2);
+                        document.querySelector('.btn-wrap').style.display = 'flex';
+                        // AI胜利后，下方两个按钮消失
+                        setControlsVisible(false);
                     }
                 }
             }
 
-            // 如果有多个最佳位置，随机选择一个
-            if (bestMoves.length > 0) {
-                var randomIndex = Math.floor(Math.random() * bestMoves.length);
-                u = bestMoves[randomIndex].i;
-                v = bestMoves[randomIndex].j;
-            }
+            me = true;
+            redrawAll();
+        }, 800); // 原样：延迟800ms再下棋
+    }
 
-            // 延迟AI下棋并标记为白色
-            setTimeout(() => {
-                oneStep(u, v, false, true); // AI下的棋子为白色
-                chessBoard[u][v] = 2; // 计算机棋子
+    // --------- 悔棋/重开 ----------
+    function undoOnce(){
+        const resultEl = document.getElementById('result-wrap');
 
-                // 检查AI是否获胜
-                for (var k = 0; k < count; k++) {
-                    if (wins[u][v][k]) {
-                        computerWin[k]++;
-                        myWin[k] = 6;
-                        if (computerWin[k] == 5) {
-                            document.getElementById('result-wrap').innerHTML = '计算机赢了，继续加油哦！';
-                            over = true;
-                            document.querySelector(".btn-wrap").style.display = 'flex';
-                        }
-                    }
-                }
-
-                if (!over) {
-                    me = !me;
-                }
-            }, 800); // 延迟800毫秒再下棋
+        if(justUndid){
+            resultEl.innerHTML = '不能连续悔棋哦～';
+            return;
         }
+        if(moveHistory.length===0){
+            resultEl.innerHTML = '当前无法悔棋';
+            return;
+        }
+
+        // 如果AI还在思考（定时器未落子），撤回我方最后一步
+        if(aiTimer){
+            clearTimeout(aiTimer); aiTimer=null;
+            const last = moveHistory.pop(); // 我方刚下的那步
+            if(last && chessBoard[last.i][last.j]!==0){
+                chessBoard[last.i][last.j]=0;
+            }
+            me = true;
+            over = false;
+            winLine = null;
+            document.querySelector('.btn-wrap').style.display='none';
+            resultEl.innerHTML='--益智五子棋--';
+
+            recomputeWins();
+            lastAIMove = null;
+            for(let t=moveHistory.length-1;t>=0;t--){
+                if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+            }
+            redrawAll();
+            justUndid = true;
+            setControlsVisible(true);
+            return;
+        }
+
+        if(moveHistory.length<2){
+            resultEl.innerHTML = '没有足够的步数可以悔棋';
+            return;
+        }
+        // 撤回AI与我方各一步
+        let step = moveHistory.pop();
+        if(step.player===2){ chessBoard[step.i][step.j]=0; }
+        else{
+            while(step && step.player!==2){
+                chessBoard[step.i][step.j]=0;
+                if(moveHistory.length===0) break;
+                step = moveHistory.pop();
+            }
+            if(step && step.player===2) chessBoard[step.i][step.j]=0;
+        }
+        if(moveHistory.length>0){
+            let step2 = moveHistory.pop();
+            chessBoard[step2.i][step2.j]=0;
+        }
+
+        me = true; over=false; winLine=null;
+        document.querySelector('.btn-wrap').style.display='none';
+        resultEl.innerHTML='--益智五子棋--';
+
+        recomputeWins();
+        lastAIMove = null;
+        for(let t=moveHistory.length-1;t>=0;t--){
+            if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+        }
+        redrawAll();
+        justUndid = true;
+        setControlsVisible(true);
+    }
+
+    document.getElementById('undo').onclick = undoOnce;
+    document.getElementById('restartTop').onclick = function(){ window.location.reload(); };
+    document.getElementById('restart').onclick = function(){ window.location.reload(); };
     </script>
 </body>
 </html>
