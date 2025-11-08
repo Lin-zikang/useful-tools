@@ -45,23 +45,19 @@
 
     select,.btn{appearance:none; font:inherit}
 
-    /* Select beautify */
     .select{position:relative}
     .select select{background:#0f1a33; color:var(--text); border:1px solid #1f2937; border-radius:10px; padding:7px 36px 7px 10px; outline:none}
     .select::after{content:""; position:absolute; right:10px; top:50%; width:10px; height:10px; border-right:2px solid #6b7280; border-bottom:2px solid #6b7280; transform:translateY(-70%) rotate(45deg); pointer-events:none}
 
-    /* Buttons beautify */
     .btn{cursor:pointer; position:relative; overflow:hidden; border:none; border-radius:12px; padding:10px 14px; color:white; font-weight:700; letter-spacing:.3px; transition:transform .08s ease, filter .2s ease, box-shadow .2s ease}
     .btn:active{transform:scale(.98)}
     .btn.primary{background:linear-gradient(135deg, #0ea5e9, #8b5cf6); box-shadow: var(--shadow)}
     .btn.ghost{background:linear-gradient(180deg,#0e1326,#0a1020); color:var(--text); border:1px solid #1f2937}
     .btn:hover{filter:brightness(1.05); box-shadow:0 12px 30px rgba(2,8,23,.45)}
 
-    /* Ripple ink */
     .ripple-ink{position:absolute; border-radius:999px; transform:translate(-50%,-50%) scale(0); opacity:.35; background:currentColor; pointer-events:none; animation:ripple .6s ease-out}
     @keyframes ripple{to{transform:translate(-50%,-50%) scale(12); opacity:0}}
 
-    /* ===== Layout ===== */
     .layout{display:grid; grid-template-columns:1fr minmax(300px, 360px); gap:16px}
     @media (max-width: 960px){ .layout{grid-template-columns:1fr} }
 
@@ -72,7 +68,6 @@
     .badge.o{border-color:var(--o)}
     .turn{font-weight:700}
 
-    /* ===== Board ===== */
     .boardWrap{display:grid; gap:12px}
     .board{aspect-ratio:1/1; width:min(94vw, 680px); max-width:100%; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
     .mini{position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:8px; border-radius:14px; background:linear-gradient(180deg,#0b1024,#0b1220); border:2px solid #1f2937; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease}
@@ -89,7 +84,6 @@
     .flash{animation:flash 420ms ease}
     @keyframes flash{0%{box-shadow:0 0 0 0 rgba(56,189,248,.0);} 30%{box-shadow:0 0 0 8px rgba(56,189,248,.18);} 100%{box-shadow:0 0 0 0 rgba(56,189,248,.0);}}
 
-    /* 黄色可下提示 */
     .cell.playable{box-shadow: inset 0 0 0 2px rgba(251,191,36,.8), 0 0 0 2px rgba(251,191,36,.22);} 
     .cell.playable::before{content:""; position:absolute; inset:2px; border-radius:8px; background:radial-gradient(circle at 50% 50%, rgba(251,191,36,.22), rgba(251,191,36,.04) 60%, transparent 70%)}
 
@@ -119,7 +113,7 @@
   <div class="wrap">
     <header>
       <div class="title">
-        <div style="font-size:clamp(20px,3.5vw,28px)">九井棋 <span>（Ultimate Tic‑Tac‑Toe / Tic‑Tac‑Ku）</span></div>
+        <div style="font-size:clamp(20px,3.5vw,28px)">九井棋 <span>（Ultimate Tic-Tac-Toe / Tic-Tac-Ku）</span></div>
         <div class="hint">双人或对AI对弈，按钮美化与涟漪、手机端优化</div>
       </div>
       <div class="controls panel">
@@ -133,13 +127,14 @@
           <select id="difficulty">
             <option value="easy">简单（随机）</option>
             <option value="medium">中等（贪婪）</option>
-            <option value="hard">困难（Minimax）</option>
+            <option value="hard">困难（搜索优化）</option>
+            <option value="pro">专家（迭代加深+置换表）</option>
           </select>
         </div>
         <div class="chip select"><label>胜负条件：</label>
           <select id="ruleset">
             <option value="line">大盘连成一线（经典）</option>
-            <option value="five">先赢任意五个小盘（Tic‑Tac‑Ku）</option>
+            <option value="five">先赢任意五个小盘（Tic-Tac-Ku）</option>
           </select>
         </div>
         <div class="chip select"><label>先手方：</label>
@@ -173,7 +168,7 @@
           <li>棋盘由 3×3 个<strong>小盘</strong>组成，每个小盘也是 3×3 的井字格，总 81 格。</li>
           <li>落子：<strong>必须在对手上一手所在小盘的对应位置</strong>指向的那个小盘内落子。若该目标小盘已结束或无空位，则可在<strong>任意</strong>小盘落子。</li>
           <li>小盘胜利：某方在一个小盘内先连成三（行/列/斜）即赢得该小盘。</li>
-          <li>对局胜利：经典（大盘三连）或 Tic‑Tac‑Ku（任意五盘）。</li>
+          <li>对局胜利：经典（大盘三连）或 Tic-Tac-Ku（任意五盘）。</li>
         </ol>
         <div class="tip">提示：高亮小盘为<strong>可落子</strong>区域；黄色方框即为<strong>可下处</strong>。按“开始对局”后游戏启动，设置锁定。PVE模式下悔棋撤销到玩家上一步。</div>
       </aside>
@@ -217,7 +212,12 @@
   let aiPlayer = 0; // 1 if AI is X, -1 if AI is O, 0 if pvp
   let humanPlayer = 1; // 1 if human is X, -1 if human is O
 
-  // UI build
+  // ===== Constants & helpers =====
+  const LINES3 = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const INF = 1e9|0;
+  const MATE = 1e8|0; // 终局值
+
+  // Build board UI
   const miniEls = [];
   const cellEls = [];
   for(let m=0;m<9;m++){
@@ -253,6 +253,21 @@
       winner: 0,                // 0 none, 1 X, -1 O, 2 draw
       ruleset: 'line',
       lastMove: null,
+      hash: 0n,                 // Zobrist hash（搜索用）
+    };
+  }
+
+  // 安全深拷贝（支持 BigInt）
+  function cloneState(src){
+    return {
+      cells: src.cells.slice(),
+      mini: src.mini.slice(),
+      target: src.target,
+      player: src.player,
+      winner: src.winner,
+      ruleset: src.ruleset,
+      lastMove: src.lastMove,
+      hash: src.hash
     };
   }
 
@@ -260,10 +275,9 @@
     const rowBig = Math.floor(m/3), colBig = m%3; const row = Math.floor(c/3), col = c%3;
     return (rowBig*27) + (row*9) + (colBig*3) + col;
   }
-  // 正确反解：先取全局行/列，再拆大盘/小盘
   function indexToMiniAndCell(idx){
-    const gr = Math.floor(idx/9); // global row 0..8
-    const gc = idx % 9;           // global col 0..8
+    const gr = Math.floor(idx/9);
+    const gc = idx % 9;
     const rowBig = Math.floor(gr/3), colBig = Math.floor(gc/3);
     const row = gr % 3, col = gc % 3;
     const m = rowBig*3 + colBig; const c = row*3 + col; return [m,c];
@@ -273,7 +287,7 @@
   function playableCells(state){
     const res=[]; const target = state.target;
     const addIfPlayable = (m,c)=>{
-      if(state.mini[m]!==0 && state.mini[m]!==2) return; // 已被X/O赢的小盘不可再下
+      if(state.mini[m]!==0 && state.mini[m]!==2) return;
       const idx = coordToIndex(m,c); if(state.cells[idx]===0) res.push(idx);
     };
     if(target===-1 || state.mini[target]!==0){
@@ -285,8 +299,7 @@
   function checkMiniWinner(state, m){
     const start = miniStartIndex(m);
     const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
-    const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for(const [a,b,c] of lines){ const s=g[a]+g[b]+g[c]; if(s===3) return 1; if(s===-3) return -1; }
+    for(const [a,b,c] of LINES3){ const s=g[a]+g[b]+g[c]; if(s===3) return 1; if(s===-3) return -1; }
     if(g.every(v=>v!==0)) return 2; return 0;
   }
 
@@ -296,40 +309,337 @@
       if(xCount>=5) return 1; if(oCount>=5) return -1;
     } else {
       const b = state.mini.map(v=> v===1?1:(v===-1?-1:0));
-      const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-      for(const [a,b1,c] of L){ const s=b[a]+b[b1]+b[c]; if(s===3) return 1; if(s===-3) return -1; }
+      for(const [a,b1,c] of LINES3){ const s=b[a]+b[b1]+b[c]; if(s===3) return 1; if(s===-3) return -1; }
     }
     if(state.mini.every(v=>v!==0)) return 2; return 0;
   }
 
+  // 用 cloneState，避免 JSON + BigInt 报错
   function move(state, idx){
-    const ns = JSON.parse(JSON.stringify(state)); if(ns.winner || ns.cells[idx]!==0) return ns;
+    const ns = cloneState(state);
+    if(ns.winner || ns.cells[idx]!==0) return ns;
     const [m,c] = indexToMiniAndCell(idx);
     if(!(ns.target===-1 || ns.mini[ns.target]!==0 || m===ns.target)) return ns; // 非法
 
-    ns.cells[idx] = ns.player; ns.lastMove = idx;
-    const winMini = checkMiniWinner(ns, m); if(winMini!==ns.mini[m]) ns.mini[m]=winMini;
-    ns.target = c; if(ns.mini[ns.target]!==0) ns.target = -1;
-    ns.winner = checkBigWinner(ns); ns.player *= -1; return ns;
+    ns.cells[idx] = ns.player; 
+    ns.lastMove = idx;
+
+    const winMini = checkMiniWinner(ns, m); 
+    if(winMini!==ns.mini[m]) ns.mini[m]=winMini;
+
+    ns.target = c; 
+    if(ns.mini[ns.target]!==0) ns.target = -1;
+
+    ns.winner = checkBigWinner(ns); 
+    ns.player *= -1;
+    // ns.hash 由外层统一 compute
+    return ns;
   }
 
   function setRuleset(rs){ S.ruleset = rs; S.winner = checkBigWinner(S); render(); }
+
+  // ========== 强化AI：Zobrist、置换表、迭代加深、启发式 ==========
+  function rand64(){ const hi = Math.floor(Math.random()*0xffffffff)>>>0; const lo = Math.floor(Math.random()*0xffffffff)>>>0; return (BigInt(hi)<<32n) ^ BigInt(lo); }
+  const Z = {
+    cell: Array.from({length:81}, ()=> [rand64(), rand64()]),
+    player: rand64(),
+    target: Array.from({length:10}, ()=> rand64()), // target -1..8 -> 索引 +1
+  };
+
+  function computeHash(state){
+    let h = 0n;
+    for(let i=0;i<81;i++){ const v = state.cells[i]; if(v===1) h^=Z.cell[i][0]; else if(v===-1) h^=Z.cell[i][1]; }
+    h ^= Z.target[state.target+1];
+    if(state.player===1) h ^= Z.player;
+    return h;
+  }
+
+  function doMoveLocal(s, idx){
+    const [m,c] = indexToMiniAndCell(idx);
+    const rec = {
+      idx, m, c,
+      prevPlayer: s.player,
+      prevTarget: s.target,
+      prevMini: s.mini[m],
+      prevWinner: s.winner,
+      prevLast: s.lastMove,
+      prevHash: s.hash,
+    };
+    if(s.player===1) s.hash ^= Z.player;
+
+    s.cells[idx] = s.player;
+    s.hash ^= (s.player===1? Z.cell[idx][0] : Z.cell[idx][1]);
+    s.lastMove = idx;
+
+    const winMini = checkMiniWinner(s, m);
+    if(winMini!==s.mini[m]) s.mini[m]=winMini;
+
+    s.hash ^= Z.target[s.target+1];
+    s.target = c; if(s.mini[s.target]!==0) s.target = -1;
+    s.hash ^= Z.target[s.target+1];
+
+    s.winner = checkBigWinner(s);
+
+    s.player *= -1;
+    if(s.player===1) s.hash ^= Z.player;
+
+    return rec;
+  }
+  function undoMoveLocal(s, rec){
+    if(s.player===1) s.hash ^= Z.player;
+    s.player *= -1;
+
+    s.hash ^= Z.target[s.target+1];
+    s.target = rec.prevTarget;
+    s.hash ^= Z.target[s.target+1];
+
+    const idx = rec.idx;
+    const v = (s.player);
+    s.hash ^= (v===1? Z.cell[idx][0] : Z.cell[idx][1]);
+    s.cells[idx] = 0;
+
+    s.mini[rec.m] = rec.prevMini;
+    s.winner = rec.prevWinner;
+    s.lastMove = rec.prevLast;
+
+    if(s.player===1) s.hash ^= Z.player;
+
+    s.hash = rec.prevHash;
+  }
+
+  const killerMoves = Array.from({length:64}, ()=> [null, null]);
+  const historyScore = new Int32Array(81);
+  function pushKiller(ply, mv){
+    const ks = killerMoves[ply];
+    if(ks[0]!==mv){ ks[1] = ks[0]; ks[0] = mv; }
+  }
+  function bumpHistory(mv, depth){ historyScore[mv] += depth*depth; }
+
+  function evaluateFor(state, p){
+    if(state.winner===2) return 0;
+    if(state.winner===p) return 100000;
+    if(state.winner===-p) return -100000;
+
+    let score = 0;
+
+    // 大盘：线势能
+    const big = state.mini.map(v => v===1?1:(v===-1?-1:0));
+    let pBig = 0;
+    for(const [a,b,c] of LINES3){
+      const s = big[a]+big[b]+big[c];
+      if(s===2*p) pBig += 500;
+      else if(s===p) pBig += 150;
+      else if(s===-2*p) pBig -= 500;
+      else if(s===-p) pBig -= 150;
+    }
+    // 已赢小盘
+    for(let m=0;m<9;m++){
+      if(state.mini[m]===p){ score += 380 + (m===4?80:(m%2===0?40:0)); }
+      else if(state.mini[m]===-p){ score -= 380 + (m===4?80:(m%2===0?40:0)); }
+    }
+
+    // 未结束小盘内部势
+    for(let m=0;m<9;m++){
+      if(state.mini[m]!==0) continue;
+      const start = miniStartIndex(m);
+      const g = [
+        state.cells[start+0], state.cells[start+1], state.cells[start+2],
+        state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2],
+        state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2]
+      ];
+      let miniScore = 0;
+      for(const [a,b,c] of LINES3){
+        const sum = g[a]+g[b]+g[c];
+        if(sum===2*p) miniScore += 60;
+        else if(sum===p) miniScore += 18;
+        else if(sum===-2*p) miniScore -= 60;
+        else if(sum===-p) miniScore -= 18;
+      }
+      if(g[4]===p) miniScore += 12; else if(g[4]===-p) miniScore -= 12;
+      [0,2,6,8].forEach(i=>{
+        if(g[i]===p) miniScore += 5; else if(g[i]===-p) miniScore -= 5;
+      });
+      score += miniScore;
+    }
+
+    // 目标/机动性
+    if(state.target!==-1 && state.mini[state.target]===0){
+      const t = state.target;
+      score += - evaluateMiniAgainst(state, t, -p) * 0.6;
+    } else {
+      score += (playableCells(state).length - 20) * 1.2;
+    }
+
+    return score + pBig;
+  }
+  function evaluateMiniAgainst(state, m, q){
+    const start = miniStartIndex(m);
+    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
+    let s=0;
+    for(const [a,b,c] of LINES3){
+      const sum = g[a]+g[b]+g[c];
+      if(sum===2*q) s += 30;
+      else if(sum===q) s += 8;
+      else if(sum===-2*q) s -= 30;
+      else if(sum===-q) s -= 8;
+    }
+    if(g[4]===q) s+=6; else if(g[4]===-q) s-=6;
+    return s;
+  }
+
+  function orderMoves(state, moves, pvMove, ply){
+    const list = moves.map(idx => {
+      const [m,c] = indexToMiniAndCell(idx);
+      let h = historyScore[idx] | 0;
+
+      if(c===4) h += 120;
+      else if(c===0||c===2||c===6||c===8) h += 60;
+
+      const rec = doMoveLocal(state, idx);
+      const winNow = (state.winner!==0 && state.winner!==2);
+      let local = 0;
+      if(winNow) local += 900000;
+      else{
+        if(rec.prevMini===0 && state.mini[rec.m]!==0 && state.mini[rec.m]!==2) local += 1500;
+
+        const oppTarget = state.target;
+        if(oppTarget!==-1 && state.mini[oppTarget]===0){
+          local += (evaluateMiniAgainst(state, oppTarget, state.player) * -1) | 0;
+        }
+      }
+      undoMoveLocal(state, rec);
+
+      const ks = killerMoves[ply];
+      if(ks[0]===idx) h += 5000;
+      else if(ks[1]===idx) h += 3000;
+
+      return {idx, key: h + local};
+    });
+
+    if(pvMove!=null){
+      for(const it of list){ if(it.idx===pvMove) it.key += 800000; }
+    }
+
+    list.sort((a,b)=> b.key - a.key);
+    return list.map(x=>x.idx);
+  }
+
+  const TT = new Map(); // key: hash(BigInt string) -> {depth, score, flag, best}
+  const TT_EXACT=0, TT_LOWER=1, TT_UPPER=2;
+
+  function staticEval(state){ return evaluateFor(state, state.player); }
+  function terminalScore(state){
+    if(state.winner===2) return 0;
+    if(state.winner!==0) return -MATE;
+    return 0;
+  }
+
+  function negamax(state, depth, alpha, beta, ply, deadline, pvMove){
+    if(performance.now() > deadline) return {aborted:true};
+    if(state.winner!==0){
+      return {score: terminalScore(state), move: null, aborted:false};
+    }
+    if(depth===0){
+      return {score: staticEval(state)|0, move: null, aborted:false};
+    }
+
+    const key = state.hash.toString();
+    const t = TT.get(key);
+    if(t && t.depth>=depth){
+      if(t.flag===TT_EXACT) return {score: t.score, move: t.best, aborted:false};
+      if(t.flag===TT_LOWER && t.score>alpha) alpha = t.score;
+      else if(t.flag===TT_UPPER && t.score<beta) beta = t.score;
+      if(alpha>=beta) return {score: t.score, move: t.best, aborted:false};
+    }
+
+    const moves = playableCells(state);
+    if(moves.length===0){ return {score:0, move:null, aborted:false}; }
+
+    const ordered = orderMoves(state, moves, t?.best ?? pvMove, ply);
+
+    let bestMove = ordered[0];
+    let value = -INF;
+    const alphaOrig = alpha;
+
+    for(let i=0;i<ordered.length;i++){
+      const mv = ordered[i];
+      const rec = doMoveLocal(state, mv);
+
+      let nextDepth = depth - 1;
+      if(depth>=3 && i>=6){ nextDepth = depth - 2; }
+
+      const child = negamax(state, nextDepth, -beta, -alpha, ply+1, deadline, t?.best);
+      undoMoveLocal(state, rec);
+
+      if(child.aborted) return {aborted:true};
+
+      const score = -child.score;
+      if(score > value){ value = score; bestMove = mv; }
+      if(score > alpha) alpha = score;
+
+      if(alpha>=beta){
+        pushKiller(ply, mv);
+        bumpHistory(mv, depth);
+        break;
+      }
+    }
+
+    const flag = value<=alphaOrig ? TT_UPPER : (value>=beta ? TT_LOWER : TT_EXACT);
+    TT.set(key, {depth, score:value, flag, best:bestMove});
+    return {score:value, move:bestMove, aborted:false};
+  }
+
+  function aiSearchStrong(state, timeMs, maxDepth=14){
+    const W = {
+      cells: state.cells.slice(),
+      mini: state.mini.slice(),
+      target: state.target,
+      player: state.player,
+      winner: state.winner,
+      ruleset: state.ruleset,
+      lastMove: state.lastMove,
+      hash: 0n,
+    };
+    W.hash = computeHash(W);
+
+    const deadline = performance.now() + Math.max(100, timeMs|0);
+    let best = null, bestScore = -INF;
+    let pv = null;
+
+    for(let d=2; d<=maxDepth; d++){
+      const r = negamax(W, d, -INF, INF, 0, deadline, pv);
+      if(r.aborted) break;
+      if(r.move!=null){ best = r.move; bestScore = r.score; pv = r.move; }
+      if(bestScore> MATE/2) break;
+    }
+    if(best==null){
+      const mvs = playableCells(state);
+      if(mvs.length===0) return undefined;
+      best = orderMoves(W, mvs, null, 0)[0];
+    }
+    return best;
+  }
 
   // ===== AI Logic =====
   function aiMove() {
     if (S.winner !== 0 || S.player !== aiPlayer) return;
     const difficulty = difficultyEl.value;
     let bestMove;
+
     if (difficulty === 'easy') {
       bestMove = aiEasy(S);
     } else if (difficulty === 'medium') {
       bestMove = aiMedium(S);
-    } else { // hard
-      bestMove = aiHard(S);
+    } else if (difficulty === 'hard') {
+      bestMove = aiSearchStrong(S, 600, 13); // 困难：~0.6s
+    } else { // pro
+      bestMove = aiSearchStrong(S, 1500, 14); // 专家：~1.5s
     }
+
     if (bestMove !== undefined) {
-      history.push(JSON.parse(JSON.stringify(S)));
+      history.push(cloneState(S));         // ✅ 不用 JSON
       S = move(S, bestMove);
+      S.hash = computeHash(S);             // ✅ 更新哈希
       render();
     }
   }
@@ -345,7 +655,7 @@
     let bestIdx;
     for (const idx of moves) {
       const testState = move(state, idx);
-      const score = evaluateState(testState, aiPlayer);
+      const score = evaluateFor(testState, aiPlayer);
       if (score > bestScore) {
         bestScore = score;
         bestIdx = idx;
@@ -354,113 +664,7 @@
     return bestIdx;
   }
 
-  function aiHard(state, depth = 5) {
-    function minimax(s, d, alpha, beta, maximizing, currentDepth) {
-      if (s.winner !== 0 || d === 0) {
-        let score = evaluateState(s, aiPlayer);
-        if (s.winner === aiPlayer) score += 1000 - currentDepth;
-        else if (s.winner === -aiPlayer) score -= 1000 - currentDepth;
-        return score;
-      }
-      let moves = playableCells(s);
-      // Move ordering: sort moves by heuristic score
-      moves.sort((a, b) => {
-        const sa = move(s, a);
-        const sb = move(s, b);
-        return evaluateState(sb, aiPlayer) - evaluateState(sa, aiPlayer);
-      });
-      if (maximizing) {
-        let maxEval = -Infinity;
-        for (const m of moves) {
-          const ns = move(s, m);
-          const evalScore = minimax(ns, d - 1, alpha, beta, false, currentDepth + 1);
-          maxEval = Math.max(maxEval, evalScore);
-          alpha = Math.max(alpha, evalScore);
-          if (beta <= alpha) break;
-        }
-        return maxEval;
-      } else {
-        let minEval = Infinity;
-        for (const m of moves) {
-          const ns = move(s, m);
-          const evalScore = minimax(ns, d - 1, alpha, beta, true, currentDepth + 1);
-          minEval = Math.min(minEval, evalScore);
-          beta = Math.min(beta, evalScore);
-          if (beta <= alpha) break;
-        }
-        return minEval;
-      }
-    }
-    const moves = playableCells(state);
-    let bestScore = -Infinity;
-    let bestIdx;
-    for (const idx of moves) {
-      const testState = move(state, idx);
-      const score = minimax(testState, depth - 1, -Infinity, Infinity, false, 1);
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = idx;
-      }
-    }
-    return bestIdx;
-  }
-
-  function evaluateState(state, player) {
-    if (state.winner === player) return 10000;
-    if (state.winner === -player) return -10000;
-    if (state.winner === 2) return 0;
-    let score = 0;
-    for (let m = 0; m < 9; m++) {
-      if (state.mini[m] === player) {
-        score += 100; // Win mini-board
-        if (m === 4) score += 50; // Center mini bonus
-        else if (m % 2 === 0) score += 30; // Corner mini bonus
-      } else if (state.mini[m] === -player) {
-        score -= 100;
-        if (m === 4) score -= 50;
-        else if (m % 2 === 0) score -= 30;
-      }
-      score += evaluateMini(state, m, player) * 10; // Amplify mini scores
-    }
-    // Big board lines
-    const b = state.mini.map(v => v === player ? 1 : (v === -player ? -1 : 0));
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (const [a, b1, c] of lines) {
-      const sum = b[a] + b[b1] + b[c];
-      if (sum === 2 * player) score += 200; // Critical two in a row
-      else if (sum === -2 * player) score -= 200;
-      if (sum === 1 * player) score += 50; // One in a row
-      else if (sum === -1 * player) score -= 50;
-    }
-    // Heuristic for free move: if target is full or won, +20 (approx)
-    if (state.target !== -1 && state.mini[state.target] !== 0) score += player * 20;
-    return score * player; // Normalize for player
-  }
-
-  function evaluateMini(state, m, player) {
-    const start = miniStartIndex(m);
-    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
-    let score = 0;
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (const [a,b,c] of lines) {
-      const sum = g[a] + g[b] + g[c];
-      if (sum === 2 * player) score += 20; // Two in a row, block or win
-      else if (sum === -2 * player) score -= 20;
-      if (sum === 1 * player) score += 5;
-      else if (sum === -1 * player) score -= 5;
-    }
-    // Center cell bonus
-    if (g[4] === player) score += 10;
-    else if (g[4] === -player) score -= 10;
-    // Corner cells bonus
-    [0,2,6,8].forEach(i => {
-      if (g[i] === player) score += 3;
-      else if (g[i] === -player) score -= 3;
-    });
-    return score * player;
-  }
-
-  // ===== Rendering =====
+  // ===== Rendering / Controls =====
   function render(){
     const playable = new Set(playableCells(S));
     for(let m=0;m<9;m++){
@@ -482,10 +686,13 @@
         if(idx===S.lastMove) cell.classList.add('flash'); else cell.classList.remove('flash');
       }
     }
+    const thinking = (S.player === aiPlayer && S.winner===0 && gameStarted && modeEl.value==='pve');
     turnText.textContent = S.winner? (S.winner===2? '平局' : `胜者：${S.winner===1?'X':'O'}`) : `轮到：${S.player===1?'X':'O'}`;
-    targetText.textContent = S.target===-1 ? '可在任意未结束的小盘落子' : `请在第 ${S.target+1} 个小盘中落子`;
-    if (S.player === aiPlayer && S.winner === 0 && gameStarted) {
-      setTimeout(aiMove, 2000); // Even slower delay
+    targetText.textContent = S.winner? (S.winner===2? '对局结束（平局）' : '对局结束') :
+      (thinking ? 'AI思考中…' : (S.target===-1 ? '可在任意未结束的小盘落子' : `请在第 ${S.target+1} 个小盘中落子`));
+
+    if (thinking) {
+      setTimeout(aiMove, 10);
     }
   }
 
@@ -518,12 +725,12 @@
     if (isPve) {
       const isHumanFirst = firstEl.value === 'human';
       if (isHumanFirst) {
-        humanPlayer = 1; // Human X first
-        aiPlayer = -1; // AI O
+        humanPlayer = 1; // 人类 X
+        aiPlayer = -1;   // AI O
         S.player = 1;
       } else {
-        humanPlayer = -1; // Human O, AI X first
-        aiPlayer = 1;
+        humanPlayer = -1; // 人类 O
+        aiPlayer = 1;     // AI X
         S.player = 1;
       }
     } else {
@@ -531,6 +738,7 @@
       const isHumanFirst = firstEl.value === 'human';
       S.player = isHumanFirst ? 1 : -1;
     }
+    S.hash = computeHash(S);
     render();
   }
 
@@ -539,7 +747,8 @@
     gameStarted = true;
     lockSettings();
     if (modeEl.value === 'pve' && S.player === aiPlayer) {
-      aiMove();
+      render(); // 会触发 AI 思考
+      return;
     }
     render();
   }
@@ -551,6 +760,7 @@
       if(history.length===0) break;
       S = history.pop();
     }
+    S.hash = computeHash(S);
     render(); 
   }
 
@@ -558,8 +768,11 @@
     if (!gameStarted || S.winner !== 0) return;
     const idx = coordToIndex(+e.currentTarget.dataset.m, +e.currentTarget.dataset.c);
     const legalSet = new Set(playableCells(S)); if(!legalSet.has(idx)) return;
-    if (modeEl.value === 'pve' && S.player === aiPlayer) return; // Prevent click if AI's turn
-    history.push(JSON.parse(JSON.stringify(S))); S = move(S, idx); render();
+    if (modeEl.value === 'pve' && S.player === aiPlayer) return; // AI回合禁止点击
+    history.push(cloneState(S)); // ✅ 不用 JSON
+    S = move(S, idx);
+    S.hash = computeHash(S);     // ✅ 更新哈希
+    render();
   }
 
   // Wire controls
@@ -569,7 +782,7 @@
     resetGame();
   });
   firstEl.addEventListener('change', resetGame);
-  rulesetEl.addEventListener('change', ()=>{ setRuleset(rulesetEl.value); });
+  rulesetEl.addEventListener('change', ()=>{ setRuleset(rulesetEl.value); S.hash = computeHash(S); });
   startBtn.addEventListener('click', startGame);
   restartBtn.addEventListener('click', resetGame);
   undoBtn.addEventListener('click', undo);
