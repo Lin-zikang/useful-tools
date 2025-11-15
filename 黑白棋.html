@@ -147,16 +147,16 @@
         }
 
         @keyframes flip {
-            0% { 
-                transform: rotateY(0deg) scale(1); 
+            0% {
+                transform: rotateY(0deg) scale(1);
                 opacity: 1;
             }
-            50% { 
-                transform: rotateY(90deg) scale(0.8); 
+            50% {
+                transform: rotateY(90deg) scale(0.8);
                 opacity: 0.5;
             }
-            100% { 
-                transform: rotateY(180deg) scale(1); 
+            100% {
+                transform: rotateY(180deg) scale(1);
                 opacity: 1;
             }
         }
@@ -290,6 +290,9 @@
         let board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
         let currentPlayer = 1; // 1: black, -1: white
         let gameOver = false;
+        // 新增：是否正在处理当前落子（包括翻转动画）
+        let isProcessingMove = false;
+
         const directions = [
             [-1, -1], [-1, 0], [-1, 1],
             [0, -1],           [0, 1],
@@ -318,6 +321,7 @@
             board[4][4] = -1;
             currentPlayer = 1;
             gameOver = false;
+            isProcessingMove = false; // 重置处理中标志
             renderBoard();
             highlightValidMoves();
             updateStatus();
@@ -409,15 +413,19 @@
 
         // 执行移动并翻转
         function makeMove(row, col) {
-            if (gameOver || !isValidMove(row, col, currentPlayer)) return;
+            // 修复：如果正在处理前一个落子，直接禁止新的落子
+            if (gameOver || isProcessingMove || !isValidMove(row, col, currentPlayer)) return;
+
+            isProcessingMove = true; // 标记正在处理该回合
 
             // 放置棋子 - 立即设置颜色并添加出现动画
             board[row][col] = currentPlayer;
             const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .piece`);
-            piece.classList.add(currentPlayer === 1 ? 'black' : 'white', 'appear');
+            if (piece) {
+                piece.classList.add(currentPlayer === 1 ? 'black' : 'white', 'appear');
+            }
 
             // 翻转棋子 - 在落子后立即开始翻转动画，并在动画中间改变颜色
-            let totalToFlip = 0;
             for (let [dr, dc] of directions) {
                 let toFlip = [];
                 let r = row + dr;
@@ -428,22 +436,22 @@
                     c += dc;
                 }
                 if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === currentPlayer) {
-                    totalToFlip += toFlip.length;
                     for (let [fr, fc] of toFlip) {
                         board[fr][fc] = currentPlayer;
                         const flipPiece = document.querySelector(`[data-row="${fr}"][data-col="${fc}"] .piece`);
+                        if (!flipPiece) continue;
                         const oldColor = flipPiece.classList.contains('black') ? 'black' : 'white';
                         const newColor = currentPlayer === 1 ? 'black' : 'white';
-                        
+
                         // 开始翻转动画
                         flipPiece.classList.add('flip');
-                        
+
                         // 在翻转动画中间（50%，300ms）改变颜色
                         setTimeout(() => {
                             flipPiece.classList.remove(oldColor);
                             flipPiece.classList.add(newColor);
                         }, 300);
-                        
+
                         // 动画结束后移除 flip 类
                         setTimeout(() => {
                             flipPiece.classList.remove('flip');
@@ -461,11 +469,15 @@
 
         // 处理下一回合
         function nextTurn() {
-            if (gameOver) return;
+            if (gameOver) {
+                isProcessingMove = false;
+                return;
+            }
 
             if (!hasValidMoves(currentPlayer)) {
                 currentPlayer = -currentPlayer;
                 if (!hasValidMoves(currentPlayer)) {
+                    isProcessingMove = false;
                     endGame();
                     return;
                 }
@@ -474,6 +486,7 @@
             renderBoard();
             highlightValidMoves();
             updateStatus();
+            isProcessingMove = false; // 本回合处理完毕，可以接受下一步落子
         }
 
         // 结束游戏
@@ -497,7 +510,7 @@
             const status = document.querySelector('.status');
             const playerText = currentPlayer === 1 ? '黑方' : '白方';
             status.innerHTML = `<span class="player current">${playerText}</span> 的回合`;
-            
+
             // 更新分数显示
             const { blackCount, whiteCount } = countPieces();
             const scoresEl = document.getElementById('scores');
