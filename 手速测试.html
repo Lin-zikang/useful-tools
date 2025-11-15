@@ -102,6 +102,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* 关键：禁用手势操作，避免双击缩放干扰连点 */
+            touch-action: none;
         }
 
         .click-area:hover {
@@ -293,8 +295,12 @@
     <div class="fullscreen" id="endAlert">结束！</div>
 
 <script>
-    let mode, startTime, clickCount = 0;
-    let timer = null, targetValue, timeDisplayTimer = null;
+    let mode = null;
+    let startTime = null;
+    let clickCount = 0;
+    let timer = null;
+    let targetValue = 0;
+    let timeDisplayTimer = null;
 
     // 页面切换，始终居中
     function switchPage(id) {
@@ -304,9 +310,9 @@
 
     function startTest(selectedMode) {
         mode = selectedMode;
-        targetValue = mode === 'time' ?
-            parseInt(document.getElementById('timeInput').value) :
-            parseInt(document.getElementById('countInput').value);
+        targetValue = mode === 'time'
+            ? parseInt(document.getElementById('timeInput').value)
+            : parseInt(document.getElementById('countInput').value);
 
         if (!targetValue || targetValue <= 0) {
             alert("请输入有效的数值！");
@@ -336,7 +342,7 @@
         clearInterval(timer);
         clearInterval(timeDisplayTimer);
 
-        // 启动测试计时
+        // 时间模式：倒计时
         if (mode === 'time') {
             timer = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
@@ -348,20 +354,20 @@
             }, 100);
         }
 
-        // 次数模式下显示已用时间
+        // 次数模式：显示已用时间
         if (mode === 'count') {
             timeDisplayTimer = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
                 timeLeftEl.textContent = elapsed.toFixed(1);
             }, 100);
         }
-
-        // 绑定点击事件
-        const clickArea = document.getElementById('clickArea');
-        clickArea.onclick = handleClick;
     }
 
+    // 核心点击逻辑（被 pointer/touch/mouse 触发）
     function handleClick() {
+        // 还没开始测试时点击不计数
+        if (!mode || !startTime) return;
+
         clickCount++;
         updateDisplay();
 
@@ -406,7 +412,31 @@
             (clickCount / totalTime).toFixed(2);
     }
 
-    // 额外处理双击缩放（特别是 iOS）
+    // ==== 关键改动：使用 Pointer / Touch / Mouse 直接触发 handleClick，避免移动端 click 延迟 ====
+    const clickArea = document.getElementById('clickArea');
+
+    if (window.PointerEvent) {
+        // 优先使用 PointerEvent（现代浏览器）
+        clickArea.addEventListener('pointerdown', function (e) {
+            // 鼠标只响应左键
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            e.preventDefault(); // 阻止可能的点击延迟和默认行为
+            handleClick();
+        });
+    } else {
+        // 老设备兼容：touchstart + mousedown
+        clickArea.addEventListener('touchstart', function (e) {
+            e.preventDefault();
+            handleClick();
+        }, { passive: false });
+
+        clickArea.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            handleClick();
+        });
+    }
+
+    // 额外处理双击缩放（特别是 iOS），防止双击放大页面
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function (event) {
         const now = Date.now();
