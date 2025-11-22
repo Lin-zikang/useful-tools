@@ -177,7 +177,7 @@
     }
     function drawWinHighlight(line){
         if(!line || !line.cells || line.cells.length<5) return;
-        var first=line.cells[0], last=line.cells[line.length-1] || line.cells[line.cells.length-1];
+        var first=line.cells[0], last=line.cells[line.cells.length-1];
         var x1=15+first.i*30, y1=15+first.j*30;
         var x2=15+last.i*30,  y2=15+last.j*30;
 
@@ -275,6 +275,7 @@
                         over=true;
                         winLine = getWinningLine(i,j,1);
                         document.querySelector('.btn-wrap').style.display='flex';
+                        setControlsVisible(false); // 玩家胜利后也隐藏底部两个按钮
                     }
                 }
             }
