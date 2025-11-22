@@ -35,7 +35,7 @@
         padding: clamp(12px, 4vw, 24px);
         border-radius: 15px;
         box-shadow: var(--shadow);
-        max-width: 430px; /* 控整体宽度，保证手机一屏能看完 */
+        max-width: 430px;
         width: 100%;
     }
 
@@ -145,6 +145,7 @@
         padding: 4px 8px;
         border-radius: 5px;
         background: rgba(0,0,0,0.05);
+        transition: var(--transition);
     }
 
     .black-score {
@@ -156,6 +157,17 @@
         color: #fff;
         background: #000;
         font-weight: bold;
+    }
+
+    .score.highlight {
+        box-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 26px rgba(255,215,0,0.8);
+        transform: scale(1.05);
+        animation: scoreGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes scoreGlow {
+        0% { filter: brightness(1); }
+        100% { filter: brightness(1.25); }
     }
 
     .status {
@@ -181,6 +193,13 @@
         animation: celebrate 0.5s ease-in-out infinite alternate;
     }
 
+    .winner-diff {
+        display: inline-block;
+        margin-left: 6px;
+        font-size: 0.85rem;
+        color: #555;
+    }
+
     @keyframes celebrate {
         0% { transform: scale(1); text-shadow: 0 0 5px rgba(255,69,0,0.5); }
         100% { transform: scale(1.05); text-shadow: 0 0 15px rgba(255,69,0,0.8); }
@@ -200,7 +219,7 @@
         box-shadow: inset 0 0 20px rgba(0,0,0,0.3), var(--shadow);
         position: relative;
         overflow: hidden;
-        transition: box-shadow 0.35s ease, transform 0.35s ease;
+        transition: box-shadow 0.35s ease, transform 0.35s ease, filter 0.35s ease;
     }
 
     .board::before {
@@ -226,6 +245,14 @@
 
     .board.game-over .cell {
         cursor: not-allowed;
+    }
+
+    .board.game-over {
+        filter: brightness(0.98);
+        box-shadow:
+          0 0 0 2px rgba(0,0,0,0.35),
+          0 10px 30px rgba(0,0,0,0.5),
+          inset 0 0 25px rgba(0,0,0,0.4);
     }
 
     .board.thinking {
@@ -343,18 +370,6 @@
         filter: grayscale(0.2);
     }
 
-    #thinkingTag {
-        font-size: 13px;
-        color: #1e90ff;
-        display: none;
-        animation: thinkingPulse 1s ease-in-out infinite alternate;
-    }
-
-    @keyframes thinkingPulse {
-        0% { opacity: 0.5; transform: scale(1); }
-        100% { opacity: 1; transform: scale(1.03); }
-    }
-
     .foot { margin-top: 6px; opacity: 0.8; font-size: 12px; }
 
     @keyframes shake {
@@ -420,7 +435,6 @@
             <button id="undoBtn" title="悔棋">悔棋</button>
             <button id="resetBtn" title="重新开始">重新开始</button>
         </div>
-        <span id="thinkingTag">🤖 AI 思考中…</span>
     </div>
 
     <div class="foot">提示：对 AI 时，悔棋会回到你上一次落子前（不能连续悔棋）；AI 每手约 3 秒，思考中禁止操作。</div>
@@ -434,19 +448,17 @@ const AI_THINK_TIME_MS = 3000;
 let board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
 let currentPlayer = 1; // 1: black, -1: white
 let gameOver = false;
-let isProcessingMove = false; // 正在处理动画/收尾
-let aiThinking = false;       // AI 思考中（用户被锁）
-let undoLocked = false;       // 对AI模式下，悔棋后需走一步才解锁
-let history = [];             // 存盘栈（每步前推入）
+let isProcessingMove = false;
+let aiThinking = false;
+let undoLocked = false;
+let history = [];
 
-// 模式与AI方，默认 AI 后手白棋
-let mode = 'ai';      // 'pvp' | 'ai'
-let aiPlays = -1;     // 1 (黑) 或 -1 (白)
-let modeLocked = false; // ★ 一旦有落子就锁模式，重置游戏才解锁
+let mode = 'ai';
+let aiPlays = -1;
+let modeLocked = false;
 
 const undoBtn = document.getElementById('undoBtn');
 const resetBtn = document.getElementById('resetBtn');
-const thinkingTag = document.getElementById('thinkingTag');
 
 const modeGroupWrapper = document.getElementById('modeGroupWrapper');
 const aiSideGroupWrapper = document.getElementById('aiSideGroupWrapper');
@@ -477,7 +489,6 @@ function inBounds(r, c) {
   return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
 }
 
-/** 返回从 (row,col) 出发的翻子列表（基于 b）。 */
 function getFlips(row, col, player, b = board) {
   if (b[row][col] !== 0) return [];
   let all = [];
@@ -541,7 +552,6 @@ function restoreState(state) {
   updateStatus();
 }
 
-/** 刷新“模式可选 / 被锁”视觉状态 */
 function refreshModeUIState() {
   if (modeLocked) {
     modeGroupWrapper.classList.add('disabled');
@@ -557,19 +567,15 @@ function refreshModeUIState() {
 }
 
 function setUIBusy(busy) {
-  // 只控制 disabled 属性，真正“锁模式”交给 modeLocked + CSS
   const toggleBtns = document.querySelectorAll('.toggle-btn');
   toggleBtns.forEach(btn => { btn.disabled = busy; });
 
-  // AI 下的悔棋锁
   undoBtn.disabled = busy || (mode === 'ai' && undoLocked);
   resetBtn.disabled = busy;
 
   const boardEl = document.getElementById('board');
   if (aiThinking) boardEl.classList.add('thinking');
   else boardEl.classList.remove('thinking');
-
-  thinkingTag.style.display = (aiThinking ? 'inline-block' : 'none');
 }
 
 /** ====== 渲染与状态 ====== */
@@ -618,40 +624,37 @@ function updateStatus(extraText = '') {
   const playerText = currentPlayer === 1 ? '黑方' : '白方';
   let prefix = `<span class="player current">${playerText}</span> 的回合`;
   if (aiThinking) prefix = `🤖 AI 思考中…`;
-  status.innerHTML = extraText ? `${prefix} · ${extraText}` : prefix;
+  status.innerHTML = extraText ? `${prefix} · ${extraText}` : `${prefix}`;
 
   const { blackCount, whiteCount } = countPieces();
   const scoresEl = document.getElementById('scores');
-  scoresEl.innerHTML = `<span class="score black-score">黑: ${blackCount}</span><span class="score white-score">白: ${whiteCount}</span>`;
+  scoresEl.innerHTML =
+    `<span class="score black-score">黑: ${blackCount}</span>` +
+    `<span class="score white-score">白: ${whiteCount}</span>`;
 
   setUIBusy(isProcessingMove || aiThinking);
 }
 
-/** ====== 核心：落子（支持 AI 强制执行） ====== */
+/** ====== 核心：落子 ====== */
 function makeMove(row, col, opts = { force: false }) {
   if (gameOver) return;
   if (!opts.force && (isProcessingMove || aiThinking)) return;
   if (!isValidMove(row, col, currentPlayer, board)) return;
 
-  // ★ 第一次真正成功落子时，锁模式选择
   if (!modeLocked) {
     modeLocked = true;
     refreshModeUIState();
   }
 
-  // 记录历史（每一次真实落子之前）
   pushHistory();
-
   isProcessingMove = true;
 
-  // 放置棋子（立即出现动画）
   board[row][col] = currentPlayer;
   const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .piece`);
   if (piece) {
     piece.classList.add(currentPlayer === 1 ? 'black' : 'white', 'appear');
   }
 
-  // 翻子动画与实际状态同步
   for (let [dr, dc] of directions) {
     const toFlip = [];
     let r = row + dr, c = col + dc;
@@ -678,9 +681,7 @@ function makeMove(row, col, opts = { force: false }) {
     }
   }
 
-  // 落子后切换
   setTimeout(() => {
-    // 对AI模式下，玩家成功落子后解锁“不能连续悔棋”
     if (mode === 'ai' && currentPlayer !== aiPlays) {
       undoLocked = false;
     }
@@ -692,11 +693,12 @@ function makeMove(row, col, opts = { force: false }) {
 function nextTurn() {
   if (gameOver) {
     isProcessingMove = false;
+    aiThinking = false;
+    setUIBusy(false);
     updateStatus();
     return;
   }
 
-  // 处理无子可下（跳过）
   if (!hasValidMoves(currentPlayer, board)) {
     currentPlayer = -currentPlayer;
     if (!hasValidMoves(currentPlayer, board)) {
@@ -710,7 +712,6 @@ function nextTurn() {
   highlightValidMoves();
   isProcessingMove = false;
 
-  // 如果轮到 AI
   if (mode === 'ai' && currentPlayer === aiPlays && !gameOver) {
     aiMove();
     return;
@@ -721,14 +722,45 @@ function nextTurn() {
 
 function endGame() {
   gameOver = true;
+
   const { blackCount, whiteCount } = countPieces();
-  const winner = blackCount > whiteCount ? '黑方'
-               : whiteCount > blackCount ? '白方' : '平局';
   const status = document.querySelector('.status');
-  status.innerHTML = `<span class="winner">${winner} 获胜！</span> 黑: ${blackCount} 白: ${whiteCount}`;
+  const boardEl = document.getElementById('board');
+
+  aiThinking = false;
+  isProcessingMove = false;
+  setUIBusy(false);
+  undoBtn.disabled = true;
+
+  document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('valid'));
+
+  const scoresEl = document.getElementById('scores');
+  let blackClass = 'score black-score';
+  let whiteClass = 'score white-score';
+
+  let resultHtml = '';
+
+  if (blackCount === whiteCount) {
+    resultHtml = `<span class="winner">平局</span> 黑: ${blackCount} 白: ${whiteCount}`;
+  } else {
+    const winner = blackCount > whiteCount ? '黑方' : '白方';
+    const diff = Math.abs(blackCount - whiteCount);
+    if (blackCount > whiteCount) blackClass += ' highlight';
+    else whiteClass += ' highlight';
+
+    resultHtml =
+      `<span class="winner">${winner} 获胜！</span> ` +
+      `黑: ${blackCount} 白: ${whiteCount}` +
+      `<span class="winner-diff">领先 ${diff} 子</span>`;
+  }
+
+  scoresEl.innerHTML =
+    `<span class="${blackClass}">黑: ${blackCount}</span>` +
+    `<span class="${whiteClass}">白: ${whiteCount}</span>`;
+
+  status.innerHTML = resultHtml;
   renderBoard();
 
-  const boardEl = document.getElementById('board');
   boardEl.style.animation = 'shake 0.5s ease-in-out';
   setTimeout(() => boardEl.style.animation = '', 500);
 }
@@ -744,13 +776,12 @@ function initBoard() {
   aiThinking = false;
   undoLocked = false;
   history = [];
-  modeLocked = false;      // ★ 新局重新解锁模式选择
-  refreshModeUIState();    // 同步 UI
+  modeLocked = false;
+  refreshModeUIState();
   renderBoard();
   highlightValidMoves();
   updateStatus();
 
-  // 若AI执黑（先手），启动
   if (mode === 'ai' && currentPlayer === aiPlays) {
     aiMove();
   }
@@ -770,7 +801,6 @@ function undoMove() {
   if (gameOver || isProcessingMove || aiThinking) return;
 
   if (mode === 'pvp') {
-    // 双人：每次只退一步，可连续
     if (undoOnce()) {
       updateStatus('已悔棋一步');
       highlightValidMoves();
@@ -778,32 +808,28 @@ function undoMove() {
     return;
   }
 
-  // 对AI：每次回到“玩家上一次落子之前”，且不能连续悔棋
   if (undoLocked) return;
 
   let undone = false;
   if (currentPlayer === aiPlays) {
-    // 撤销玩家刚才那步
     undone = undoOnce();
   } else {
-    // 先撤 AI，再撤玩家
     undone = undoOnce();
     if (undone) undone = undoOnce();
   }
 
   if (undone) {
-    undoLocked = true; // 对AI下，禁止连续悔棋
+    undoLocked = true;
     updateStatus('已回到你上一次落子前');
     highlightValidMoves();
   }
 }
 
-/** ====== AI 核心：保持不变的部分 ====== */
+/** ====== AI 核心 ====== */
 function boardKey(b, player) {
   return player + ':' + b.flat().join('');
 }
 
-// 评估：综合棋形（PST）、角/行动力/子差
 const PST = [
   [120,-20, 20,  5,  5, 20,-20,120],
   [-20,-40, -5, -5, -5, -5,-40,-20],
@@ -837,7 +863,8 @@ function evaluate(b, player) {
 
   const myMoves = listValidMoves(player, b).length;
   const oppMoves = listValidMoves(-player, b).length;
-  const mobility = (myMoves + oppMoves) ? 100 * (myMoves - oppMoves) / (myMoves + oppMoves) : 0;
+  const mobility = (myMoves + oppMoves) ?
+    100 * (myMoves - oppMoves) / (myMoves + oppMoves) : 0;
 
   const empties = 64 - (my + opp);
   const wPST = empties > 12 ? 1.0 : 0.5;
@@ -884,7 +911,8 @@ function negamax(b, player, depth, alpha, beta, deadline, tt) {
     const oppMoves = listValidMoves(-player, b);
     if (oppMoves.length === 0) {
       const { blackCount, whiteCount } = countPieces(b);
-      const score = (player === 1 ? (blackCount - whiteCount) : (whiteCount - blackCount)) * 10000;
+      const score = (player === 1 ? (blackCount - whiteCount) : (whiteCount - blackCount))
+                    * 10000;
       return { value: score, move: null, timeout: false };
     }
     return negamax(b, -player, depth, alpha, beta, deadline, tt);
@@ -944,7 +972,6 @@ function findBestMoveIterative(b, player, msBudget) {
   return best;
 }
 
-/** ====== AI 出招：先显示思考特效，再算，再保证总计约3秒 ====== */
 function aiMove() {
   aiThinking = true;
   setUIBusy(true);
@@ -952,9 +979,8 @@ function aiMove() {
 
   const thinkStart = Date.now();
 
-  // 先让浏览器渲染出“思考中”UI，再开始重计算
   setTimeout(() => {
-    const searchBudget = AI_THINK_TIME_MS - 60; // 留一点时间给收尾
+    const searchBudget = AI_THINK_TIME_MS - 60;
     const move = findBestMoveIterative(board, currentPlayer, searchBudget);
 
     const elapsedTotal = Date.now() - thinkStart;
@@ -973,17 +999,15 @@ function aiMove() {
       aiThinking = false;
       makeMove(move.row, move.col, { force: true });
     }, remaining);
-  }, 60); // 给浏览器 1 帧时间刷新 UI
+  }, 60);
 }
 
-/** ====== 事件绑定：模式按钮 + 悔棋/重开 ====== */
+/** ====== 事件绑定 ====== */
 undoBtn.addEventListener('click', undoMove);
 resetBtn.addEventListener('click', resetGame);
 
-// 模式选择按钮
 modeButtons.forEach(btn => {
   btn.addEventListener('click', () => {
-    // ★ 游戏开始后（有落子）模式锁死
     if (isProcessingMove || aiThinking || modeLocked) return;
     const m = btn.dataset.mode;
     mode = m;
@@ -995,7 +1019,6 @@ modeButtons.forEach(btn => {
   });
 });
 
-// AI 执棋方按钮
 aiSideButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     if (isProcessingMove || aiThinking || modeLocked || mode !== 'ai') return;
@@ -1008,7 +1031,6 @@ aiSideButtons.forEach(btn => {
   });
 });
 
-/** ====== 启动 ====== */
 initBoard();
 </script>
 </body>
