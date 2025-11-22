@@ -150,7 +150,7 @@
             transform: scale(1.3);
         }
 
-        /* 全屏提示 */
+        /* 全屏提示（通用：结束/倒计时） */
         .fullscreen {
             position: fixed;
             top: 0;
@@ -291,7 +291,10 @@
         <button onclick="location.reload()">再测一次</button>
     </div>
 
-    <!-- 全屏提示 -->
+    <!-- 倒计时提示：3 2 1 开始 -->
+    <div class="fullscreen" id="countdownOverlay"></div>
+
+    <!-- 结束提示 -->
     <div class="fullscreen" id="endAlert">结束！</div>
 
 <script>
@@ -301,6 +304,7 @@
     let timer = null;
     let targetValue = 0;
     let timeDisplayTimer = null;
+    let countdownTimer = null; // 倒计时定时器
 
     // 页面切换，始终居中
     function switchPage(id) {
@@ -319,12 +323,9 @@
             return;
         }
 
-        // 切换到测试页
-        switchPage('test');
-
-        // 初始化数据
+        // 初始化数据，但不立刻开始计时、不切到 test 页
         clickCount = 0;
-        startTime = Date.now();
+        startTime = null;
         document.getElementById('clickCount').textContent = '0';
 
         const timeLeftEl = document.getElementById('timeLeft');
@@ -341,9 +342,50 @@
         // 清理上次的计时器
         clearInterval(timer);
         clearInterval(timeDisplayTimer);
+        clearInterval(countdownTimer);
 
-        // 时间模式：倒计时
+        // 全屏倒计时：3 2 1 开始
+        const countdownEl = document.getElementById('countdownOverlay');
+        const seq = ['3', '2', '1', '开始'];
+        let index = 0;
+
+        countdownEl.style.display = 'flex';
+        countdownEl.textContent = seq[index];
+
+        countdownTimer = setInterval(() => {
+            index++;
+            if (index < seq.length) {
+                countdownEl.textContent = seq[index];
+            } else {
+                clearInterval(countdownTimer);
+                countdownEl.style.display = 'none';
+
+                // 倒计时结束后，切到测试页
+                switchPage('test');
+
+                // 再延迟 0.25 秒，才真正开始计时/点击生效
+                setTimeout(() => {
+                    beginRealTest();
+                }, 250);
+            }
+        }, 1000);
+    }
+
+    // 真正开始计时/计次
+    function beginRealTest() {
+        startTime = Date.now();
+
+        const timeLeftEl = document.getElementById('timeLeft');
+        const timeLabel = document.getElementById('timeLabel');
+
+        clearInterval(timer);
+        clearInterval(timeDisplayTimer);
+
         if (mode === 'time') {
+            timeLabel.textContent = '剩余时间';
+            timeLeftEl.textContent = targetValue.toFixed(1);
+
+            // 时间模式：倒计时
             timer = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
                 if (elapsed >= targetValue) {
@@ -354,8 +396,11 @@
             }, 100);
         }
 
-        // 次数模式：显示已用时间
         if (mode === 'count') {
+            timeLabel.textContent = '已用时间';
+            timeLeftEl.textContent = '0.0';
+
+            // 次数模式：显示已用时间
             timeDisplayTimer = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
                 timeLeftEl.textContent = elapsed.toFixed(1);
@@ -365,7 +410,7 @@
 
     // 核心点击逻辑（被 pointer/touch/mouse 触发）
     function handleClick() {
-        // 还没开始测试时点击不计数
+        // 还没开始测试时点击不计数（包括倒计时和 0.25s 延迟阶段）
         if (!mode || !startTime) return;
 
         clickCount++;
@@ -391,6 +436,7 @@
     function endTest() {
         clearInterval(timer);
         clearInterval(timeDisplayTimer);
+        clearInterval(countdownTimer);
 
         const totalTime = (Date.now() - startTime) / 1000;
 
@@ -412,7 +458,7 @@
             (clickCount / totalTime).toFixed(2);
     }
 
-    // ==== 关键改动：使用 Pointer / Touch / Mouse 直接触发 handleClick，避免移动端 click 延迟 ====
+    // ==== 使用 Pointer / Touch / Mouse 直接触发 handleClick，避免移动端 click 延迟 ====
     const clickArea = document.getElementById('clickArea');
 
     if (window.PointerEvent) {
