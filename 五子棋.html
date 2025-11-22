@@ -105,7 +105,7 @@
     }
     for(let i=0;i<count;i++){ myWin[i]=0; computerWin[i]=0; }
 
-    // --------- 画布与特效（保持不变） ----------
+    // --------- 画布与特效 ----------
     var chess = document.getElementById('chess');
     var ctx = chess.getContext('2d');
     ctx.strokeStyle = '#bfbfbf';
@@ -177,7 +177,7 @@
     }
     function drawWinHighlight(line){
         if(!line || !line.cells || line.cells.length<5) return;
-        var first=line.cells[0], last=line.cells[line.cells.length-1];
+        var first=line.cells[0], last=line.cells[line.length-1];
         var x1=15+first.i*30, y1=15+first.j*30;
         var x2=15+last.i*30,  y2=15+last.j*30;
 
@@ -283,80 +283,137 @@
 
             if(!over){
                 me=false;
-                computerAI(); // —— 按“原样”算法执行AI —— 
+                computerAI(); // —— 改进后的 AI —— 
             }
         }
     }
     chess.addEventListener('click', handleMove);
     chess.addEventListener('touchstart', handleMove, {passive:false});
 
-    // --------- 计算机下棋（按“原样”算法） ----------
+    // --------- 计算机下棋（改进版：优先挡活三，棋风仍偏进攻） ----------
     function computerAI(){
         var myScore = [];
         var computerScore = [];
         var max = 0;
         var u = 0, v = 0;
         var bestMoves = [];
+        var SIZE = 15;
 
-        for (var i = 0; i < 15; i++) {
+        // 初始化评分表
+        for (var i = 0; i < SIZE; i++) {
             myScore[i] = [];
             computerScore[i] = [];
-            for (var j = 0; j < 15; j++) {
+            for (var j = 0; j < SIZE; j++) {
                 myScore[i][j] = 0;
                 computerScore[i][j] = 0;
             }
         }
 
-        for (var i = 0; i < 15; i++) {
-            for (var j = 0; j < 15; j++) {
+        var found = false;
+
+        // ① 先找“必胜点”：AI 自己直接五连
+        outerAIWin:
+        for (i = 0; i < SIZE; i++) {
+            for (j = 0; j < SIZE; j++) {
                 if (chessBoard[i][j] === 0) {
                     for (var k = 0; k < count; k++) {
-                        if (wins[i][j][k]) {
-                            // 防守权重
-                            if (myWin[k] === 1) myScore[i][j] += 200;
-                            if (myWin[k] === 2) myScore[i][j] += 400;
-                            if (myWin[k] === 3) myScore[i][j] += 2000;
-                            if (myWin[k] === 4) myScore[i][j] += 10000;
-                            // 进攻权重
-                            if (computerWin[k] === 1) computerScore[i][j] += 220;
-                            if (computerWin[k] === 2) computerScore[i][j] += 420;
-                            if (computerWin[k] === 3) computerScore[i][j] += 2100;
-                            if (computerWin[k] === 4) computerScore[i][j] += 20000;
+                        if (wins[i][j][k] && computerWin[k] === 4) {
+                            u = i;
+                            v = j;
+                            found = true;
+                            break outerAIWin;
                         }
                     }
-                    // 记录当前最大分及候选点（原样：并列随机）
-                    if (myScore[i][j] > max) { max = myScore[i][j]; bestMoves = [{i:i, j:j}]; }
-                    else if (myScore[i][j] === max) { bestMoves.push({i:i, j:j}); }
-
-                    if (computerScore[i][j] > max) { max = computerScore[i][j]; bestMoves = [{i:i, j:j}]; }
-                    else if (computerScore[i][j] === max) { bestMoves.push({i:i, j:j}); }
                 }
             }
         }
 
-        if (bestMoves.length > 0) {
-            var randomIndex = Math.floor(Math.random() * bestMoves.length);
-            u = bestMoves[randomIndex].i;
-            v = bestMoves[randomIndex].j;
+        // ② 没有必胜点，再找“必堵点”：玩家马上五连
+        if (!found) {
+            outerBlockFour:
+            for (i = 0; i < SIZE; i++) {
+                for (j = 0; j < SIZE; j++) {
+                    if (chessBoard[i][j] === 0) {
+                        for (k = 0; k < count; k++) {
+                            if (wins[i][j][k] && myWin[k] === 4) {
+                                u = i;
+                                v = j;
+                                found = true;
+                                break outerBlockFour;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        aiTimer = setTimeout(function(){
+        // ③ 正常打分：在原算法基础上加强防守“活三”
+        if (!found) {
+            for (i = 0; i < SIZE; i++) {
+                for (j = 0; j < SIZE; j++) {
+                    if (chessBoard[i][j] === 0) {
+                        for (k = 0; k < count; k++) {
+                            if (wins[i][j][k]) {
+                                // 防守权重
+                                if (myWin[k] === 1) myScore[i][j] += 200;
+                                if (myWin[k] === 2) myScore[i][j] += 400;
+                                if (myWin[k] === 3) {
+                                    myScore[i][j] += 2000;
+                                    // 如果这一条线上电脑子为 0，大概率是“活三”或强威胁，再额外加分
+                                    if (computerWin[k] === 0) {
+                                        myScore[i][j] += 3000; // 重点：让挡活三优先级更高
+                                    }
+                                }
+                                if (myWin[k] === 4) myScore[i][j] += 10000;
+
+                                // 进攻权重（保持棋风偏进攻）
+                                if (computerWin[k] === 1) computerScore[i][j] += 220;
+                                if (computerWin[k] === 2) computerScore[i][j] += 420;
+                                if (computerWin[k] === 3) computerScore[i][j] += 2100;
+                                if (computerWin[k] === 4) computerScore[i][j] += 20000;
+                            }
+                        }
+
+                        var total = myScore[i][j] + computerScore[i][j];
+                        if (total > max) {
+                            max = total;
+                            bestMoves = [{ i: i, j: j }];
+                        } else if (total === max) {
+                            bestMoves.push({ i: i, j: j });
+                        }
+                    }
+                }
+            }
+
+            if (bestMoves.length > 0) {
+                var randomIndex = Math.floor(Math.random() * bestMoves.length);
+                u = bestMoves[randomIndex].i;
+                v = bestMoves[randomIndex].j;
+            } else {
+                // 理论上不会出现，兜底：下在中间
+                u = Math.floor(SIZE / 2);
+                v = Math.floor(SIZE / 2);
+            }
+        }
+
+        // ④ 落子（延迟、光环、高亮等逻辑保持不变）
+        aiTimer = setTimeout(function () {
             aiTimer = null;
 
             chessBoard[u][v] = 2;               // 落子
-            moveHistory.push({i:u, j:v, player:2});
-            lastAIMove = {i:u, j:v};            // 金色光环坐标
+            moveHistory.push({ i: u, j: v, player: 2 });
+            lastAIMove = { i: u, j: v };        // 金色光环坐标
             winLine = null;
 
             for (var k = 0; k < count; k++) {
                 if (wins[u][v][k]) {
-                    computerWin[k]++; myWin[k] = 6;
+                    computerWin[k]++;
+                    myWin[k] = 6;
                     if (computerWin[k] === 5) {
                         document.getElementById('result-wrap').innerHTML = '计算机赢了，继续加油哦！';
                         over = true;
                         winLine = getWinningLine(u, v, 2);
                         document.querySelector('.btn-wrap').style.display = 'flex';
-                        // AI胜利后，下方两个按钮消失
                         setControlsVisible(false);
                     }
                 }
@@ -364,7 +421,7 @@
 
             me = true;
             redrawAll();
-        }, 800); // 原样：延迟800ms再下棋
+        }, 800); // 保持原来的 800ms 思考时间
     }
 
     // --------- 悔棋/重开 ----------
