@@ -188,7 +188,7 @@
     }
     function drawWinHighlight(line){
         if(!line || !line.cells || line.cells.length<5) return;
-
+        
         ctx.save();
         ctx.lineWidth=4;
         ctx.strokeStyle='rgba(220,20,60,0.8)';
@@ -241,24 +241,6 @@
         }
     }
 
-    // --------- 和棋判定（棋盘占满即结束，且不允许悔棋） ----------
-    function isBoardFull(){
-        for(let i=0;i<15;i++){
-            for(let j=0;j<15;j++){
-                if(chessBoard[i][j]===0) return false;
-            }
-        }
-        return true;
-    }
-    function endAsDraw(){
-        if(over) return;
-        over = true;
-        winLine = null;
-        document.getElementById('result-wrap').innerHTML = '和棋！棋盘已满。';
-        document.querySelector('.btn-wrap').style.display='flex';
-        setControlsVisible(false); // 与胜负结束同样：隐藏悔棋/重开
-    }
-
     // --------- 下子与交互 ----------
     function handleMove(e){
         if(over || !me) return;
@@ -301,11 +283,6 @@
             redrawAll();
 
             if(!over){
-                // 棋盘占满 => 立刻判和，且不允许悔棋（与胜负结束同设计）
-                if(isBoardFull()){
-                    endAsDraw();
-                    return;
-                }
                 me=false;
                 // 启动AI
                 computerAI(); 
@@ -316,355 +293,214 @@
     chess.addEventListener('touchstart', handleMove, {passive:false});
 
     // ==========================================
-    //  核心AI算法 (Enhanced V3 - Threat Search + Alpha-Beta)
-    //  重点升级：
-    //  1) 强化防守：提前识别并处理【双三 / 三四 / 活四】等绝杀威胁
-    //  2) 强化进攻：主动制造【双三 / 三四 / 活四】等巧胜机会
-    //  3) 采用候选点 + Alpha-Beta 搜索（带威胁优先级），胜率更高
+    //  核心AI算法 (Enhanced V2)
     // ==========================================
-    (function(){
-        const SIZE = 15;
-        const AI_ROLE = 2;
-        const HUMAN_ROLE = 1;
-        const CENTER = 7;
+    function computerAI(){
+        // 延迟落子以模拟思考
+        aiTimer = setTimeout(function () {
+            aiTimer = null;
+            if(over) return;
 
-        // 棋型模式表（0空 1己 2堵边/对手）
-        const PAT = {
-            OPEN_FOUR:  ['011110'],
-            RUSH_FOUR:  ['211110','011112','11011','10111','11101'],
-            OPEN_THREE: ['01110','010110','011010'],
-            // 眠三（用于细化估值；主要威胁仍以活三为主）
-            SLEEP_THREE:['21110','01112','210110','011012','210112','211010','010112','211010','011012'],
-            OPEN_TWO:   ['00110','01100','01010','010010','001010','010100']
-        };
+            var u = 0, v = 0;
+            var maxScore = -1;
+            
+            // 评分常量
+            const SCORE = {
+                FIVE: 10000000,   // 连五
+                LIVE4: 100000,    // 活四
+                DEAD4: 10000,     // 冲四 (死四)
+                LIVE3: 10000,     // 活三 (威胁度极高，等于冲四)
+                DEAD3: 1000,      // 眠三
+                LIVE2: 500,       // 活二
+                DEAD2: 100,       // 眠二
+                ONE:   10
+            };
 
-        function inBounds(x,y){ return x>=0 && x<SIZE && y>=0 && y<SIZE; }
+            // 保存最佳点集合，用于随机选择同分点
+            var bestPoints = [];
 
-        function countOccur(str, sub){
-            let c=0, idx=0;
-            while(true){
-                idx = str.indexOf(sub, idx);
-                if(idx === -1) break;
-                c++; idx += 1; // 允许重叠
-            }
-            return c;
-        }
-        function countAny(str, list){
-            let c=0;
-            for(const p of list) c += countOccur(str, p);
-            return c;
-        }
+            // 遍历棋盘所有空点进行打分
+            for(var i=0; i<15; i++){
+                for(var j=0; j<15; j++){
+                    if(chessBoard[i][j] === 0){
+                        // 1. 评估AI进攻分数 (我下这里好不好)
+                        var attackScore = evaluatePoint(i, j, 2, 1); 
+                        // 2. 评估人类防守分数 (不下这里会不会死)
+                        var defenseScore = evaluatePoint(i, j, 1, 2);
 
-        // 以(x,y)为落子点，获取某方向(-4..+4)的局部线串
-        function makeLineString(x,y,dx,dy,role){
-            let s='';
-            for(let k=-4;k<=4;k++){
-                const tx = x + dx*k;
-                const ty = y + dy*k;
-                if(!inBounds(tx,ty)){
-                    s += '2'; // 边界视为堵
-                }else if(tx===x && ty===y){
-                    s += '1';
-                }else{
-                    const v = chessBoard[tx][ty];
-                    if(v===0) s += '0';
-                    else if(v===role) s += '1';
-                    else s += '2';
-                }
-            }
-            return s;
-        }
+                        // 3. 综合评分策略
+                        // 如果进攻能成杀（成5），优先级无限高
+                        // 如果防守很紧急（对面活三/冲四），防守分会很高
+                        var finalScore = 0;
 
-        function analyzeMove(x,y,role){
-            const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-            const info = { five:0, openFour:0, rushFour:0, openThree:0, sleepThree:0, openTwo:0 };
-            for(const [dx,dy] of dirs){
-                const line = makeLineString(x,y,dx,dy,role);
-                if(line.indexOf('11111')!==-1) info.five++;
-                info.openFour  += countAny(line, PAT.OPEN_FOUR);
-                info.rushFour  += countAny(line, PAT.RUSH_FOUR);
-                info.openThree += countAny(line, PAT.OPEN_THREE);
-                info.sleepThree+= countAny(line, PAT.SLEEP_THREE);
-                info.openTwo   += countAny(line, PAT.OPEN_TWO);
-            }
-            return info;
-        }
+                        // 进攻权重大于防守，但如果防守是致命的，分数自然会高
+                        // 这里给进攻一点点加成，鼓励AI赢棋而不是被动挨打
+                        if(attackScore >= SCORE.FIVE) {
+                            finalScore = SCORE.FIVE * 2; // 必胜
+                        } else if(defenseScore >= SCORE.FIVE) {
+                            finalScore = SCORE.FIVE; // 必救
+                        } else {
+                            // 普通局面：攻击分 + 防守分
+                            // 稍微偏向攻击 (1.2倍)，形成“以攻代守”
+                            finalScore = attackScore * 1.2 + defenseScore;
+                        }
 
-        // 单点棋型评分（数值越大越优）
-        function moveScore(info){
-            if(info.five>0) return 1000000000;      // 成五
-            if(info.openFour>0) return 100000000;    // 活四（基本必胜）
-            if(info.rushFour>0 && info.openThree>0) return 50000000; // 三四
-            if(info.rushFour>=2) return 40000000;    // 双冲四
-            if(info.openThree>=2) return 30000000;   // 双三
-            if(info.rushFour>0) return 8000000 + info.rushFour*1000000;
-            if(info.openThree>0) return 2000000 + info.openThree*200000;
-            if(info.sleepThree>0) return 300000 + info.sleepThree*50000;
-            if(info.openTwo>0) return 20000 + info.openTwo*3000;
-            return 10;
-        }
-
-        function proximityBonus(i,j){
-            const dist = Math.abs(i-CENTER) + Math.abs(j-CENTER);
-            return 200 - dist*10;
-        }
-
-        // 快速启发式：进攻 + 防守 + 位置
-        function quickHeuristic(i,j,role){
-            const opp = (role===AI_ROLE) ? HUMAN_ROLE : AI_ROLE;
-            const a = moveScore(analyzeMove(i,j,role));
-            const d = moveScore(analyzeMove(i,j,opp));
-            return a*1.15 + d*1.05 + proximityBonus(i,j);
-        }
-
-        // 候选点：只考虑距离已有棋子 2 格内的空点（强AI常用剪枝）
-        function getCandidateMoves(){
-            const cand = new Set();
-            let hasPiece = false;
-            for(let i=0;i<SIZE;i++){
-                for(let j=0;j<SIZE;j++){
-                    if(chessBoard[i][j]!==0){
-                        hasPiece = true;
-                        for(let dx=-2;dx<=2;dx++){
-                            for(let dy=-2;dy<=2;dy++){
-                                const x=i+dx, y=j+dy;
-                                if(inBounds(x,y) && chessBoard[x][y]===0){
-                                    cand.add(x+','+y);
-                                }
-                            }
+                        if(finalScore > maxScore){
+                            maxScore = finalScore;
+                            bestPoints = [{i:i, j:j}];
+                        } else if(finalScore === maxScore){
+                            bestPoints.push({i:i, j:j});
                         }
                     }
                 }
             }
-            if(!hasPiece) return [{i:CENTER, j:CENTER}];
-            const arr=[];
-            cand.forEach(k=>{
-                const [x,y] = k.split(',').map(Number);
-                arr.push({i:x, j:y});
-            });
-            return arr;
+
+            // 决定落子坐标
+            if(bestPoints.length > 0){
+                // 如果有多个最高分点，稍微随机一下避免呆板，但优先选中间的
+                // 这里简单随机
+                var p = bestPoints[Math.floor(Math.random() * bestPoints.length)];
+                u = p.i; 
+                v = p.j;
+            } else {
+                u = 7; v = 7; // 兜底
+            }
+
+            // 执行落子
+            doAiMove(u, v);
+
+        }, 500); // 思考时间
+    }
+
+    // 在点(x,y)下 role 角色(1黑 2白) 的局势评分
+    // opponent 是对手角色
+    function evaluatePoint(x, y, role, opponent){
+        var totalScore = 0;
+        // 四个方向：横、竖、左斜、右斜
+        var dirs = [[1,0], [0,1], [1,1], [1,-1]];
+        
+        for(var k=0; k<dirs.length; k++){
+            var dx = dirs[k][0];
+            var dy = dirs[k][1];
+            
+            // 获取该方向上的线条 pattern
+            // 例如：以(x,y)为中心，向两边延伸4格，看连子情况
+            var lineAnalysis = getLineAnalysis(x, y, dx, dy, role, opponent);
+            totalScore += scorePattern(lineAnalysis.count, lineAnalysis.leftOpen, lineAnalysis.rightOpen, lineAnalysis.gap);
         }
+        return totalScore;
+    }
 
-        function checkFive(i,j,role){
-            const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-            for(const [dx,dy] of dirs){
-                let c=1;
-                let x=i+dx, y=j+dy;
-                while(inBounds(x,y) && chessBoard[x][y]===role){ c++; x+=dx; y+=dy; }
-                x=i-dx; y=j-dy;
-                while(inBounds(x,y) && chessBoard[x][y]===role){ c++; x-=dx; y-=dy; }
-                if(c>=5) return true;
-            }
-            return false;
-        }
+    // 分析单方向棋型
+    function getLineAnalysis(x, y, dx, dy, role, opponent){
+        var count = 1; // 当前落子算1个
+        var leftOpen = false;
+        var rightOpen = false;
+        var gap = 0; // 是否有跳子 (e.g. 1011)
 
-        // 走法排序与“必走点”优先级：
-        // 1) 当前角色可直接赢（成五）=> 只返回这些
-        // 2) 必须挡对手成五 => 只返回这些
-        // 3) 当前角色可下活四（强制赢）=> 只返回这些
-        // 4) 其余按启发式排序取前 limit 个
-        function getOrderedMoves(role, limit){
-            const opp = (role===AI_ROLE) ? HUMAN_ROLE : AI_ROLE;
-            let moves = getCandidateMoves();
-
-            // 1) 直接赢
-            const winMoves = [];
-            for(const m of moves){
-                const info = analyzeMove(m.i,m.j,role);
-                if(info.five>0) winMoves.push(m);
-            }
-            if(winMoves.length){
-                winMoves.sort((a,b)=>proximityBonus(b.i,b.j)-proximityBonus(a.i,a.j));
-                return winMoves;
-            }
-
-            // 2) 必挡对手成五
-            const blockWins = [];
-            for(const m of moves){
-                const infoOpp = analyzeMove(m.i,m.j,opp);
-                if(infoOpp.five>0) blockWins.push(m);
-            }
-            if(blockWins.length){
-                blockWins.sort((a,b)=>quickHeuristic(b.i,b.j,role)-quickHeuristic(a.i,a.j,role));
-                return blockWins;
-            }
-
-            // 3) 活四（强制赢）
-            const openFourMoves = [];
-            for(const m of moves){
-                const info = analyzeMove(m.i,m.j,role);
-                if(info.openFour>0) openFourMoves.push(m);
-            }
-            if(openFourMoves.length){
-                openFourMoves.sort((a,b)=>quickHeuristic(b.i,b.j,role)-quickHeuristic(a.i,a.j,role));
-                return openFourMoves;
-            }
-
-            // 4) 普通排序
-            moves.sort((a,b)=>quickHeuristic(b.i,b.j,role)-quickHeuristic(a.i,a.j,role));
-            if(limit && moves.length>limit) moves = moves.slice(0, limit);
-            return moves;
-        }
-
-        // 局面估值（AI 视角，分数越大越利于AI）
-        function evaluateBoard(turnRole){
-            const moves = getCandidateMoves();
-            if(moves.length===0) return 0;
-
-            let myTop = [0,0,0];
-            let oppTop = [0,0,0];
-            let myWinMoves=0, oppWinMoves=0;
-            let myOpenFourMoves=0, oppOpenFourMoves=0;
-
-            function pushTop(arr, val){
-                if(val>arr[0]){ arr[2]=arr[1]; arr[1]=arr[0]; arr[0]=val; return; }
-                if(val>arr[1]){ arr[2]=arr[1]; arr[1]=val; return; }
-                if(val>arr[2]){ arr[2]=val; }
-            }
-
-            for(const m of moves){
-                const mi = analyzeMove(m.i,m.j,AI_ROLE);
-                const oi = analyzeMove(m.i,m.j,HUMAN_ROLE);
-                const ms = moveScore(mi);
-                const os = moveScore(oi);
-
-                pushTop(myTop, ms);
-                pushTop(oppTop, os);
-
-                if(mi.five>0) myWinMoves++;
-                if(oi.five>0) oppWinMoves++;
-                if(mi.openFour>0) myOpenFourMoves++;
-                if(oi.openFour>0) oppOpenFourMoves++;
-            }
-
-            // 轮到谁走：若当前走子方有“立刻成五/立刻活四”，基本就是决定性优势
-            if(turnRole===AI_ROLE){
-                if(myWinMoves>0) return 900000000;
-                if(myOpenFourMoves>0) return 800000000;
-            }else{
-                if(oppWinMoves>0) return -900000000;
-                if(oppOpenFourMoves>0) return -800000000;
-            }
-
-            // 双杀（两处成五点）几乎无解
-            if(oppWinMoves>=2) return -900000000;
-            if(myWinMoves>=2) return 900000000;
-
-            const mySum  = myTop[0] + myTop[1]*0.6 + myTop[2]*0.3;
-            const oppSum = oppTop[0] + oppTop[1]*0.6 + oppTop[2]*0.3;
-
-            return mySum - oppSum*1.08;
-        }
-
-        function minimax(depth, alpha, beta, isMax){
-            if(depth<=0){
-                return evaluateBoard(isMax ? AI_ROLE : HUMAN_ROLE);
-            }
-
-            const role = isMax ? AI_ROLE : HUMAN_ROLE;
-            const limit = (depth>=3 ? 10 : 12);
-            const moves = getOrderedMoves(role, limit);
-            if(moves.length===0) return 0;
-
-            if(isMax){
-                let best=-Infinity;
-                for(const m of moves){
-                    chessBoard[m.i][m.j] = AI_ROLE;
-                    if(checkFive(m.i,m.j,AI_ROLE)){
-                        chessBoard[m.i][m.j] = 0;
-                        return 800000000 + depth*1000; // 越快赢越好
-                    }
-                    const val = minimax(depth-1, alpha, beta, false);
-                    chessBoard[m.i][m.j] = 0;
-
-                    if(val>best) best=val;
-                    if(best>alpha) alpha=best;
-                    if(beta<=alpha) break;
+        // 向正方向寻找
+        for(var i=1; i<=4; i++){
+            var tx = x + dx * i;
+            var ty = y + dy * i;
+            if(tx<0 || tx>=15 || ty<0 || ty>=15){ break; } // 边界
+            
+            var val = chessBoard[tx][ty];
+            if(val === role){
+                count++;
+            } else if(val === 0){
+                // 遇到空位，检查下一个是不是己方棋子（处理跳活三 1011）
+                // 仅当目前还没有gap且没有被阻断时检查跳子
+                if(tx + dx >=0 && tx + dx < 15 && ty + dy >=0 && ty + dy < 15 && chessBoard[tx+dx][ty+dy] === role){
+                   gap++; // 发现跳子结构，虽然不算连续，但在五子棋中威胁很大
+                   // 可以在这里做个标记，简单起见，我们只看连子
+                   // 为了简化算法，我们把跳子视为半个连子或特殊处理
+                   // 这里简单处理：遇到空位就停止连续计数，标记为Open
+                   rightOpen = true; 
+                } else {
+                   rightOpen = true;
                 }
-                return best;
-            }else{
-                let best=Infinity;
-                for(const m of moves){
-                    chessBoard[m.i][m.j] = HUMAN_ROLE;
-                    if(checkFive(m.i,m.j,HUMAN_ROLE)){
-                        chessBoard[m.i][m.j] = 0;
-                        return -800000000 - depth*1000; // 越快输越糟
-                    }
-                    const val = minimax(depth-1, alpha, beta, true);
-                    chessBoard[m.i][m.j] = 0;
-
-                    if(val<best) best=val;
-                    if(best<beta) beta=best;
-                    if(beta<=alpha) break;
-                }
-                return best;
+                break;
+            } else {
+                // 遇到对手
+                break;
             }
         }
 
-        function chooseSearchDepth(){
-            const n = getCandidateMoves().length;
-            if(n<=10) return 5;
-            if(n<=18) return 4;
-            return 3;
-        }
-
-        function findBestMove(){
-            if(moveHistory.length===0) return {i:CENTER, j:CENTER};
-
-            const depth = chooseSearchDepth();
-            const moves = getOrderedMoves(AI_ROLE, 12);
-
-            let bestMove = moves[0] || {i:CENTER, j:CENTER};
-            let bestScore = -Infinity;
-            let alpha = -Infinity;
-            const beta = Infinity;
-
-            for(const m of moves){
-                chessBoard[m.i][m.j] = AI_ROLE;
-
-                if(checkFive(m.i,m.j,AI_ROLE)){
-                    chessBoard[m.i][m.j] = 0;
-                    return m;
+        // 向反方向寻找
+        for(var i=1; i<=4; i++){
+            var tx = x - dx * i;
+            var ty = y - dy * i;
+            if(tx<0 || tx>=15 || ty<0 || ty>=15){ break; }
+            
+            var val = chessBoard[tx][ty];
+            if(val === role){
+                count++;
+            } else if(val === 0){
+                if(tx - dx >=0 && tx - dx < 15 && ty - dy >=0 && ty - dy < 15 && chessBoard[tx-dx][ty-dy] === role){
+                   gap++;
+                   leftOpen = true; 
+                } else {
+                   leftOpen = true;
                 }
-
-                const score = minimax(depth-1, alpha, beta, false);
-                chessBoard[m.i][m.j] = 0;
-
-                if(score>bestScore){
-                    bestScore=score;
-                    bestMove=m;
-                }else if(score===bestScore){
-                    // 同分时：更偏向中心（更稳健）
-                    if(proximityBonus(m.i,m.j) > proximityBonus(bestMove.i,bestMove.j)){
-                        bestMove=m;
-                    }
-                }
-
-                if(bestScore>alpha) alpha=bestScore;
+                break;
+            } else {
+                break;
             }
-
-            return bestMove;
         }
+        
+        return { count: count, leftOpen: leftOpen, rightOpen: rightOpen, gap: gap };
+    }
 
-        // 覆盖原 computerAI（其余逻辑保持不变）
-        window.computerAI = function(){
-            // 延迟落子以模拟思考
-            aiTimer = setTimeout(function () {
-                aiTimer = null;
-                if(over) return;
-
-                const m = findBestMove();
-                doAiMove(m.i, m.j);
-
-            }, 500);
+    // 根据棋型返回分数
+    function scorePattern(count, leftOpen, rightOpen, gap){
+        // 评分常量引用
+        const S = {
+            FIVE: 10000000, LIVE4: 100000, DEAD4: 10000,
+            LIVE3: 10000, DEAD3: 1000, LIVE2: 500, DEAD2: 100
         };
-    })();
+
+        if(count >= 5) return S.FIVE;
+
+        // 活四：两头空，4个子 (或者跳子形成的成5威胁)
+        if(count === 4){
+            if(leftOpen && rightOpen) return S.LIVE4;
+            if(leftOpen || rightOpen) return S.DEAD4;
+            return 0; // 死四无需处理
+        }
+
+        // 三连
+        if(count === 3){
+            // 活三：两头空 (01110)
+            if(leftOpen && rightOpen) return S.LIVE3;
+            // 眠三：一头空 (21110)
+            if(leftOpen || rightOpen) return S.DEAD3;
+            return 0;
+        }
+
+        // 二连
+        if(count === 2){
+            if(leftOpen && rightOpen) return S.LIVE2;
+            if(leftOpen || rightOpen) return S.DEAD2;
+            return 0;
+        }
+
+        // 处理特殊跳子情况 (简化版补丁)
+        // 如果虽然连子只有3或2，但有gap，可能构成 10111 (实际是4) 或 1011 (实际是活3)
+        // 这个简单的Pattern函数主要处理连续，跳子通过gap加分补偿
+        // 实际强AI需要更复杂的位运算，这里给gap加分以识别 1011 为威胁
+        if(gap > 0) {
+            // 如果只有3个子但有gap (1101)，其实相当于3个子的威胁，接近活3
+            if(count === 3 && (leftOpen || rightOpen)) return S.DEAD3 + 500; 
+        }
+
+        return 1;
+    }
 
     function doAiMove(i, j){
         chessBoard[i][j] = 2;
         moveHistory.push({i,j,player:2});
         lastAIMove = {i,j};
-
+        
         // 更新全局赢法判定
         for(let k=0;k<count;k++){
             if(wins[i][j][k]){
@@ -678,12 +514,7 @@
                 }
             }
         }
-
-        // AI下完也要检测是否填满棋盘（和棋）
-        if(!over && isBoardFull()){
-            endAsDraw();
-        }
-
+        
         if(!over) me = true;
         redrawAll();
     }
@@ -691,7 +522,6 @@
     // --------- 悔棋/重开 ----------
     function undoOnce(){
         const resultEl = document.getElementById('result-wrap');
-        if(over){ resultEl.innerHTML = '游戏已结束，无法悔棋'; return; }
         if(justUndid){ resultEl.innerHTML = '不能连续悔棋哦～'; return; }
         if(moveHistory.length===0){ resultEl.innerHTML = '当前无法悔棋'; return; }
 
@@ -700,7 +530,7 @@
             clearTimeout(aiTimer); aiTimer=null;
             const last = moveHistory.pop();
             chessBoard[last.i][last.j]=0;
-
+            
             me = true; over = false; winLine = null;
             document.querySelector('.btn-wrap').style.display='none';
             resultEl.innerHTML='--益智五子棋--';
@@ -722,7 +552,7 @@
 
         let stepAI = moveHistory.pop(); // AI
         chessBoard[stepAI.i][stepAI.j]=0;
-
+        
         let stepPlayer = moveHistory.pop(); // Player
         chessBoard[stepPlayer.i][stepPlayer.j]=0;
 
