@@ -13,9 +13,10 @@
             overflow:hidden;
             display:flex; flex-direction:column; justify-content:flex-start;
             height:100vh;
+            align-items:center; /* 使内容水平居中 */
         }
         canvas{
-            display:block; margin:12px auto 8px;
+            display:block; margin:8px auto 8px;
             box-shadow:0 4px 10px rgba(0,0,0,.1);
             cursor:pointer; background:#fff; border-radius:10px;
         }
@@ -49,12 +50,10 @@
             .btn{ padding:9px 16px; font-size:13px; }
         }
 
-        /* ========== 新增：右上角 Pro 按钮样式 ========== */
+        /* ========== 修改：将 Pro 按钮放在棋盘上方（非固定定位），并保持美观 ========== */
         .pro-btn{
-            position:fixed;
-            top:18px;
-            right:18px;
-            z-index:220;
+            /* 不再 fixed，改为在文档流中（位于 canvas 之上） */
+            position:relative;
             display:inline-flex;
             align-items:center;
             gap:10px;
@@ -72,7 +71,12 @@
             -webkit-backdrop-filter: blur(6px);
             border: 1px solid rgba(255,255,255,0.18);
             user-select:none;
+            margin-top:18px;
+            margin-bottom:6px;
+            z-index:2; /* 保持在普通内容之上，但不覆盖棋盘（因在棋盘上方的文档流中） */
         }
+        /* 把按钮居中：因为 body 使用 align-items:center，直接 display:inline-flex 就会居中显示 */
+
         .pro-btn .icon{
             display:inline-flex;
             align-items:center;
@@ -86,16 +90,16 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.12) inset;
         }
         .pro-btn:hover{
-            transform: translateY(-5px) scale(1.02);
+            transform: translateY(-3px) scale(1.02);
             box-shadow:0 16px 40px rgba(0,0,0,0.22);
             opacity:1;
         }
-        .pro-btn:active{ transform: translateY(-2px); }
+        .pro-btn:active{ transform: translateY(-1px); }
 
-        /* 小屏时只显示图标，避免遮挡视图 */
+        /* 小屏时仅显示图标以节省空间，仍位于棋盘上方但不会遮挡 */
         @media (max-width:600px){
             .pro-btn{
-                top:12px; right:12px;
+                margin-top:12px; margin-bottom:6px;
                 padding:8px;
                 width:44px;
                 height:44px;
@@ -104,14 +108,10 @@
             .pro-btn .label{ display:none; }
             .pro-btn .icon{ width:28px; height:28px; font-size:16px; }
         }
-        /* 可选： 在极小屏幕上隐藏（如果需要） */
-        @media (max-width:360px){
-            /* .pro-btn{ display:none; } */
-        }
     </style>
 </head>
 <body>
-    <!-- 右上角 Pro 模式按钮 -->
+    <!-- 现在按钮位于文档流中、棋盘上方（居中），不会覆盖棋盘 -->
     <a id="proBtn" class="pro-btn" href="/%E4%BA%94%E5%AD%90%E6%A3%8BPro" title="进入 Pro 模式" role="button" aria-label="进入 Pro 模式">
         <span class="icon">⭐</span>
         <span class="label">进入Pro模式</span>
@@ -628,7 +628,7 @@
 
         recomputeWins();
         lastAIMove = null;
-        for(let t=moveHistory.length-1;t>=0;t--){
+        for(let t=moveHistory.length-1;t>=0;t--){ 
             if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
         }
         redrawAll();
