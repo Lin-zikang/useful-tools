@@ -13,6 +13,7 @@
             overflow:hidden;
             display:flex; flex-direction:column; justify-content:flex-start;
             height:100vh;
+            box-sizing: border-box; /* 确保padding计算在高度内 */
         }
         canvas{
             display:block; margin:12px auto 8px;
@@ -43,13 +44,8 @@
             color:#fff; background:#6a85b3; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
             transition: background-color .3s, transform .3s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .btn-wrap span:hover{ background:#4e6498; transform:scale(1.1); }
-        @media (max-width:600px){
-            canvas{ width:90%; height:auto; }
-            #result-wrap{ font-size:18px; }
-            .btn{ padding:9px 16px; font-size:13px; }
-        }
-
-        /* ========== 新增：右上角 Pro 按钮样式 ========== */
+        
+        /* ========== Pro 按钮样式 ========== */
         .pro-btn{
             position:fixed;
             top:18px;
@@ -92,26 +88,33 @@
         }
         .pro-btn:active{ transform: translateY(-2px); }
 
-        /* 小屏时只显示图标，避免遮挡视图 */
+        /* ========== 移动端适配修改 ========== */
         @media (max-width:600px){
+            body {
+                /* 给顶部留出空间放置按钮，防止遮挡棋盘 */
+                padding-top: 60px; 
+            }
+            canvas{ 
+                width:90%; height:auto; 
+                margin-top: 0; /* 顶部距离由body padding控制 */
+            }
+            #result-wrap{ font-size:18px; }
+            .btn{ padding:9px 16px; font-size:13px; }
+
+            /* 移动端优化 Pro 按钮位置，放在 padding 留出的空白区 */
             .pro-btn{
-                top:12px; right:12px;
-                padding:8px;
-                width:44px;
-                height:44px;
-                justify-content:center;
+                top: 8px; 
+                right: 12px;
+                padding: 6px 12px; /* 稍微缩小一点 */
+                height: 36px;
+                box-sizing: border-box;
             }
             .pro-btn .label{ display:none; }
-            .pro-btn .icon{ width:28px; height:28px; font-size:16px; }
-        }
-        /* 可选： 在极小屏幕上隐藏（如果需要） */
-        @media (max-width:360px){
-            /* .pro-btn{ display:none; } */
+            .pro-btn .icon{ width:24px; height:24px; font-size:14px; }
         }
     </style>
 </head>
 <body>
-    <!-- 右上角 Pro 模式按钮 -->
     <a id="proBtn" class="pro-btn" href="/%E4%BA%94%E5%AD%90%E6%A3%8BPro" title="进入 Pro 模式" role="button" aria-label="进入 Pro 模式">
         <span class="icon">⭐</span>
         <span class="label">进入Pro模式</span>
@@ -333,20 +336,38 @@
             moveHistory.push({i,j,player:1});
             winLine=null;
 
+            // 检查平局：15*15=225，下满且无人胜则平局
+            // 因为玩家先手，满盘时一定是玩家落完最后一子
+            let isDraw = false;
+            if (moveHistory.length === 225) {
+                isDraw = true;
+            }
+
             // 更新赢法统计（仅用于判断胜负）
+            let playerWon = false;
             for(let k=0;k<count;k++){
                 if(wins[i][j][k]){
                     myWin[k]++; computerWin[k]=6;
                     if(myWin[k]===5){
                         resultEl.innerHTML='恭喜，你赢了！';
                         over=true;
+                        playerWon = true;
                         winLine = getWinningLine(i,j,1);
                         document.querySelector('.btn-wrap').style.display='flex';
-                        setControlsVisible(false);
+                        setControlsVisible(false); // 游戏结束，隐藏控制栏（也就禁止了悔棋）
                     }
                 }
             }
             redrawAll();
+
+            // 如果已经赢了，就不判定平局了
+            if (!playerWon && isDraw) {
+                resultEl.innerHTML = '棋逢对手，平局！';
+                over = true;
+                document.querySelector('.btn-wrap').style.display = 'flex';
+                setControlsVisible(false); // 平局，隐藏控制栏（禁止悔棋）
+                return;
+            }
 
             if(!over){
                 me=false;
@@ -587,6 +608,9 @@
 
     // --------- 悔棋/重开 ----------
     function undoOnce(){
+        // 如果游戏结束（包括平局），严格禁止悔棋
+        if(over) return;
+
         const resultEl = document.getElementById('result-wrap');
         if(justUndid){ resultEl.innerHTML = '不能连续悔棋哦～'; return; }
         if(moveHistory.length===0){ resultEl.innerHTML = '当前无法悔棋'; return; }
