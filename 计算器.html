@@ -2,192 +2,534 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
-  <title>计算器</title>
-  <!-- 引入 Big.js 库 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/big.js/6.1.1/big.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+ <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <title>Calculator</title>
+  
   <style>
-    /* 全局背景动画（蓝色渐变） */
-    @keyframes backgroundMove {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    /* --- 核心修复：布局锁定 --- */
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
-    body {
+
+    html, body {
       margin: 0;
-      min-height: 100vh;
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(-45deg, #a1c4fd, #c2e9fb, #a1c4fd, #c2e9fb);
-      background-size: 400% 400%;
-      animation: backgroundMove 15s ease infinite;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden; /* 彻底禁止滚动 */
+      position: fixed; /* 强制固定，防止iOS回弹 */
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: linear-gradient(135deg, #1c262e, #233440, #0f1418);
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 10px;
     }
-    /* 计算器容器：采用蓝白渐变 */
+
+    /* 背景光效动画 */
+    .bg-glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 30%, rgba(79, 172, 254, 0.15), transparent 60%);
+      animation: breathe 8s ease-in-out infinite alternate;
+    }
+    @keyframes breathe {
+      0% { opacity: 0.5; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1.05); }
+    }
+
+    /* --- 计算器主体 --- */
     .calculator {
-      width: 100%;
-      max-width: 350px;
-      padding: 20px;
-      border: none;
-      border-radius: 20px;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
-      background: linear-gradient(to bottom right, #ffffff, #e0f7fa);
+      width: 90vw;
+      max-width: 380px;
+      /* 限制高度，适配小屏手机 */
+      height: 90vh; 
+      max-height: 700px; 
+      padding: 24px;
+      /* 高级玻璃拟态 */
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 32px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
       position: relative;
-      overflow: hidden;
     }
-    /* 显示区域：蓝色调背景 */
-    .display {
-      width: 100%;
-      height: 50px;
-      font-size: 24px;
+
+    /* 顶部栏 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      height: 30px;
+      flex-shrink: 0; /* 防止被压缩 */
+    }
+    .app-title {
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* 开关组件 */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.3);
+      transition: .3s;
+      border-radius: 34px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #fff;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #0088cc; border-color: #0088cc; }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    /* --- 屏幕区域 --- */
+    .screen {
+      flex-grow: 1; /* 占据剩余空间 */
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 20px;
+      padding: 15px 20px;
       text-align: right;
       margin-bottom: 20px;
-      padding: 10px;
-      border: none;
-      border-radius: 10px;
-      background: #e1f5fe;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+      min-height: 120px; /* 保证最小高度 */
     }
-    /* 按钮区域采用网格布局，自适应调整 */
-    .buttons {
+    
+    #history-display {
+      font-family: monospace;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      height: 20px;
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #main-display {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 42px;
+      text-align: right;
+      font-family: 'SF Pro Display', sans-serif;
+      font-weight: 300;
+      padding: 0;
+      margin: 0;
+      outline: none;
+      word-break: break-all;
+      line-height: 1.1;
+      /* 处理长结果显示 */
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    /* 隐藏滚动条 */
+    #main-display::-webkit-scrollbar { width: 0; }
+
+    /* --- 键盘区域 --- */
+    .keypad {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
+      flex-shrink: 0; /* 键盘不可压缩 */
+      height: auto;
     }
-    /* 按钮样式：蓝色渐变背景，白色文字 */
-    .button {
+
+    .btn {
       position: relative;
-      overflow: hidden;
-      padding: 15px;
-      font-size: 18px;
-      text-align: center;
-      background: linear-gradient(135deg, #42a5f5, #1e88e5);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e0e0e0;
+      font-size: 20px;
+      /* 自适应高度，保持方形比例 */
+      aspect-ratio: 1.3; 
+      border-radius: 16px;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.1s;
+      user-select: none;
+      font-family: inherit;
     }
-    .button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+
+    .btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.15);
     }
-    .button:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+
+    /* 颜色分类 */
+    .btn.ac { color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
+    .btn.del { color: #ff6b6b; font-size: 16px; }
+    .btn.func { color: #5dade2; font-size: 16px; }
+    .btn.op { color: #4fc3f7; font-size: 24px; font-weight: 400; }
+    
+    .btn.equal {
+      grid-column: span 2;
+      aspect-ratio: auto; /* 覆盖比例 */
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      box-shadow: 0 4px 20px rgba(0, 114, 255, 0.4);
     }
-    /* 水波纹动画 */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.4);
-      transform: scale(0);
-      animation: rippleEffect 600ms linear;
-      pointer-events: none;
-    }
-    @keyframes rippleEffect {
-      to {
-        transform: scale(4);
-        opacity: 0;
-      }
-    }
-    /* 针对移动设备的响应式调整 */
-    @media (max-width: 480px) {
-      .display { font-size: 20px; height: 45px; }
-      .button { padding: 12px; font-size: 16px; }
+
+    /* 适配极小屏幕 */
+    @media (max-height: 650px) {
+      .calculator { padding: 15px; border-radius: 20px; }
+      .screen { min-height: 80px; margin-bottom: 10px; }
+      .keypad { gap: 8px; }
+      .btn { font-size: 18px; border-radius: 12px; }
     }
   </style>
 </head>
 <body>
+
+  <div class="bg-glow"></div>
+
   <div class="calculator">
-    <input type="text" class="display" id="display" readonly />
-    <div class="buttons">
-      <div class="button" onclick="appendToDisplay('(')">(</div>
-      <div class="button" onclick="appendToDisplay(')')">)</div>
-      <div class="button" onclick="clearDisplay()">C</div>
-      <div class="button" onclick="backspace()">←</div>
-      <div class="button" onclick="appendToDisplay('^')">^</div>
-      <div class="button" onclick="appendToDisplay('7')">7</div>
-      <div class="button" onclick="appendToDisplay('8')">8</div>
-      <div class="button" onclick="appendToDisplay('9')">9</div>
-      <div class="button" onclick="appendToDisplay('/')">/</div>
-      <div class="button" onclick="appendToDisplay('4')">4</div>
-      <div class="button" onclick="appendToDisplay('5')">5</div>
-      <div class="button" onclick="appendToDisplay('6')">6</div>
-      <div class="button" onclick="appendToDisplay('*')">*</div>
-      <div class="button" onclick="appendToDisplay('1')">1</div>
-      <div class="button" onclick="appendToDisplay('2')">2</div>
-      <div class="button" onclick="appendToDisplay('3')">3</div>
-      <div class="button" onclick="appendToDisplay('-')">-</div>
-      <div class="button" onclick="appendToDisplay('0')">0</div>
-      <div class="button" onclick="appendToDisplay('.')">.</div>
-      <div class="button" onclick="calculate()">=</div>
-      <div class="button" onclick="appendToDisplay('+')">+</div>
-      <div class="button" onclick="appendToDisplay('sin(')">sin</div>
-      <div class="button" onclick="appendToDisplay('cos(')">cos</div>
-      <div class="button" onclick="appendToDisplay('tan(')">tan</div>
-      <div class="button" onclick="appendToDisplay('ln(')">ln</div>
-      <div class="button" onclick="appendToDisplay('log(')">log</div>
-      <div class="button" onclick="appendToDisplay('sqrt(')">√</div>
-      <div class="button" onclick="appendToDisplay('e')">e</div>
-      <div class="button" onclick="appendToDisplay('pi')">π</div>
+    <div class="header">
+      <div class="app-title">Scientific Calc</div>
+      <div class="switch-container">
+        <span>High Precision</span>
+        <label class="switch">
+          <input type="checkbox" id="precision-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div id="history-display"></div>
+      <textarea id="main-display" readonly>0</textarea>
+    </div>
+
+    <div class="keypad">
+      <div class="btn ac" onclick="calc.clear()">AC</div>
+      <div class="btn del" onclick="calc.del()">DEL</div>
+      <div class="btn func" onclick="calc.append('(')">(</div>
+      <div class="btn func" onclick="calc.append(')')">)</div>
+
+      <div class="btn func" onclick="calc.append('sin(')">sin</div>
+      <div class="btn func" onclick="calc.append('cos(')">cos</div>
+      <div class="btn func" onclick="calc.append('sqrt(')">√</div>
+      <div class="btn func" onclick="calc.append('^')">^</div>
+
+      <div class="btn func" onclick="calc.append('pi')">π</div>
+      <div class="btn func" onclick="calc.append('e')">e</div>
+      <div class="btn func" onclick="calc.append('log(')">log</div>
+      <div class="btn op" onclick="calc.append('/')">÷</div>
+
+      <div class="btn" onclick="calc.append('7')">7</div>
+      <div class="btn" onclick="calc.append('8')">8</div>
+      <div class="btn" onclick="calc.append('9')">9</div>
+      <div class="btn op" onclick="calc.append('*')">×</div>
+
+      <div class="btn" onclick="calc.append('4')">4</div>
+      <div class="btn" onclick="calc.append('5')">5</div>
+      <div class="btn" onclick="calc.append('6')">6</div>
+      <div class="btn op" onclick="calc.append('-')">-</div>
+
+      <div class="btn" onclick="calc.append('1')">1</div>
+      <div class="btn" onclick="calc.append('2')">2</div>
+      <div class="btn" onclick="calc.append('3')">3</div>
+      <div class="btn op" onclick="calc.append('+')">+</div>
+
+      <div class="btn" onclick="calc.append('0')">0</div>
+      <div class="btn" onclick="calc.append('.')">.</div>
+      <div class="btn equal" onclick="calc.calculate()">=</div>
     </div>
   </div>
 
   <script>
-    // 按钮点击水波纹效果
-    document.querySelectorAll('.button').forEach(button => {
-      button.addEventListener('click', function (e) {
-        const ripple = document.createElement('span');
-        ripple.classList.add('ripple');
-        const rect = this.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = e.clientX - rect.left - size / 2 + 'px';
-        ripple.style.top = e.clientY - rect.top - size / 2 + 'px';
-        this.appendChild(ripple);
-        setTimeout(() => {
-          ripple.remove();
-        }, 600);
-      });
-    });
+    /**
+     * 高精度运算核心 - BigInt Fraction 实现
+     * 修复了：
+     * 1. 整数显示为 .00... 的问题
+     * 2. 有限小数显示多余零的问题
+     * 3. 循环节判定逻辑
+     */
+    const BigMath = {
+      // 字符串转分数
+      toFraction(str) {
+        try {
+          if (str.includes('.')) {
+            const [int, dec] = str.split('.');
+            const d = 10n ** BigInt(dec.length);
+            const n = BigInt(int) * d + BigInt(dec);
+            return { n, d };
+          } else {
+            return { n: BigInt(str), d: 1n };
+          }
+        } catch (e) { return { n: 0n, d: 1n }; } // 容错
+      },
+      
+      // 分数运算
+      add(a, b) { return { n: a.n * b.d + b.n * a.d, d: a.d * b.d }; },
+      sub(a, b) { return { n: a.n * b.d - b.n * a.d, d: a.d * b.d }; },
+      mul(a, b) { return { n: a.n * b.n, d: a.d * b.d }; },
+      div(a, b) { 
+        if (b.n === 0n) throw new Error("Div0");
+        let res = { n: a.n * b.d, d: a.d * b.n };
+        if (res.d < 0n) { res.n = -res.n; res.d = -res.d; } // 保持分母为正
+        return res;
+      },
+      pow(a, b) {
+        // 简单整数幂支持
+        const exp = Number(b.n) / Number(b.d);
+        if (Number.isInteger(exp) && exp >= 0) {
+           return { n: a.n ** BigInt(exp), d: a.d ** BigInt(exp) };
+        }
+        throw new Error("ComplexPow"); // 浮点幂回退到普通计算
+      },
 
-    function appendToDisplay(value) {
-      document.getElementById('display').value += value;
-    }
-    function clearDisplay() {
-      document.getElementById('display').value = '';
-    }
-    // 退格键功能
-    function backspace() {
-      let display = document.getElementById('display');
-      display.value = display.value.slice(0, -1);
-    }
-    function calculate() {
-      try {
-        let expression = document.getElementById('display').value;
-        // 替换数学函数和常量
-        expression = expression.replace(/sin\(/g, 'Math.sin(')
-          .replace(/cos\(/g, 'Math.cos(')
-          .replace(/tan\(/g, 'Math.tan(')
-          .replace(/ln\(/g, 'Math.log(')
-          .replace(/log\(/g, 'Math.log10(')
-          .replace(/sqrt\(/g, 'Math.sqrt(')
-          .replace(/\^/g, '**')
-          .replace(/e/g, 'Math.E')
-          .replace(/pi/g, 'Math.PI');
-        let result = eval(expression);
-        let bigResult = new Big(result);
-        // 直接用 toString() 输出，无需额外补零
-        document.getElementById('display').value = bigResult.toString();
-      } catch (error) {
-        document.getElementById('display').value = 'Error';
+      // 核心：格式化输出
+      format(frac) {
+        let n = frac.n;
+        let d = frac.d;
+        if (d === 0n) return "Error";
+
+        // 处理符号
+        let sign = "";
+        if (n < 0n) { sign = "-"; n = -n; }
+
+        // 1. 整数部分
+        let integerPart = n / d;
+        let remainder = n % d;
+
+        // 【关键修复】如果整除，立即返回，不进小数逻辑
+        if (remainder === 0n) {
+          return sign + integerPart.toString();
+        }
+
+        // 2. 小数部分
+        let resStr = sign + integerPart.toString() + ".";
+        let remMap = new Map(); // 用于检测循环
+        let decimalPart = "";
+        
+        // 最多计算150位用于检测
+        for (let i = 0; i < 150; i++) {
+          remainder *= 10n;
+          let digit = remainder / d;
+          
+          // 记录当前余数的位置
+          if (remMap.has(remainder)) {
+            // 发现循环！
+            let start = remMap.get(remainder);
+            let preCycle = decimalPart.substring(0, start);
+            let cycle = decimalPart.substring(start);
+            // 显示规则：非循环 + 循环 + 循环 + ...
+            return resStr + preCycle + cycle + cycle + "...";
+          }
+          
+          remMap.set(remainder, decimalPart.length);
+          decimalPart += digit.toString();
+          remainder %= d;
+
+          // 【关键修复】如果除尽了（有限小数），立即停止
+          if (remainder === 0n) {
+            return resStr + decimalPart;
+          }
+        }
+
+        // 3. 超过150位还没除尽，截取前100位
+        return resStr + decimalPart.substring(0, 100) + "...";
       }
-    }
+    };
+
+    /**
+     * UI控制器
+     */
+    const calc = {
+      display: document.getElementById('main-display'),
+      history: document.getElementById('history-display'),
+      toggle: document.getElementById('precision-toggle'),
+      expr: '',
+      isResult: false,
+
+      append(val) {
+        if (this.isResult) {
+          // 如果刚算出结果，输入运算符则继续，输入数字则清空
+          if (['+','-','*','/','^'].includes(val)) {
+            this.isResult = false;
+          } else {
+            this.expr = '';
+            this.isResult = false;
+          }
+        }
+        this.expr += val;
+        this.updateView();
+      },
+
+      del() {
+        if (this.isResult) {
+          this.expr = '';
+          this.isResult = false;
+        } else {
+          this.expr = this.expr.slice(0, -1);
+        }
+        this.updateView();
+      },
+
+      clear() {
+        this.expr = '';
+        this.history.innerText = '';
+        this.display.value = '0';
+        this.isResult = false;
+      },
+
+      updateView() {
+        let view = this.expr.replace(/\*/g, '×').replace(/\//g, '÷');
+        this.display.value = view || '0';
+        this.display.scrollTop = this.display.scrollHeight;
+      },
+
+      calculate() {
+        if (!this.expr) return;
+        
+        // 视觉历史记录
+        this.history.innerText = this.expr.replace(/\*/g, '×').replace(/\//g, '÷') + ' =';
+        
+        try {
+          // 检查是否包含不支持高精度的函数（sin, cos, pi等）
+          const hasFunc = /[a-z]/.test(this.expr); 
+          const isHighPrec = this.toggle.checked;
+
+          if (!hasFunc && isHighPrec) {
+            // 走纯高精度分数引擎
+            let res = this.evaluateHighPrec(this.expr);
+            this.display.value = res;
+            // 为了能够继续计算，我们需要把结果（如果是字符串）也设为 expr
+            // 注意：带 ... 的结果不能直接用于下一次精确运算，这里清空 expr 防止逻辑混乱
+            // 或者如果结果是精确的数字，可以保留
+            if (res.includes('...')) {
+                this.expr = ''; // 模糊结果不能参与下一次精确运算
+            } else {
+                this.expr = res;
+            }
+          } else {
+            // 走普通 JS 引擎 (eval降级)
+            let res = this.evaluateStandard(this.expr);
+            this.display.value = res;
+            this.expr = res;
+          }
+          this.isResult = true;
+        } catch (e) {
+          this.display.value = "Error";
+          console.error(e);
+          this.expr = '';
+        }
+      },
+
+      // 标准计算 (Function eval)
+      evaluateStandard(str) {
+        let safe = str
+          .replace(/sin/g, 'Math.sin')
+          .replace(/cos/g, 'Math.cos')
+          .replace(/tan/g, 'Math.tan')
+          .replace(/sqrt/g, 'Math.sqrt')
+          .replace(/log/g, 'Math.log10')
+          .replace(/pi/g, 'Math.PI')
+          .replace(/e/g, 'Math.E')
+          .replace(/\^/g, '**');
+        let res = new Function('return ' + safe)();
+        // 修复 js 浮点数精度 bug (0.3000000004)
+        return parseFloat(res.toPrecision(14)).toString();
+      },
+
+      // 高精度计算调度 (RPN算法)
+      evaluateHighPrec(str) {
+        // 简单的词法分析
+        const tokens = str.match(/(\d+\.\d+|\d+|[\+\-\*\/^()])/g);
+        if (!tokens) return "0";
+
+        // 1. 中缀转后缀 (Shunting Yard)
+        const output = [];
+        const stack = [];
+        const precedence = { '+':1, '-':1, '*':2, '/':2, '^':3 };
+        
+        tokens.forEach(token => {
+          if (!isNaN(token)) {
+            output.push(BigMath.toFraction(token));
+          } else if ('+-*/^'.includes(token)) {
+            while (stack.length && stack[stack.length-1] !== '(' && 
+                   precedence[stack[stack.length-1]] >= precedence[token]) {
+              output.push(stack.pop());
+            }
+            stack.push(token);
+          } else if (token === '(') {
+            stack.push(token);
+          } else if (token === ')') {
+            while (stack.length && stack[stack.length-1] !== '(') {
+              output.push(stack.pop());
+            }
+            stack.pop();
+          }
+        });
+        while (stack.length) output.push(stack.pop());
+
+        // 2. 计算后缀表达式
+        const calcStack = [];
+        for (let item of output) {
+          if (typeof item === 'object') {
+            calcStack.push(item);
+          } else {
+            const b = calcStack.pop();
+            const a = calcStack.pop();
+            if (!a || !b) throw new Error("Format");
+            
+            let res;
+            switch(item) {
+              case '+': res = BigMath.add(a, b); break;
+              case '-': res = BigMath.sub(a, b); break;
+              case '*': res = BigMath.mul(a, b); break;
+              case '/': res = BigMath.div(a, b); break;
+              case '^': res = BigMath.pow(a, b); break;
+            }
+            calcStack.push(res);
+          }
+        }
+        
+        return BigMath.format(calcStack[0]);
+      }
+    };
   </script>
 </body>
 </html>
