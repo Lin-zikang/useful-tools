@@ -4,556 +4,190 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
-  <title></title>计算器</title>
+  <title>计算器</title>
+  <!-- 引入 Big.js 库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/big.js/6.1.1/big.min.js"></script>
   <style>
-    /* --- 核心修复：禁止滚动与触摸优化 --- */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden; /* 禁止滚动 */
-      touch-action: manipulation; /* 优化触摸响应，禁止双击缩放 */
-      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      /* 动态深色流光背景 */
-      background: linear-gradient(135deg, #1a1f25, #2c3e50, #000000);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
-    }
-
-    @keyframes gradientBG {
+    /* 全局背景动画（蓝色渐变） */
+    @keyframes backgroundMove {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
-    /* --- 玻璃拟态计算器容器 --- */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(-45deg, #a1c4fd, #c2e9fb, #a1c4fd, #c2e9fb);
+      background-size: 400% 400%;
+      animation: backgroundMove 15s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+    /* 计算器容器：采用蓝白渐变 */
     .calculator {
       width: 100%;
-      max-width: 360px; /* 限制最大宽度，适配手机 */
-      height: auto;
+      max-width: 350px;
       padding: 20px;
-      /* 高级磨砂玻璃效果 */
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 30px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box; /* 防止padding撑开宽度 */
-    }
-
-    /* 顶部栏 */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding: 0 5px;
-    }
-    .app-title {
-      font-size: 12px;
-      letter-spacing: 1.5px;
-      color: rgba(255, 255, 255, 0.6);
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    /* 开关样式 */
-    .switch-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.8);
-    }
-    .switch {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(to bottom right, #ffffff, #e0f7fa);
       position: relative;
-      display: inline-block;
-      width: 36px;
-      height: 20px;
+      overflow: hidden;
     }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0, 0, 0, 0.4);
-      transition: .4s;
-      border-radius: 20px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 2px;
-      bottom: 2px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider { background-color: #00f2fe; }
-    input:checked + .slider:before { transform: translateX(16px); }
-
-    /* --- 显示屏区域 --- */
-    .screen {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 20px;
-      padding: 15px 20px;
+    /* 显示区域：蓝色调背景 */
+    .display {
+      width: 100%;
+      height: 50px;
+      font-size: 24px;
       text-align: right;
       margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      min-height: 110px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    #history-display {
-      font-family: 'Menlo', monospace;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.5);
-      min-height: 20px;
-      margin-bottom: 5px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    #main-display {
-      width: 100%;
-      background: transparent;
+      padding: 10px;
       border: none;
-      color: #fff;
-      font-size: 36px;
-      text-align: right;
-      font-family: 'SF Pro Display', sans-serif;
-      font-weight: 300;
-      padding: 0;
-      margin: 0;
-      resize: none;
-      outline: none;
-      /* 允许长文本换行，但在普通模式下单行 */
-      white-space: pre-wrap; 
-      word-break: break-all;
-      overflow-y: auto;
-      max-height: 120px; /* 限制结果高度，防止撑破布局 */
-      line-height: 1.2;
+      border-radius: 10px;
+      background: #e1f5fe;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    /* 滚动条隐藏 */
-    #main-display::-webkit-scrollbar { width: 0; }
-
-    /* --- 键盘区域 --- */
-    .keypad {
+    /* 按钮区域采用网格布局，自适应调整 */
+    .buttons {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
-
-    .btn {
+    /* 按钮样式：蓝色渐变背景，白色文字 */
+    .button {
       position: relative;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      color: #fff;
+      overflow: hidden;
+      padding: 15px;
       font-size: 18px;
-      height: 55px; /* 固定高度 */
-      border-radius: 16px;
-      cursor: pointer;
-      outline: none;
-      user-select: none;
-      transition: background 0.2s, transform 0.1s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: inherit;
-    }
-
-    .btn:active {
-      transform: scale(0.95);
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .btn.clear { color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
-    .btn.func { color: #4facfe; font-size: 16px; }
-    .btn.op { color: #00f2fe; font-size: 22px; }
-    
-    .btn.equal {
-      grid-column: span 2;
-      background: linear-gradient(90deg, #4facfe, #00f2fe);
-      border: none;
+      text-align: center;
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
       color: #fff;
-      font-weight: 600;
-      font-size: 24px;
-      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     }
-    .btn.equal:active { opacity: 0.8; }
-
-    /* 水波纹效果 */
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    }
+    .button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    /* 水波纹动画 */
     .ripple {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.4);
       transform: scale(0);
-      animation: ripple 0.4s linear;
+      animation: rippleEffect 600ms linear;
       pointer-events: none;
     }
-    @keyframes ripple {
-      to { transform: scale(3); opacity: 0; }
+    @keyframes rippleEffect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    /* 针对移动设备的响应式调整 */
+    @media (max-width: 480px) {
+      .display { font-size: 20px; height: 45px; }
+      .button { padding: 12px; font-size: 16px; }
     }
   </style>
 </head>
 <body>
-
   <div class="calculator">
-    <div class="header">
-      <div class="app-title">Scientific Calc</div>
-      <div class="switch-container">
-        <span>高精度模式</span>
-        <label class="switch">
-          <input type="checkbox" id="precision-toggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <div class="screen">
-      <div id="history-display"></div>
-      <textarea id="main-display" readonly>0</textarea>
-    </div>
-
-    <div class="keypad">
-      <button class="btn clear" onclick="action('AC')">AC</button>
-      <button class="btn clear" onclick="action('DEL')">DEL</button>
-      <button class="btn func" onclick="append('(')">(</button>
-      <button class="btn func" onclick="append(')')">)</button>
-
-      <button class="btn func" onclick="append('sin(')">sin</button>
-      <button class="btn func" onclick="append('cos(')">cos</button>
-      <button class="btn func" onclick="append('sqrt(')">√</button>
-      <button class="btn func" onclick="append('^')">^</button>
-
-      <button class="btn func" onclick="append('pi')">π</button>
-      <button class="btn func" onclick="append('e')">e</button>
-      <button class="btn func" onclick="append('log(')">log</button>
-      <button class="btn op" onclick="append('/')">÷</button>
-
-      <button class="btn" onclick="append('7')">7</button>
-      <button class="btn" onclick="append('8')">8</button>
-      <button class="btn" onclick="append('9')">9</button>
-      <button class="btn op" onclick="append('*')">×</button>
-
-      <button class="btn" onclick="append('4')">4</button>
-      <button class="btn" onclick="append('5')">5</button>
-      <button class="btn" onclick="append('6')">6</button>
-      <button class="btn op" onclick="append('-')">-</button>
-
-      <button class="btn" onclick="append('1')">1</button>
-      <button class="btn" onclick="append('2')">2</button>
-      <button class="btn" onclick="append('3')">3</button>
-      <button class="btn op" onclick="append('+')">+</button>
-
-      <button class="btn" onclick="append('0')">0</button>
-      <button class="btn" onclick="append('.')">.</button>
-      <button class="btn equal" onclick="calculate()">=</button>
+    <input type="text" class="display" id="display" readonly />
+    <div class="buttons">
+      <div class="button" onclick="appendToDisplay('(')">(</div>
+      <div class="button" onclick="appendToDisplay(')')">)</div>
+      <div class="button" onclick="clearDisplay()">C</div>
+      <div class="button" onclick="backspace()">←</div>
+      <div class="button" onclick="appendToDisplay('^')">^</div>
+      <div class="button" onclick="appendToDisplay('7')">7</div>
+      <div class="button" onclick="appendToDisplay('8')">8</div>
+      <div class="button" onclick="appendToDisplay('9')">9</div>
+      <div class="button" onclick="appendToDisplay('/')">/</div>
+      <div class="button" onclick="appendToDisplay('4')">4</div>
+      <div class="button" onclick="appendToDisplay('5')">5</div>
+      <div class="button" onclick="appendToDisplay('6')">6</div>
+      <div class="button" onclick="appendToDisplay('*')">*</div>
+      <div class="button" onclick="appendToDisplay('1')">1</div>
+      <div class="button" onclick="appendToDisplay('2')">2</div>
+      <div class="button" onclick="appendToDisplay('3')">3</div>
+      <div class="button" onclick="appendToDisplay('-')">-</div>
+      <div class="button" onclick="appendToDisplay('0')">0</div>
+      <div class="button" onclick="appendToDisplay('.')">.</div>
+      <div class="button" onclick="calculate()">=</div>
+      <div class="button" onclick="appendToDisplay('+')">+</div>
+      <div class="button" onclick="appendToDisplay('sin(')">sin</div>
+      <div class="button" onclick="appendToDisplay('cos(')">cos</div>
+      <div class="button" onclick="appendToDisplay('tan(')">tan</div>
+      <div class="button" onclick="appendToDisplay('ln(')">ln</div>
+      <div class="button" onclick="appendToDisplay('log(')">log</div>
+      <div class="button" onclick="appendToDisplay('sqrt(')">√</div>
+      <div class="button" onclick="appendToDisplay('e')">e</div>
+      <div class="button" onclick="appendToDisplay('pi')">π</div>
     </div>
   </div>
 
   <script>
-    /* =========================================
-       纯手写逻辑核心 (无外部库)
-       ========================================= */
-    const display = document.getElementById('main-display');
-    const history = document.getElementById('history-display');
-    const toggle = document.getElementById('precision-toggle');
-    let expr = "";
-    let lastResult = false;
-
-    // --- 按钮交互逻辑 ---
-    
-    function append(val) {
-      if (lastResult) {
-        // 如果刚算完，输入数字则清空，输入运算符则继续
-        if ("+-*/^".includes(val)) {
-          lastResult = false;
-        } else {
-          expr = "";
-          lastResult = false;
-        }
-      }
-      expr += val;
-      updateDisplay();
-    }
-
-    function action(type) {
-      if (type === 'AC') {
-        expr = "";
-        lastResult = false;
-        history.innerText = "";
-        display.value = "0";
-      } else if (type === 'DEL') {
-        if (lastResult) {
-            expr = ""; 
-            lastResult = false;
-        } else {
-            expr = expr.slice(0, -1);
-        }
-        updateDisplay();
-      }
-    }
-
-    function updateDisplay() {
-      // 视觉美化：替换乘除号
-      let show = expr.replace(/\*/g, '×').replace(/\//g, '÷');
-      if (!show) show = "0";
-      display.value = show;
-      // 自动滚动到底部
-      display.scrollTop = display.scrollHeight;
-    }
-
-    // --- 核心计算调度器 ---
-    
-    function calculate() {
-      if (!expr) return;
-      
-      const isHighPrec = toggle.checked;
-      history.innerText = expr.replace(/\*/g, '×').replace(/\//g, '÷') + " =";
-      
-      try {
-        let result = "";
-        
-        // 1. 如果包含科学函数 (sin, cos, sqrt, log, pi, e)
-        // 手写高精度三角函数太复杂，这里做降级处理：
-        // 如果是高精度模式且只包含加减乘除，走 BigMath。
-        // 如果包含函数，走原生 Math (并给出提示或直接显示原生精度)。
-        if (/[a-z]/.test(expr)) { 
-           // 包含字母，说明有函数
-           result = evalMath(expr);
-        } else {
-           // 纯算术表达式
-           if (isHighPrec) {
-             result = BigMath.evaluate(expr);
-           } else {
-             result = evalMath(expr);
-           }
-        }
-        
-        display.value = result;
-        expr = result; // 允许连续计算
-        lastResult = true;
-      } catch (e) {
-        display.value = "Error";
-        console.error(e);
-      }
-    }
-
-    // 普通模式引擎 (使用 Function 构造器代替 eval 安全性稍好，处理 Math 对象)
-    function evalMath(expression) {
-      // 预处理：将 sin(x) 替换为 Math.sin(x) 等
-      let safeExpr = expression
-        .replace(/sin/g, 'Math.sin')
-        .replace(/cos/g, 'Math.cos')
-        .replace(/tan/g, 'Math.tan')
-        .replace(/sqrt/g, 'Math.sqrt')
-        .replace(/log/g, 'Math.log10')
-        .replace(/pi/g, 'Math.PI')
-        .replace(/e/g, 'Math.E')
-        .replace(/\^/g, '**'); // JS 支持 ** 幂运算
-      
-      let res = new Function('return ' + safeExpr)();
-      
-      // 简单格式化：去除极小的浮点误差
-      if (Math.abs(res) < 1e-10) return "0";
-      return parseFloat(res.toPrecision(12)).toString(); 
-    }
-
-    /* =========================================
-       BigMath: 手写高精度分数运算引擎
-       解决了 JS 原生浮点数精度丢失问题
-       ========================================= */
-    
-    const BigMath = {
-      // 简单的优先级解析器 (Shunting-yard 简化版)
-      evaluate: function(str) {
-        // 1. 预处理：处理负数，将 1.5 转换为分数
-        // 这里做一个简化的假设：输入是合法的算术式
-        // 先把所有数字转换为 Fraction 对象
-        
-        // 替换 - 为 + - (处理负数逻辑较复杂，这里采用替换法简化解析)
-        // 实际上为了稳定性，我们先支持正数的加减乘除，负数由 BigInt 原生支持
-        
-        // 分离数字和运算符
-        const tokens = str.match(/(\d+\.\d+|\d+|[\+\-\*\/^()])/g);
-        if (!tokens) return "0";
-
-        // 将中缀表达式转后缀表达式 (RPN)
-        const outputQueue = [];
-        const operatorStack = [];
-        const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 3 };
-
-        tokens.forEach(token => {
-          if (/\d/.test(token)) {
-             // 是数字，转为分数对象
-             outputQueue.push(this.toFraction(token));
-          } else if ("+-*/^".includes(token)) {
-             while (operatorStack.length && 
-                    precedence[operatorStack[operatorStack.length - 1]] >= precedence[token]) {
-                outputQueue.push(operatorStack.pop());
-             }
-             operatorStack.push(token);
-          } else if (token === '(') {
-             operatorStack.push(token);
-          } else if (token === ')') {
-             while (operatorStack.length && operatorStack[operatorStack.length - 1] !== '(') {
-                outputQueue.push(operatorStack.pop());
-             }
-             operatorStack.pop(); // 弹出 '('
-          }
-        });
-        while (operatorStack.length) outputQueue.push(operatorStack.pop());
-
-        // 计算 RPN
-        const stack = [];
-        for (let item of outputQueue) {
-          if (typeof item === 'object') { // Fraction 对象
-            stack.push(item);
-          } else {
-            const b = stack.pop();
-            const a = stack.pop();
-            if (!a || !b) throw new Error("Format Err");
-            let res;
-            switch(item) {
-              case '+': res = this.add(a, b); break;
-              case '-': res = this.sub(a, b); break;
-              case '*': res = this.mul(a, b); break;
-              case '/': res = this.div(a, b); break;
-              case '^': res = this.pow(a, b); break;
-            }
-            stack.push(res);
-          }
-        }
-        
-        return this.format(stack[0]);
-      },
-
-      // 将字符串数字 "1.5" 转为分数 {n: 15n, d: 10n}
-      toFraction: function(str) {
-        if (str.includes('.')) {
-           const [int, dec] = str.split('.');
-           const denominator = 10n ** BigInt(dec.length);
-           const numerator = BigInt(int) * denominator + BigInt(dec);
-           return { n: numerator, d: denominator };
-        } else {
-           return { n: BigInt(str), d: 1n };
-        }
-      },
-
-      // 分数加法: n1/d1 + n2/d2 = (n1d2 + n2d1) / (d1d2)
-      add: function(a, b) {
-        return { n: a.n * b.d + b.n * a.d, d: a.d * b.d };
-      },
-      sub: function(a, b) {
-        return { n: a.n * b.d - b.n * a.d, d: a.d * b.d };
-      },
-      mul: function(a, b) {
-        return { n: a.n * b.n, d: a.d * b.d };
-      },
-      div: function(a, b) {
-        if (b.n === 0n) throw new Error("Div by Zero");
-        // 除以分数等于乘以倒数
-        let res = { n: a.n * b.d, d: a.d * b.n };
-        // 处理符号：保证分母为正
-        if (res.d < 0n) { res.n = -res.n; res.d = -res.d; }
-        return res;
-      },
-      pow: function(a, b) {
-        // 简化版：仅支持整数次幂，否则退回浮点
-        // 实际上高精度分数幂很复杂，这里做个简单转换
-        let exp = Number(b.n) / Number(b.d);
-        if (!Number.isInteger(exp)) return { n: 0n, d: 0n, isFloat: Math.pow(Number(a.n)/Number(a.d), exp) };
-        return { n: a.n ** BigInt(exp), d: a.d ** BigInt(exp) };
-      },
-
-      // 核心：输出格式化 (实现长除法和循环节检测)
-      format: function(frac) {
-        if (frac.isFloat !== undefined) return frac.isFloat.toString(); // 降级处理
-
-        let n = frac.n;
-        let d = frac.d;
-        
-        if (d === 0n) return "Error";
-        
-        // 提取符号
-        let sign = "";
-        if (n < 0n) { sign = "-"; n = -n; }
-        
-        // 整数部分
-        let integerPart = n / d;
-        let remainder = n % d;
-        
-        if (remainder === 0n) {
-          // 整除，直接返回整数，绝不加 .000
-          return sign + integerPart.toString();
-        }
-        
-        // 小数部分：长除法
-        let decimalStr = "";
-        let remainderMap = new Map(); // 用于记录余数出现的位置，检测循环
-        let index = 0;
-        
-        // 限制最多计算 200 位（防止死循环，且满足用户100位需求）
-        while (remainder !== 0n && index < 200) {
-           // 循环检测
-           if (remainderMap.has(remainder)) {
-              let start = remainderMap.get(remainder);
-              let nonCycle = decimalStr.substring(0, start);
-              let cycle = decimalStr.substring(start);
-              // 输出：整数.非循环+循环+循环...
-              return sign + integerPart.toString() + "." + nonCycle + cycle + cycle + "...";
-           }
-           
-           remainderMap.set(remainder, index);
-           
-           remainder *= 10n;
-           let digit = remainder / d;
-           decimalStr += digit.toString();
-           remainder %= d;
-           index++;
-        }
-        
-        // 如果除尽了 (remainder == 0)
-        if (remainder === 0n) {
-           return sign + integerPart.toString() + "." + decimalStr;
-        }
-        
-        // 如果没除尽且没找到循环 (或者循环节太长超过200位，或者无限不循环)
-        // 截取 100 位
-        return sign + integerPart.toString() + "." + decimalStr.substring(0, 100) + "...";
-      }
-    };
-
-    // --- 按钮点击波纹特效 ---
-    document.querySelectorAll('.btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        let ripple = document.createElement('span');
+    // 按钮点击水波纹效果
+    document.querySelectorAll('.button').forEach(button => {
+      button.addEventListener('click', function (e) {
+        const ripple = document.createElement('span');
         ripple.classList.add('ripple');
-        let rect = this.getBoundingClientRect();
-        // 确保波纹从点击中心扩散
-        let size = Math.max(rect.width, rect.height);
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
         ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
-        ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+        ripple.style.left = e.clientX - rect.left - size / 2 + 'px';
+        ripple.style.top = e.clientY - rect.top - size / 2 + 'px';
         this.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 400);
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
       });
     });
 
+    function appendToDisplay(value) {
+      document.getElementById('display').value += value;
+    }
+    function clearDisplay() {
+      document.getElementById('display').value = '';
+    }
+    // 退格键功能
+    function backspace() {
+      let display = document.getElementById('display');
+      display.value = display.value.slice(0, -1);
+    }
+    function calculate() {
+      try {
+        let expression = document.getElementById('display').value;
+        // 替换数学函数和常量
+        expression = expression.replace(/sin\(/g, 'Math.sin(')
+          .replace(/cos\(/g, 'Math.cos(')
+          .replace(/tan\(/g, 'Math.tan(')
+          .replace(/ln\(/g, 'Math.log(')
+          .replace(/log\(/g, 'Math.log10(')
+          .replace(/sqrt\(/g, 'Math.sqrt(')
+          .replace(/\^/g, '**')
+          .replace(/e/g, 'Math.E')
+          .replace(/pi/g, 'Math.PI');
+        let result = eval(expression);
+        let bigResult = new Big(result);
+        // 直接用 toString() 输出，无需额外补零
+        document.getElementById('display').value = bigResult.toString();
+      } catch (error) {
+        document.getElementById('display').value = 'Error';
+      }
+    }
   </script>
 </body>
 </html>
