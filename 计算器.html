@@ -3,499 +3,191 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>科学计算器 Pro | 高精度版</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
-  <link href="https://gs.jurieo.com/gemini/fonts-googleapis/css2?family=Roboto+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <title>计算器</title>
+  <!-- 引入 Big.js 库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/big.js/6.1.1/big.min.js"></script>
   <style>
-    /* --- 全局样式与动态背景 --- */
-    :root {
-      --primary-color: #00f2fe;
-      --secondary-color: #4facfe;
-      --glass-bg: rgba(255, 255, 255, 0.1);
-      --glass-border: rgba(255, 255, 255, 0.2);
-      --text-color: #ffffff;
-      --btn-bg: rgba(255, 255, 255, 0.05);
-      --btn-hover: rgba(255, 255, 255, 0.2);
-      --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: 'Inter', sans-serif;
-      /* 深色流光背景 */
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: var(--text-color);
-      overflow: hidden; /* 防止移动端滚动 */
-    }
-
-    @keyframes gradientBG {
+    /* 全局背景动画（蓝色渐变） */
+    @keyframes backgroundMove {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
-    /* 增加背景漂浮粒子特效 */
-    .bg-particles {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      overflow: hidden;
-      z-index: -1;
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(-45deg, #a1c4fd, #c2e9fb, #a1c4fd, #c2e9fb);
+      background-size: 400% 400%;
+      animation: backgroundMove 15s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
     }
-    .particle {
-      position: absolute;
-      display: block;
-      list-style: none;
-      width: 20px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      animation: animate 25s linear infinite;
-      bottom: -150px;
-      border-radius: 50%;
-    }
-    .particle:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-    .particle:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-    .particle:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-    .particle:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-    .particle:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-    @keyframes animate {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; }
-    }
-
-    /* --- 计算器主体 (磨砂玻璃) --- */
+    /* 计算器容器：采用蓝白渐变 */
     .calculator {
       width: 100%;
-      max-width: 420px;
-      padding: 25px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      transition: transform 0.3s;
-    }
-
-    /* 头部：标题与开关 */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-    }
-    .app-title {
-      font-size: 14px;
-      letter-spacing: 1px;
-      opacity: 0.8;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    
-    /* 开关样式 */
-    .switch-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 20px;
-    }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(255,255,255,0.2);
-      transition: .4s;
-      border-radius: 20px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 14px;
-      width: 14px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider { background-color: var(--secondary-color); }
-    input:checked + .slider:before { transform: translateX(20px); }
-
-    /* --- 显示区域 --- */
-    .screen {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 16px;
-      padding: 15px;
-      text-align: right;
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      min-height: 100px;
-    }
-    
-    /* 上一行：计算过程 */
-    #history-display {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
-      min-height: 20px;
-      word-wrap: break-word;
-    }
-
-    /* 下一行：结果输入 */
-    #main-display {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 32px;
-      color: #fff;
-      background: transparent;
+      max-width: 350px;
+      padding: 20px;
       border: none;
-      text-align: right;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(to bottom right, #ffffff, #e0f7fa);
+      position: relative;
+      overflow: hidden;
+    }
+    /* 显示区域：蓝色调背景 */
+    .display {
       width: 100%;
-      outline: none;
-      word-break: break-all; /* 允许长数字换行 */
+      height: 50px;
+      font-size: 24px;
+      text-align: right;
+      margin-bottom: 20px;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: #e1f5fe;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    
-    /* 当结果特别长时（高精度模式），缩小字体 */
-    #main-display.long-text {
-      font-size: 18px;
-      line-height: 1.4;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
-    /* 滚动条美化 */
-    #main-display::-webkit-scrollbar { width: 6px; }
-    #main-display::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
-
-    /* --- 键盘区域 --- */
-    .keypad {
+    /* 按钮区域采用网格布局，自适应调整 */
+    .buttons {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
-
-    .btn {
+    /* 按钮样式：蓝色渐变背景，白色文字 */
+    .button {
       position: relative;
-      background: var(--btn-bg);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #fff;
-      font-size: 18px;
-      padding: 18px 0;
-      border-radius: 14px;
-      cursor: pointer;
-      outline: none;
-      user-select: none;
-      transition: all 0.2s ease;
       overflow: hidden;
-      font-family: 'Inter', sans-serif;
-    }
-
-    /* 按钮状态效果 */
-    .btn:hover {
-      background: var(--btn-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    .btn:active {
-      transform: translateY(1px);
-    }
-
-    /* 特殊按钮颜色 */
-    .btn.operator { color: var(--primary-color); font-weight: bold; }
-    .btn.function { font-size: 14px; color: #a1c4fd; }
-    .btn.clear { color: #ff6b6b; }
-    .btn.equal {
-      background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+      padding: 15px;
+      font-size: 18px;
+      text-align: center;
+      background: linear-gradient(135deg, #42a5f5, #1e88e5);
+      color: #fff;
       border: none;
-      box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-      grid-column: span 2; /* 占据两格 */
-      font-weight: bold;
-      font-size: 22px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     }
-    .btn.equal:hover {
-      box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
     }
-
+    .button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
     /* 水波纹动画 */
     .ripple {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.4);
       transform: scale(0);
-      animation: ripple 0.6s linear;
+      animation: rippleEffect 600ms linear;
       pointer-events: none;
     }
-    @keyframes ripple {
-      to { transform: scale(4); opacity: 0; }
+    @keyframes rippleEffect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
     }
-
+    /* 针对移动设备的响应式调整 */
+    @media (max-width: 480px) {
+      .display { font-size: 20px; height: 45px; }
+      .button { padding: 12px; font-size: 16px; }
+    }
   </style>
 </head>
 <body>
-
-  <ul class="bg-particles">
-    <li class="particle"></li><li class="particle"></li>
-    <li class="particle"></li><li class="particle"></li>
-    <li class="particle"></li>
-  </ul>
-
   <div class="calculator">
-    <div class="header">
-      <div class="app-title">Scientific Calc</div>
-      <div class="switch-container">
-        <span>高精度模式</span>
-        <label class="switch">
-          <input type="checkbox" id="precision-toggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <div class="screen">
-      <div id="history-display"></div>
-      <textarea id="main-display" readonly rows="1">0</textarea>
-    </div>
-
-    <div class="keypad">
-      <button class="btn clear" onclick="clearAll()">AC</button>
-      <button class="btn clear" onclick="backspace()">DEL</button>
-      <button class="btn function" onclick="inputStr('(')">(</button>
-      <button class="btn function" onclick="inputStr(')')">)</button>
-
-      <button class="btn function" onclick="inputStr('sin(')">sin</button>
-      <button class="btn function" onclick="inputStr('cos(')">cos</button>
-      <button class="btn function" onclick="inputStr('sqrt(')">√</button>
-      <button class="btn function" onclick="inputStr('^')">^</button>
-
-      <button class="btn function" onclick="inputStr('pi')">π</button>
-      <button class="btn function" onclick="inputStr('e')">e</button>
-      <button class="btn function" onclick="inputStr('log(')">log</button>
-      <button class="btn operator" onclick="inputStr('/')">÷</button>
-
-      <button class="btn" onclick="inputStr('7')">7</button>
-      <button class="btn" onclick="inputStr('8')">8</button>
-      <button class="btn" onclick="inputStr('9')">9</button>
-      <button class="btn operator" onclick="inputStr('*')">×</button>
-
-      <button class="btn" onclick="inputStr('4')">4</button>
-      <button class="btn" onclick="inputStr('5')">5</button>
-      <button class="btn" onclick="inputStr('6')">6</button>
-      <button class="btn operator" onclick="inputStr('-')">-</button>
-
-      <button class="btn" onclick="inputStr('1')">1</button>
-      <button class="btn" onclick="inputStr('2')">2</button>
-      <button class="btn" onclick="inputStr('3')">3</button>
-      <button class="btn operator" onclick="inputStr('+')">+</button>
-
-      <button class="btn" onclick="inputStr('0')">0</button>
-      <button class="btn" onclick="inputStr('.')">.</button>
-      <button class="btn equal" onclick="calculate()">=</button>
+    <input type="text" class="display" id="display" readonly />
+    <div class="buttons">
+      <div class="button" onclick="appendToDisplay('(')">(</div>
+      <div class="button" onclick="appendToDisplay(')')">)</div>
+      <div class="button" onclick="clearDisplay()">C</div>
+      <div class="button" onclick="backspace()">←</div>
+      <div class="button" onclick="appendToDisplay('^')">^</div>
+      <div class="button" onclick="appendToDisplay('7')">7</div>
+      <div class="button" onclick="appendToDisplay('8')">8</div>
+      <div class="button" onclick="appendToDisplay('9')">9</div>
+      <div class="button" onclick="appendToDisplay('/')">/</div>
+      <div class="button" onclick="appendToDisplay('4')">4</div>
+      <div class="button" onclick="appendToDisplay('5')">5</div>
+      <div class="button" onclick="appendToDisplay('6')">6</div>
+      <div class="button" onclick="appendToDisplay('*')">*</div>
+      <div class="button" onclick="appendToDisplay('1')">1</div>
+      <div class="button" onclick="appendToDisplay('2')">2</div>
+      <div class="button" onclick="appendToDisplay('3')">3</div>
+      <div class="button" onclick="appendToDisplay('-')">-</div>
+      <div class="button" onclick="appendToDisplay('0')">0</div>
+      <div class="button" onclick="appendToDisplay('.')">.</div>
+      <div class="button" onclick="calculate()">=</div>
+      <div class="button" onclick="appendToDisplay('+')">+</div>
+      <div class="button" onclick="appendToDisplay('sin(')">sin</div>
+      <div class="button" onclick="appendToDisplay('cos(')">cos</div>
+      <div class="button" onclick="appendToDisplay('tan(')">tan</div>
+      <div class="button" onclick="appendToDisplay('ln(')">ln</div>
+      <div class="button" onclick="appendToDisplay('log(')">log</div>
+      <div class="button" onclick="appendToDisplay('sqrt(')">√</div>
+      <div class="button" onclick="appendToDisplay('e')">e</div>
+      <div class="button" onclick="appendToDisplay('pi')">π</div>
     </div>
   </div>
 
   <script>
-    const display = document.getElementById('main-display');
-    const historyDisplay = document.getElementById('history-display');
-    const precisionToggle = document.getElementById('precision-toggle');
-    let currentExpression = '';
-    let isResultShown = false;
-
-    // 初始化 Math.js 配置
-    // 默认高精度配置，但平时只显示少量小数，开启开关后显示全部
-    const mathHighPrec = math.create(math.all, {
-      number: 'BigNumber', 
-      precision: 150 // 内部计算精度设为150位，防止舍入误差
-    });
-
-    // 按钮点击动画
-    document.querySelectorAll('.btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        let ripple = document.createElement('span');
+    // 按钮点击水波纹效果
+    document.querySelectorAll('.button').forEach(button => {
+      button.addEventListener('click', function (e) {
+        const ripple = document.createElement('span');
         ripple.classList.add('ripple');
-        let rect = this.getBoundingClientRect();
-        let size = Math.max(rect.width, rect.height);
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
         ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = e.clientX - rect.left - size/2 + 'px';
-        ripple.style.top = e.clientY - rect.top - size/2 + 'px';
+        ripple.style.left = e.clientX - rect.left - size / 2 + 'px';
+        ripple.style.top = e.clientY - rect.top - size / 2 + 'px';
         this.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 600);
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
       });
     });
 
-    function inputStr(val) {
-      if (isResultShown) {
-        // 如果当前显示的是结果，且输入的是数字，则清空重新开始
-        // 如果输入的是运算符，则基于结果继续计算
-        if (['+', '-', '*', '/', '^'].includes(val)) {
-          isResultShown = false;
-        } else {
-          currentExpression = '';
-          display.value = '';
-          isResultShown = false;
-        }
-      }
-      
-      // 视觉优化：乘除号替换
-      let visualVal = val; 
-      
-      currentExpression += val;
-      // 简单的格式化显示逻辑
-      display.value = currentExpression
-        .replace(/\*/g, '×')
-        .replace(/\//g, '÷');
-      
-      adjustFontSize();
+    function appendToDisplay(value) {
+      document.getElementById('display').value += value;
     }
-
-    function clearAll() {
-      currentExpression = '';
-      display.value = '0';
-      historyDisplay.innerText = '';
-      display.classList.remove('long-text');
-      isResultShown = false;
+    function clearDisplay() {
+      document.getElementById('display').value = '';
     }
-
+    // 退格键功能
     function backspace() {
-      if (isResultShown) {
-        clearAll();
-        return;
-      }
-      currentExpression = currentExpression.slice(0, -1);
-      display.value = currentExpression.replace(/\*/g, '×').replace(/\//g, '÷');
-      if (display.value === '') display.value = '0';
-      adjustFontSize();
+      let display = document.getElementById('display');
+      display.value = display.value.slice(0, -1);
     }
-
-    // 调整字体大小
-    function adjustFontSize() {
-      if (display.value.length > 15) {
-        display.classList.add('long-text');
-      } else {
-        display.classList.remove('long-text');
-      }
-    }
-
-    // 核心计算函数
     function calculate() {
-      if (!currentExpression) return;
-      
       try {
-        historyDisplay.innerText = currentExpression.replace(/\*/g, '×').replace(/\//g, '÷') + ' =';
-        
-        const isHighPrecision = precisionToggle.checked;
-        
-        let result;
-        if (isHighPrecision) {
-          // 高精度模式
-          result = mathHighPrec.evaluate(currentExpression);
-          display.value = formatHighPrecision(result);
-        } else {
-          // 普通模式 (使用默认 math.js，但也比 eval 强)
-          result = math.evaluate(currentExpression);
-          // 格式化：保留一定精度，避免 0.30000000000000004
-          display.value = math.format(result, { precision: 14 });
-        }
-
-        currentExpression = display.value; // 允许基于结果继续运算
-        isResultShown = true;
-        adjustFontSize();
-
-      } catch (e) {
-        display.value = "Error";
-        setTimeout(() => {
-          if (display.value === "Error") clearAll();
-        }, 1500);
+        let expression = document.getElementById('display').value;
+        // 替换数学函数和常量
+        expression = expression.replace(/sin\(/g, 'Math.sin(')
+          .replace(/cos\(/g, 'Math.cos(')
+          .replace(/tan\(/g, 'Math.tan(')
+          .replace(/ln\(/g, 'Math.log(')
+          .replace(/log\(/g, 'Math.log10(')
+          .replace(/sqrt\(/g, 'Math.sqrt(')
+          .replace(/\^/g, '**')
+          .replace(/e/g, 'Math.E')
+          .replace(/pi/g, 'Math.PI');
+        let result = eval(expression);
+        let bigResult = new Big(result);
+        // 直接用 toString() 输出，无需额外补零
+        document.getElementById('display').value = bigResult.toString();
+      } catch (error) {
+        document.getElementById('display').value = 'Error';
       }
     }
-
-    /**
-     * 高精度格式化逻辑
-     * 1. 整数全部保留
-     * 2. 无限不循环：保留100位
-     * 3. 循环小数：显示两个循环节
-     */
-    function formatHighPrecision(bigNum) {
-      // 获取高精度的字符串表示 (不使用科学计数法)
-      let str = mathHighPrec.format(bigNum, { notation: 'fixed', precision: 120 });
-      
-      if (!str.includes('.')) return str; // 纯整数直接返回
-
-      let [integerPart, decimalPart] = str.split('.');
-      
-      // 尝试寻找循环节 (简单的启发式算法)
-      // 我们在120位的精度下寻找末尾重复的模式
-      let cycle = findRepeatingPattern(decimalPart);
-      
-      if (cycle && cycle.length > 0) {
-        // 找到循环节
-        // 找到循环开始的位置
-        let firstIndex = decimalPart.indexOf(cycle);
-        let preCycle = decimalPart.substring(0, firstIndex);
-        
-        // 格式：整数.非循环部分[循环节][循环节]...
-        return `${integerPart}.${preCycle}${cycle}${cycle}...`;
-      } else {
-        // 未找到明显循环节，或者是无限不循环小数
-        // 按照要求保留100位
-        if (decimalPart.length > 100) {
-          return `${integerPart}.${decimalPart.substring(0, 100)}...`; 
-        } else {
-          // 如果本身小数位不足100且不循环（有限小数），直接返回
-          return str;
-        }
-      }
-    }
-
-    // 简单的循环节检测算法
-    function findRepeatingPattern(str) {
-      // 我们从字符串末尾开始检查，看是否有重复出现的子串
-      // 为了性能和准确性，我们假设循环节长度在 1 到 50 之间
-      // 且至少重复了 3 次 (比如 120位小数里，重复3次能确认是循环)
-      
-      // 去掉最后几位可能存在的舍入误差数字
-      let cleanStr = str.substring(0, str.length - 2); 
-      
-      for (let len = 1; len <= 50; len++) {
-        let pattern = cleanStr.substring(cleanStr.length - len);
-        let prevPattern = cleanStr.substring(cleanStr.length - 2 * len, cleanStr.length - len);
-        let prevPrevPattern = cleanStr.substring(cleanStr.length - 3 * len, cleanStr.length - 2 * len);
-        
-        if (pattern === prevPattern && pattern === prevPrevPattern) {
-            // 确认找到循环模式，现在需要找到该模式真正的起始点（因为可能前面也有）
-            // 这里简单返回模式即可，外层函数会处理拼接
-            return pattern;
-        }
-      }
-      return null;
-    }
-
-    // 键盘支持
-    document.addEventListener('keydown', (e) => {
-      const key = e.key;
-      if (/[0-9]/.test(key)) inputStr(key);
-      if (['+', '-', '*', '/', '^', '(', ')', '.'].includes(key)) inputStr(key);
-      if (key === 'Enter') calculate();
-      if (key === 'Backspace') backspace();
-      if (key === 'Escape') clearAll();
-    });
-
   </script>
 </body>
 </html>
