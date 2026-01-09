@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
- <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
-  <title>Calculator</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <title>计算器</title>
   
   <style>
     /* --- 核心修复：布局锁定 --- */
@@ -78,7 +78,7 @@
       text-transform: uppercase;
     }
 
-    /* 开关组件 */
+    /* 开关组件（已移除高精度后不再使用，但保留样式以防未来扩展） */
     .switch-container {
       display: flex;
       align-items: center;
@@ -227,13 +227,8 @@
   <div class="calculator">
     <div class="header">
       <div class="app-title">Scientific Calc</div>
-      <div class="switch-container">
-        <span>High Precision</span>
-        <label class="switch">
-          <input type="checkbox" id="precision-toggle">
-          <span class="slider"></span>
-        </label>
-      </div>
+      <!-- 高精度开关已移除，为了保持对齐占位留空 -->
+      <div style="width:36px; height:22px;"></div>
     </div>
 
     <div class="screen">
@@ -280,107 +275,12 @@
 
   <script>
     /**
-     * 高精度运算核心 - BigInt Fraction 实现
-     * 修复了：
-     * 1. 整数显示为 .00... 的问题
-     * 2. 有限小数显示多余零的问题
-     * 3. 循环节判定逻辑
+     * 简化版：已移除高精度分数引擎，始终使用浏览器 Math / 标准求值。
      */
-    const BigMath = {
-      // 字符串转分数
-      toFraction(str) {
-        try {
-          if (str.includes('.')) {
-            const [int, dec] = str.split('.');
-            const d = 10n ** BigInt(dec.length);
-            const n = BigInt(int) * d + BigInt(dec);
-            return { n, d };
-          } else {
-            return { n: BigInt(str), d: 1n };
-          }
-        } catch (e) { return { n: 0n, d: 1n }; } // 容错
-      },
-      
-      // 分数运算
-      add(a, b) { return { n: a.n * b.d + b.n * a.d, d: a.d * b.d }; },
-      sub(a, b) { return { n: a.n * b.d - b.n * a.d, d: a.d * b.d }; },
-      mul(a, b) { return { n: a.n * b.n, d: a.d * b.d }; },
-      div(a, b) { 
-        if (b.n === 0n) throw new Error("Div0");
-        let res = { n: a.n * b.d, d: a.d * b.n };
-        if (res.d < 0n) { res.n = -res.n; res.d = -res.d; } // 保持分母为正
-        return res;
-      },
-      pow(a, b) {
-        // 简单整数幂支持
-        const exp = Number(b.n) / Number(b.d);
-        if (Number.isInteger(exp) && exp >= 0) {
-           return { n: a.n ** BigInt(exp), d: a.d ** BigInt(exp) };
-        }
-        throw new Error("ComplexPow"); // 浮点幂回退到普通计算
-      },
 
-      // 核心：格式化输出
-      format(frac) {
-        let n = frac.n;
-        let d = frac.d;
-        if (d === 0n) return "Error";
-
-        // 处理符号
-        let sign = "";
-        if (n < 0n) { sign = "-"; n = -n; }
-
-        // 1. 整数部分
-        let integerPart = n / d;
-        let remainder = n % d;
-
-        // 【关键修复】如果整除，立即返回，不进小数逻辑
-        if (remainder === 0n) {
-          return sign + integerPart.toString();
-        }
-
-        // 2. 小数部分
-        let resStr = sign + integerPart.toString() + ".";
-        let remMap = new Map(); // 用于检测循环
-        let decimalPart = "";
-        
-        // 最多计算150位用于检测
-        for (let i = 0; i < 150; i++) {
-          remainder *= 10n;
-          let digit = remainder / d;
-          
-          // 记录当前余数的位置
-          if (remMap.has(remainder)) {
-            // 发现循环！
-            let start = remMap.get(remainder);
-            let preCycle = decimalPart.substring(0, start);
-            let cycle = decimalPart.substring(start);
-            // 显示规则：非循环 + 循环 + 循环 + ...
-            return resStr + preCycle + cycle + cycle + "...";
-          }
-          
-          remMap.set(remainder, decimalPart.length);
-          decimalPart += digit.toString();
-          remainder %= d;
-
-          // 【关键修复】如果除尽了（有限小数），立即停止
-          if (remainder === 0n) {
-            return resStr + decimalPart;
-          }
-        }
-
-        // 3. 超过150位还没除尽，截取前100位
-        return resStr + decimalPart.substring(0, 100) + "...";
-      }
-    };
-
-    /**
-     * UI控制器
-     */
     const calc = {
       display: document.getElementById('main-display'),
       history: document.getElementById('history-display'),
-      toggle: document.getElementById('precision-toggle'),
       expr: '',
       isResult: false,
 
@@ -428,28 +328,10 @@
         this.history.innerText = this.expr.replace(/\*/g, '×').replace(/\//g, '÷') + ' =';
         
         try {
-          // 检查是否包含不支持高精度的函数（sin, cos, pi等）
-          const hasFunc = /[a-z]/.test(this.expr); 
-          const isHighPrec = this.toggle.checked;
-
-          if (!hasFunc && isHighPrec) {
-            // 走纯高精度分数引擎
-            let res = this.evaluateHighPrec(this.expr);
-            this.display.value = res;
-            // 为了能够继续计算，我们需要把结果（如果是字符串）也设为 expr
-            // 注意：带 ... 的结果不能直接用于下一次精确运算，这里清空 expr 防止逻辑混乱
-            // 或者如果结果是精确的数字，可以保留
-            if (res.includes('...')) {
-                this.expr = ''; // 模糊结果不能参与下一次精确运算
-            } else {
-                this.expr = res;
-            }
-          } else {
-            // 走普通 JS 引擎 (eval降级)
-            let res = this.evaluateStandard(this.expr);
-            this.display.value = res;
-            this.expr = res;
-          }
+          // 一律使用标准 JS/Math 引擎进行计算（已移除高精度分支）
+          let res = this.evaluateStandard(this.expr);
+          this.display.value = res;
+          this.expr = res;
           this.isResult = true;
         } catch (e) {
           this.display.value = "Error";
@@ -472,62 +354,6 @@
         let res = new Function('return ' + safe)();
         // 修复 js 浮点数精度 bug (0.3000000004)
         return parseFloat(res.toPrecision(14)).toString();
-      },
-
-      // 高精度计算调度 (RPN算法)
-      evaluateHighPrec(str) {
-        // 简单的词法分析
-        const tokens = str.match(/(\d+\.\d+|\d+|[\+\-\*\/^()])/g);
-        if (!tokens) return "0";
-
-        // 1. 中缀转后缀 (Shunting Yard)
-        const output = [];
-        const stack = [];
-        const precedence = { '+':1, '-':1, '*':2, '/':2, '^':3 };
-        
-        tokens.forEach(token => {
-          if (!isNaN(token)) {
-            output.push(BigMath.toFraction(token));
-          } else if ('+-*/^'.includes(token)) {
-            while (stack.length && stack[stack.length-1] !== '(' && 
-                   precedence[stack[stack.length-1]] >= precedence[token]) {
-              output.push(stack.pop());
-            }
-            stack.push(token);
-          } else if (token === '(') {
-            stack.push(token);
-          } else if (token === ')') {
-            while (stack.length && stack[stack.length-1] !== '(') {
-              output.push(stack.pop());
-            }
-            stack.pop();
-          }
-        });
-        while (stack.length) output.push(stack.pop());
-
-        // 2. 计算后缀表达式
-        const calcStack = [];
-        for (let item of output) {
-          if (typeof item === 'object') {
-            calcStack.push(item);
-          } else {
-            const b = calcStack.pop();
-            const a = calcStack.pop();
-            if (!a || !b) throw new Error("Format");
-            
-            let res;
-            switch(item) {
-              case '+': res = BigMath.add(a, b); break;
-              case '-': res = BigMath.sub(a, b); break;
-              case '*': res = BigMath.mul(a, b); break;
-              case '/': res = BigMath.div(a, b); break;
-              case '^': res = BigMath.pow(a, b); break;
-            }
-            calcStack.push(res);
-          }
-        }
-        
-        return BigMath.format(calcStack[0]);
       }
     };
   </script>
