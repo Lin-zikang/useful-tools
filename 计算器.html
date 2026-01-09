@@ -7,7 +7,7 @@
   <title>计算器</title>
   
   <style>
-    /* --- 核心修复：布局锁定 --- */
+    /* --- 核心修复：布局锁定（已调整，允许纵向滚动） --- */
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -17,14 +17,18 @@
       margin: 0;
       padding: 0;
       width: 100vw;
-      height: 100vh;
-      overflow: hidden; /* 彻底禁止滚动 */
-      position: fixed; /* 强制固定，防止iOS回弹 */
+      min-height: 100vh; /* 使用 min-height 以允许内容超过视窗时滚动 */
+      /* 允许纵向滚动，禁止横向滚动以防止横向布局跑版 */
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative; /* 不再固定页面，允许自然流动 */
       font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
       background: linear-gradient(135deg, #1c262e, #233440, #0f1418);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start; /* 顶部对齐，避免在可滚动页面上垂直居中导致的问题 */
+      padding-top: 40px; /* 顶部间距，使页面不紧贴顶部 */
+      padding-bottom: 40px; /* 底部间距，方便滚动时有缓冲 */
     }
 
     /* 背景光效动画 */
