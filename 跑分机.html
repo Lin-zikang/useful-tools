@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>综合性能跑分器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    /* ====== 基础与布局 ====== */
+    :root{
+      --card-bg: rgba(0,0,0,0.78);
+      --accent-a: #ff3b3f;
+      --accent-b: #ff9966;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      min-height:100vh;
+      margin:0;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      color:#fff;
+      font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC","Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(1200px 500px at 20% -10%, #21444855, transparent 70%),
+        radial-gradient(900px 400px at 120% 120%, #1a324655, transparent 70%),
+        linear-gradient(45deg,#6e7c7f,#1c3b3d);
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .shell{
+      width: 460px;
+      max-width: 94vw;
+      padding: 18px 0 40px;
+    }
+    .card{
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      padding: 22px 22px 26px;
+      margin: 14px 0;
+      animation: slideIn .55s ease-out both;
+      backdrop-filter: blur(6px);
+    }
+    /* 顶部标题行（含按钮） */
+    .header-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:6px;
+    }
+    .title-wrap{ display:flex; flex-direction:column; }
+    h1{
+      margin: 0;
+      font-size: 26px;
+      letter-spacing:.5px;
+    }
+    p.muted{
+      margin: 4px 0 0;
+      opacity:.7;
+      font-size: 12px;
+    }
+
+    /* ====== 按钮 ====== */
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:0;
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-size: 16px;
+      color:#fff;
+      cursor:pointer;
+      background: linear-gradient(45deg,var(--accent-a),var(--accent-b));
+      transition: transform .25s ease, box-shadow .25s ease, opacity .2s ease;
+      box-shadow: 0 6px 18px rgba(255,90,70,0.35);
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px) scale(1.02) }
+    .btn:active{ transform: translateY(0) scale(.98) }
+    .btn[disabled]{ opacity:.45; cursor:not-allowed; box-shadow:none; transform:none; }
+
+    .btn.ghost{
+      background: transparent; border:1px solid #334155; box-shadow: none;
+    }
+
+    /* 顶部小型按钮（紧凑） */
+    .btn.small{
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+
+    /* ====== 进度条与徽章 ====== */
+    .bar{
+      width:100%; height:10px; border-radius: 999px; background:#1e293b;
+      overflow:hidden; margin: 8px 0 2px;
+    }
+    .bar > i{
+      display:block; height:100%; width:0%;
+      background: linear-gradient(90deg,var(--accent-a),var(--accent-b));
+      transition: width .25s ease;
+    }
+    .badge{
+      display:inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      line-height:1;
+      background:#0b1220;
+      border:1px solid #263046;
+      opacity:.9;
+    }
+
+    /* ====== 结果展示 ====== */
+    .kv{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(255,255,255,.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .kv:last-child{ border-bottom:0; }
+    .kv b{ font-weight:700; }
+    .num{ font-variant-numeric: tabular-nums; letter-spacing:.3px; }
+
+    /* ====== Canvas 与特效 ====== */
+    #gameCanvas{
+      display:block; margin:12px auto 2px; border-radius: 12px;
+      background:
+        radial-gradient(500px 200px at -20% -30%, #ffffff0a, transparent 70%),
+        #0b1220;
+      width: 100%;
+      height: 200px; /* 默认显示高度，可被媒体查询覆盖 */
+      object-fit: cover;
+    }
+
+    /* ====== 模态框 ====== */
+    .modal{
+      position: fixed; inset: 0; display:none;
+      align-items:center; justify-content:center;
+      background: rgba(0,0,0,.55);
+      animation: fadeIn .25s ease both;
+      z-index: 50;
+      padding: 16px;
+    }
+    .modal .panel{
+      background: #0b1220;
+      width: 560px; max-width: 98vw;
+      border-radius: 16px; padding: 18px 18px 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      border: 1px solid #213047;
+    }
+    .modal h3{ margin: 2px 0 8px; }
+    .modal p{ opacity:.9; line-height:1.6; }
+    .modal .actions{ display:flex; justify-content:flex-end; gap:8px; margin-top: 10px; }
+
+    /* ====== 粘性 CTA（结果页用） ====== */
+    .sticky-cta{ position: sticky; bottom: 8px; background: transparent; padding-top: 6px; z-index: 2; }
+
+    /* ====== 动画 ====== */
+    @keyframes slideIn{
+      0%{ opacity:0; transform: translateY(18px) scale(.98) }
+      100%{ opacity:1; transform: none }
+    }
+    @keyframes fadeIn{
+      from{ opacity:0 } to{ opacity:1 }
+    }
+
+    /* 小提示 */
+    .tips{ font-size:12px; opacity:.8; margin-top:4px }
+
+    /* 紧凑模式：当可视高度较矮时自动压缩布局 */
+    @media (max-height: 830px){
+      .shell{ padding-top: 8px; }
+      h1{ font-size: 22px; margin-bottom: 4px; }
+      .card{ padding: 14px 14px 16px; margin: 10px 0; }
+      .tips{ display:none; }
+      #gameCanvas{ height: 150px; }
+    }
+
+    @media (max-width: 420px){
+      .shell{ width: 96vw; padding: 12px 0 40px; }
+      .card{ padding: 14px; border-radius: 14px; }
+      .btn{ padding: 10px 16px; font-size: 14px; }
+      .header-row{ gap:8px; align-items:flex-start; }
+      .title-wrap{ flex:1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- 顶部卡片 -->
+    <div class="card" id="performanceSection">
+      <!-- 把开始/结束按钮放到顶部，与标题同一行 -->
+      <div class="header-row">
+        <div class="title-wrap">
+          <h1>综合性能跑分器</h1>
+          <p class="muted">修复小数点与单位、增加 CPU 测试、优化动画与流程</p>
+        </div>
+        <div class="row" style="align-items:center;">
+          <button id="startBtn" class="btn small">开始测试</button>
+          <button id="stopBtn" class="btn small ghost" style="display:none;">结束测试</button>
+        </div>
+      </div>
+
+      <!-- 图形渲染 -->
+      <div class="test card">
+        <h2>图形渲染速度 <span class="badge" id="gfxBadge">待测试</span></h2>
+        <canvas id="gameCanvas" width="320" height="200"></canvas>
+        <div class="bar"><i id="gfxProg"></i></div>
+        <div class="kv"><span>即时帧率</span><span class="num" id="graphicsLive">-- FPS</span></div>
+        <div class="kv"><span>平均帧率</span><span class="num" id="graphicsAvg">-- FPS</span></div>
+      </div>
+
+      <!-- 内存读写 -->
+      <div class="test card">
+        <h2>内存读写速度 <span class="badge" id="memBadge">待测试</span></h2>
+        <div class="bar"><i id="memProg"></i></div>
+        <div class="kv"><span>写入速度</span><span class="num" id="memWrite">-- MB/s</span></div>
+        <div class="kv"><span>读取速度</span><span class="num" id="memRead">-- MB/s</span></div>
+        <p class="tips">默认测试 64 MiB 数组；数值为浏览器层面的估算，非真实内存总线带宽。</p>
+      </div>
+
+      <!-- 存储设备 -->
+      <div class="test card">
+        <h2>存储设备性能 <span class="badge" id="ioBadge">待测试</span></h2>
+        <div class="bar"><i id="ioProg"></i></div>
+        <div class="kv"><span>写入速度</span><span class="num" id="ioWrite">-- MB/s</span></div>
+        <div class="kv"><span>读取速度</span><span class="num" id="ioRead">-- MB/s</span></div>
+        <p class="tips">优先使用 IndexedDB 进行持久化写读；如受限则回退到内存 Blob 模拟。</p>
+      </div>
+
+      <!-- CPU 算力 -->
+      <div class="test card">
+        <h2>CPU 算力（单线程）<span class="badge" id="cpuBadge">待测试</span></h2>
+        <div class="bar"><i id="cpuProg"></i></div>
+        <div class="kv"><span>估算算力</span><span class="num" id="cpuOps">-- MOPS</span></div>
+        <p class="tips">在 ~1.5 秒内执行大量混合运算，统计每秒可完成的运算次数（百万次）。</p>
+      </div>
+    </div>
+
+    <!-- 结果卡片 -->
+    <div class="card" id="resultsSection" style="display:none;">
+      <h2>测试结果</h2>
+      <div class="kv"><span>图形渲染速度</span><span class="num" id="finalGraphics">--</span></div>
+      <div class="kv"><span>内存写入速度</span><span class="num" id="finalMemW">--</span></div>
+      <div class="kv"><span>内存读取速度</span><span class="num" id="finalMemR">--</span></div>
+      <div class="kv"><span>存储写入速度</span><span class="num" id="finalIoW">--</span></div>
+      <div class="kv"><span>存储读取速度</span><span class="num" id="finalIoR">--</span></div>
+      <div class="kv"><span>CPU 算力</span><span class="num" id="finalCpu">--</span></div>
+      <div class="row sticky-cta" style="margin-top:10px">
+        <button class="btn" id="restartBtn">重新测试</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 首次同意模态框 -->
+  <div class="modal" id="consentModal" aria-hidden="true">
+    <div class="panel">
+      <h3⚠️ 风险提示</h3>
+      <p>此测试会在浏览器中进行高强度运算和读写，可能导致短暂卡顿、风扇转速提升、设备温度上升等现象。请确保设备处于良好散热状态并保存重要数据。</p>
+      <p>点击“我了解并同意”开始测试。你可以随时点击“结束测试”停止。</p>
+      <div class="actions">
+        <button class="btn ghost" id="consentCancel">取消</button>
+        <button class="btn" id="consentAccept">我了解并同意</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========= 工具函数 ========= */
+    const $ = (id)=>document.getElementById(id);
+    const MiB = 1024*1024;
+    const toMiBps = (bytes, ms)=> (bytes / (ms/1000) / MiB);
+
+    let abortAll = false;
+    let hasRunGfx = false;
+
+    /* ========= 图形渲染测试 ========= */
+    async function graphicsTest(durationMs = 3000){
+      const canvas = $('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      let running = true;
+
+      let lastFpsMark = performance.now();
+      let secFrames = 0;
+      let fpsSamples = [];
+
+      function drawStamp(){
+        ctx.clearRect(0,0,w,h);
+        for(let i=0;i<350;i++){
+          const x = Math.random()*w;
+          const y = Math.random()*h;
+          const r = Math.random()*6+0.5;
+          ctx.beginPath();
+          ctx.arc(x,y,r,0,Math.PI*2);
+          ctx.fillStyle = `hsla(${(x+y)%360}, 90%, 60%, .35)`;
+          ctx.fill();
+        }
+        const grd = ctx.createRadialGradient(w*0.2,h*0.3,10,w*0.2,h*0.3,180);
+        grd.addColorStop(0,'#ffffff0f'); grd.addColorStop(1,'#0000');
+        ctx.fillStyle = grd; ctx.fillRect(0,0,w,h);
+      }
+
+      return new Promise(resolve=>{
+        const start = performance.now();
+        (function loop(){
+          if(!running || abortAll) return resolve({avg: 0});
+          const now = performance.now();
+          secFrames++;
+          if(now - lastFpsMark >= 1000){
+            $('graphicsLive').textContent = `${secFrames} FPS`;
+            fpsSamples.push(secFrames);
+            secFrames = 0;
+            lastFpsMark = now;
+          }
+          drawStamp();
+          $('gfxProg').style.width = `${Math.min(100, ((now-start)/durationMs)*100)}%`;
+          if(now - start >= durationMs){
+            running = false;
+            const avg = fpsSamples.length
+              ? Math.round(fpsSamples.reduce((a,b)=>a+b,0)/fpsSamples.length)
+              : Math.round((performance.now()-start)/1000) || 0;
+            $('graphicsAvg').textContent = `${avg.toFixed(0)} FPS`;
+            $('gfxBadge').textContent = '完成';
+            hasRunGfx = true;
+            resolve({avg});
+            return;
+          }
+          requestAnimationFrame(loop);
+        })();
+      });
+    }
+
+    /* ========= 内存读写测试 ========= */
+    async function memoryTest(totalMiB = 64){
+      $('memBadge').textContent = '测试中…';
+      const totalBytes = totalMiB * MiB;
+      const arr = new Uint8Array(totalBytes);
+
+      let t0 = performance.now();
+      arr.fill(0x7b);
+      let t1 = performance.now();
+      const writeMiBps = toMiBps(totalBytes, t1 - t0);
+
+      let sum = 0;
+      t0 = performance.now();
+      for(let i=0;i<arr.length;i++) sum += arr[i];
+      t1 = performance.now();
+      const readMiBps = toMiBps(totalBytes, t1 - t0);
+
+      $('memWrite').textContent = `${writeMiBps.toFixed(2)} MB/s`;
+      $('memRead').textContent  = `${readMiBps.toFixed(2)} MB/s`;
+      $('memBadge').textContent = '完成';
+      $('memProg').style.width = '100%';
+
+      return { writeMiBps, readMiBps };
+    }
+
+    /* ========= IndexedDB 工具 ========= */
+    function idbOpen(dbname='perfDB', store='chunks'){
+      return new Promise((resolve, reject)=>{
+        const req = indexedDB.open(dbname, 1);
+        req.onupgradeneeded = e=>{
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains(store)) db.createObjectStore(store);
+        };
+        req.onsuccess = ()=>resolve(req.result);
+        req.onerror = ()=>reject(req.error);
+      });
+    }
+    function idbPut(db, store, key, val){
+      return new Promise((resolve, reject)=>{
+        const tx = db.transaction([store],'readwrite');
+        tx.oncomplete = ()=>resolve();
+        tx.onerror = ()=>reject(tx.error);
+        tx.objectStore(store).put(val, key);
+      });
+    }
+    function idbGet(db, store, key){
+      return new Promise((resolve, reject)=>{
+        const tx = db.transaction([store],'readonly');
+        tx.onerror = ()=>reject(tx.error);
+        const req = tx.objectStore(store).get(key);
+        req.onsuccess = ()=>resolve(req.result);
+        req.onerror = ()=>reject(req.error);
+      });
+    }
+
+    /* ========= 存储设备性能测试 ========= */
+    async function storageTest(sizeMiB=20){
+      $('ioBadge').textContent = '测试中…';
+      const bytes = sizeMiB*MiB;
+      const buf = new Uint8Array(bytes);
+      for(let i=0;i<buf.length;i+=4096) buf[i]=i&255;
+
+      let writeMiBps=NaN, readMiBps=NaN;
+
+      try{
+        const db = await idbOpen();
+        const key = 'blob-'+Date.now();
+        let t0 = performance.now();
+        await idbPut(db, 'chunks', key, buf);
+        let t1 = performance.now();
+        writeMiBps = toMiBps(bytes, (t1-t0));
+        t0 = performance.now();
+        const got = await idbGet(db, 'chunks', key);
+        t1 = performance.now();
+        readMiBps = toMiBps(got ? got.byteLength || got.length : bytes, (t1-t0));
+      }catch(e){
+        const blob = new Blob([buf], {type:'application/octet-stream'});
+        let t0 = performance.now();
+        await new Promise((res,rej)=>{
+          const r = new FileReader();
+          r.onloadend = ()=>res();
+          r.onerror = ()=>rej(r.error);
+          r.readAsArrayBuffer(blob);
+        });
+        let t1 = performance.now();
+        writeMiBps = toMiBps(bytes, (t1-t0));
+
+        t0 = performance.now();
+        await new Promise((res,rej)=>{
+          const r = new FileReader();
+          r.onloadend = ()=>res();
+          r.onerror = ()=>rej(r.error);
+          r.readAsArrayBuffer(blob);
+        });
+        t1 = performance.now();
+        readMiBps = toMiBps(bytes, (t1-t0));
+      }
+
+      $('ioWrite').textContent = isFinite(writeMiBps) ? `${writeMiBps.toFixed(2)} MB/s` : '失败';
+      $('ioRead').textContent  = isFinite(readMiBps)  ? `${readMiBps.toFixed(2)} MB/s`  : '失败';
+      $('ioBadge').textContent = '完成';
+      $('ioProg').style.width = '100%';
+
+      return { writeMiBps, readMiBps };
+    }
+
+    /* ========= CPU 测试 ========= */
+    async function cpuTest(durationMs = 1500){
+      $('cpuBadge').textContent = '测试中…';
+      const start = performance.now();
+      let ops = 0;
+      let x = 1234567;
+      function step(){
+        const endBatch = performance.now() + 30;
+        while(performance.now() < endBatch){
+          x = Math.imul(x, 1664525) + 1013904223 | 0;
+          const y = Math.sin(x) * Math.cos(x*0.5) + Math.sqrt((x&65535)+1);
+          x ^= (y|0);
+          ops += 6;
+          if(abortAll) return;
+        }
+        const elapsed = performance.now() - start;
+        $('cpuProg').style.width = `${Math.min(100, elapsed/durationMs*100)}%`;
+        if(elapsed < durationMs){
+          setTimeout(step,0);
+        }else{
+          const mops = (ops/1e6) / (elapsed/1000);
+          $('cpuOps').textContent = `${mops.toFixed(2)} MOPS`;
+          $('cpuBadge').textContent = '完成';
+        }
+      }
+      return new Promise(resolve=>{
+        const timer = setInterval(()=>{
+          if(abortAll){ clearInterval(timer); resolve({mops:0}); }
+        },50);
+        step();
+        setTimeout(()=>{
+          clearInterval(timer);
+          const mops = parseFloat(($('cpuOps').textContent||'0').replace(/[^\d.]/g,'')||'0');
+          resolve({mops});
+        }, durationMs+120);
+      });
+    }
+
+    /* ========= 流程控制 ========= */
+    async function runAll(){
+      abortAll = false;
+      toggleButtons(true);
+
+      const gfx = await graphicsTest(3000);
+      if(abortAll) return finalize();
+      const mem = await memoryTest(64);
+      if(abortAll) return finalize();
+      const io  = await storageTest(20);
+      if(abortAll) return finalize();
+      const cpu = await cpuTest(1500);
+      if(abortAll) return finalize();
+      finalize(gfx, mem, io, cpu);
+    }
+
+    function finalize(gfx={}, mem={}, io={}, cpu={}){
+      $('finalGraphics').textContent = (gfx.avg? `${gfx.avg.toFixed?.(0) || gfx.avg} FPS` : '--');
+      $('finalMemW').textContent = isFinite(mem.writeMiBps)? `${mem.writeMiBps.toFixed(2)} MB/s`:'--';
+      $('finalMemR').textContent = isFinite(mem.readMiBps)?  `${mem.readMiBps.toFixed(2)} MB/s`:'--';
+      $('finalIoW').textContent  = isFinite(io.writeMiBps)?  `${io.writeMiBps.toFixed(2)} MB/s`:'--';
+      $('finalIoR').textContent  = isFinite(io.readMiBps)?   `${io.readMiBps.toFixed(2)} MB/s`:'--';
+      $('finalCpu').textContent  = (typeof cpu.mops==='number' && isFinite(cpu.mops))? `${cpu.mops.toFixed(2)} MOPS`:'--';
+
+      $('performanceSection').style.display='none';
+      $('resultsSection').style.display='block';
+      toggleButtons(false);
+      confettiLite();
+    }
+
+    function toggleButtons(running){
+      $('startBtn').style.display = running? 'none':'inline-flex';
+      $('stopBtn').style.display  = running? 'inline-flex':'none';
+    }
+
+    function resetUI(){
+      abortAll = false;
+      $('performanceSection').style.display='block';
+      $('resultsSection').style.display='none';
+      $('graphicsLive').textContent='-- FPS';
+      $('graphicsAvg').textContent='-- FPS';
+      $('gfxProg').style.width='0%'; $('memProg').style.width='0%';
+      $('ioProg').style.width='0%';  $('cpuProg').style.width='0%';
+      $('gfxBadge').textContent='待测试';
+      $('memBadge').textContent='待测试';
+      $('ioBadge').textContent='待测试';
+      $('cpuBadge').textContent='待测试';
+      $('memWrite').textContent='-- MB/s';
+      $('memRead').textContent='-- MB/s';
+      $('ioWrite').textContent='-- MB/s';
+      $('ioRead').textContent='-- MB/s';
+      $('cpuOps').textContent='-- MOPS';
+    }
+
+    /* ========= 轻量彩带 ========= */
+    function confettiLite(){
+      const n = 24;
+      for(let i=0;i<n;i++){
+        const d = document.createElement('div');
+        const s = d.style;
+        s.position='fixed'; s.top='-10px';
+        s.left = (Math.random()*100)+'vw';
+        s.width='6px'; s.height='14px';
+        s.background = `hsl(${Math.random()*360},90%,60%)`;
+        s.borderRadius='2px';
+        s.transform=`rotate(${Math.random()*360}deg)`;
+        s.zIndex=60; s.opacity='.9';
+        document.body.appendChild(d);
+        const vy = 60 + Math.random()*40;
+        const t0 = performance.now();
+        const fall = ()=>{
+          const t = (performance.now()-t0)/1000;
+          s.top = (t*vy)+'vh';
+          if(parseFloat(s.top) < 110) requestAnimationFrame(fall);
+          else d.remove();
+        };
+        fall();
+      }
+    }
+
+    /* ========= 首次点击同意流程 ========= */
+    function needConsent(){
+      return localStorage.getItem('perf_tester_consent') !== 'yes';
+    }
+    function showConsent(){
+      const m = $('consentModal');
+      m.style.display='flex'; m.setAttribute('aria-hidden','false');
+    }
+    function hideConsent(){
+      const m = $('consentModal');
+      m.style.display='none'; m.setAttribute('aria-hidden','true');
+    }
+
+    /* ========= 事件绑定 ========= */
+    $('startBtn').addEventListener('click', ()=>{
+      if(needConsent()){
+        showConsent();
+      }else{
+        resetUI();
+        runAll();
+      }
+    });
+    $('stopBtn').addEventListener('click', ()=>{
+      abortAll = true;
+      finalize();
+    });
+    $('restartBtn').addEventListener('click', ()=>{
+      resetUI();
+      runAll();
+    });
+    $('consentAccept').addEventListener('click', ()=>{
+      localStorage.setItem('perf_tester_consent','yes');
+      hideConsent();
+      resetUI();
+      runAll();
+    });
+    $('consentCancel').addEventListener('click', ()=>{
+      hideConsent();
+    });
+
+    // Canvas 占位提示
+    (function warmup(){
+      const c=$('gameCanvas'); const ctx=c.getContext('2d');
+      ctx.fillStyle='#0b1220'; ctx.fillRect(0,0,c.width,c.height);
+      ctx.fillStyle='#ffffff22'; ctx.font='12px ui-sans-serif';
+      ctx.fillText('点击“开始测试”启动 →', 12, 22);
+    })();
+  </script>
+</body>
+</html>

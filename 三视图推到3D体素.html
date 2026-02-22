@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>三视图推导3D体素</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #1a1f33;
+      --card: #222842;
+      --text: #e8ecff;
+      --muted: #9aa5d4;
+      --accent: #6ea8ff;
+      --ok: #41d392;
+      --warn: #ffb020;
+      --danger: #ff6b6b;
+      --line: #3a4265;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"PingFang SC","Microsoft Yahei",sans-serif;
+      background: linear-gradient(180deg,#0b0e1a,#121730 40%,#0f1220);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ====== 基础：手机端保持单列 ====== */
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    /* ====== 电脑端：更舒适的两栏布局 + 左侧吸顶 ====== */
+    @media (min-width: 1100px) {
+      .wrap {
+        grid-template-columns: 560px minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px;
+        align-items: start;
+      }
+      /* 左侧工具面板吸顶，方便一边看预览一边操作 */
+      .wrap > .panel:first-child{
+        position: sticky;
+        top: 14px;
+        max-height: calc(100vh - 28px);
+        overflow: auto;
+        overscroll-behavior: contain;
+      }
+      /* 右侧整体高度更合理 */
+      .panel.result{
+        min-height: calc(100vh - 28px);
+      }
+    }
+
+    .panel {
+      background: rgba(26,31,51,.95);
+      border: 1px solid #2a3152;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    }
+    .title { font-size: 16px; font-weight: 700; margin: 4px 0 10px; }
+    .sub { color: var(--muted); font-size: 12px; line-height: 1.5; margin-bottom: 8px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    label { font-size: 13px; color: var(--muted); }
+    input[type=number] {
+      width: 96px; background: #151a2d; border: 1px solid #313a62; color: var(--text);
+      border-radius: 8px; padding: 6px 8px; font-size: 14px; outline: none;
+    }
+    input[type=checkbox], input[type=radio] { transform: translateY(1px); margin-right: 4px; }
+    button {
+      border: none; border-radius: 10px; background: #2d3760; color: #eaf0ff;
+      padding: 8px 12px; font-size: 13px; cursor: pointer; transition: .18s ease;
+      white-space: nowrap;
+    }
+    button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-accent { background: var(--accent); color: #071024; font-weight: 700; }
+    .btn-ok { background: var(--ok); color: #052116; font-weight: 700; }
+    .btn-warn { background: var(--warn); color: #2d1f03; font-weight: 700; }
+
+    .views { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 620px) { .views { grid-template-columns: repeat(3,1fr); } }
+
+    /* 电脑端让三视图区域更“桌面化”：略增间距、卡片更稳 */
+    @media (min-width: 1100px) {
+      .views { gap: 12px; }
+      .view-card { padding: 12px; }
+    }
+
+    .view-card {
+      background: rgba(34,40,66,.95);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .view-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .name { font-size: 13px; font-weight: 700; }
+    .mini-btn { font-size: 11px; border-radius: 7px; padding: 5px 8px; background: #30395f; }
+
+    canvas.grid {
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: #14192d;
+      border: 1px solid #3a436c;
+      border-radius: 10px;
+      touch-action: none;
+      display: block;
+    }
+
+    /* 右侧预览：桌面端高度更大，更适合观察 */
+    .result { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-height: 480px; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    #renderWrap {
+      position: relative; border: 1px solid #35406b; border-radius: 12px; overflow: hidden;
+      background: radial-gradient(circle at 50% 35%,#1d2748,#111729 65%);
+      min-height: 400px; touch-action: none;
+    }
+    @media (min-width: 1100px) {
+      #renderWrap { min-height: 680px; }
+    }
+
+    #renderCanvas { width: 100%; height: 100%; display: block; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 8px; border-radius: 8px; background: #1d2440;
+      border: 1px solid #34406d; color: #dce6ff; font-size: 12px;
+    }
+    .danger { color: var(--danger); }
+    .ok { color: var(--ok); }
+
+    .voxel-count {
+      font-size: 13px;
+      margin: 8px 0;
+      padding: 6px 10px;
+      background: rgba(26, 40, 66, 0.6);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .progress-wrap {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(18, 26, 48, 0.6);
+      border: 1px solid #33406a;
+      display: none; /* 未求解时隐藏 */
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: #1c2440;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width .12s linear;
+    }
+
+    .choose-card{
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(34,40,66,.7);
+      border: 1px solid var(--line);
+      display:none;
+    }
+    .choose-title{ font-weight:700; font-size:13px; margin-bottom:6px;}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px;
+      background:#182044; border:1px solid #33406a; font-size:12px; color:#dbe6ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="title">三视图输入（至少填两个）</div>
+      <div class="sub">
+        点击格子：亮色=有方块。坐标：前(x-z)、侧(y-z)、俯(x-y)。建议 N≤5。
+      </div>
+
+      <div class="row">
+        <label>网格 N</label><input id="sizeN" type="number" min="2" max="7" value="4" />
+        <button id="resizeBtn" class="btn-accent">重置网格</button>
+        <button id="demoBtn">示例填充</button>
+        <button id="clearAllBtn">清空全部</button>
+      </div>
+
+      <div class="row">
+        <label><input id="connectedOnly" type="checkbox" checked /> 仅连通体</label>
+        <button id="analyzeBtn" class="btn-ok">先分析体素范围</button>
+        <span id="rangePill" class="pill" style="display:none;">范围：-</span>
+      </div>
+
+      <div class="views">
+        <div class="view-card">
+          <div class="view-head"><div class="name">前视图 (x-z)</div><button class="mini-btn" data-clear="front">清空</button></div>
+          <canvas id="frontCanvas" class="grid"></canvas>
+        </div>
+        <div class="view-card">
+          <div class="view-head"><div class="name">侧视图 (y-z)</div><button class="mini-btn" data-clear="side">清空</button></div>
+          <canvas id="sideCanvas" class="grid"></canvas>
+        </div>
+        <div class="view-card">
+          <div class="view-head"><div class="name">俯视图 (x-y)</div><button class="mini-btn" data-clear="top">清空</button></div>
+          <canvas id="topCanvas" class="grid"></canvas>
+        </div>
+      </div>
+
+      <div id="chooseCard" class="choose-card">
+        <div class="choose-title">第 2 步：选择体素数组（K）与生成方式</div>
+        <div class="row">
+          <button id="pickMinBtn" class="btn-accent">选择最小 K</button>
+          <button id="pickMaxBtn" class="btn-accent">选择最大 K</button>
+          <label>自定义 K</label><input id="customK" type="number" min="0" value="0" />
+          <button id="useCustomBtn">使用自定义</button>
+          <span id="pickedPill" class="pill" style="display:none;">已选：K=-</span>
+        </div>
+        <div class="row">
+          <label><input type="radio" name="genMode" value="fast" checked /> 快速（最多3解）</label>
+          <label><input type="radio" name="genMode" value="all" /> 全部解</label>
+          <button id="generateBtn" class="btn-ok" disabled>开始生成</button>
+        </div>
+        <div class="hint">提示：先“分析体素范围”，再选 K。快速模式会尽量 1 秒内返回（最多 3 个不同解）。</div>
+      </div>
+
+      <div id="status" class="hint">等待输入。</div>
+
+      <div id="progressWrap" class="progress-wrap">
+        <div class="progress-bar-bg"><div id="progressBar" class="progress-bar"></div></div>
+        <div id="progressText" class="hint" style="margin-top:4px;">进度：0%</div>
+      </div>
+    </div>
+
+    <div class="panel result">
+      <div>
+        <div class="title">3D 预览</div>
+        <div class="toolbar">
+          <span id="countBadge" class="badge">结果数: 0</span>
+          <span id="indexBadge" class="badge">当前: 0 / 0</span>
+          <button id="prevBtn">上一个</button>
+          <button id="nextBtn">下一个</button>
+          <button id="zoomInBtn">放大</button>
+          <button id="zoomOutBtn">缩小</button>
+          <button id="fitBtn">自动适配</button>
+          <button id="resetCamBtn">重置视角</button>
+          <button id="autoRotateBtn">自动旋转: 关</button>
+        </div>
+
+        <div id="voxelCount" class="voxel-count">当前体素数: 0</div>
+
+        <div class="hint" style="margin-top:8px;">
+          拖拽旋转，滚轮/双指缩放。默认视角：**正面为前视图（x-z），左边为侧视图（y-z），上面为俯视图（x-y）**；默认能看到正面一大部分、左侧与上方各一小部分。
+        </div>
+      </div>
+      <div id="renderWrap"><canvas id="renderCanvas"></canvas></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const create2D = (n, fill = false) => Array.from({ length: n }, () => Array(n).fill(fill));
+      const deepCopy2D = a => a.map(r => r.slice());
+      const deepCopy3D = a => a.map(x => x.map(y => y.slice()));
+      const sleep0 = () => new Promise(r => setTimeout(r, 0));
+
+      // ======== 位集工具（最多 128 个约束，用 BigInt 表示）========
+      const MASK64 = (1n << 64n) - 1n;
+      function setBitPair(pair, i){
+        if (i < 64) pair.lo |= (1n << BigInt(i));
+        else pair.hi |= (1n << BigInt(i-64));
+      }
+      function orPair(a,b){ return {lo: a.lo|b.lo, hi: a.hi|b.hi}; }
+      function andPair(a,b){ return {lo: a.lo&b.lo, hi: a.hi&b.hi}; }
+      function isZeroPair(a){ return a.lo===0n && a.hi===0n; }
+      function notPair(a){ return {lo: (~a.lo)&MASK64, hi:(~a.hi)&MASK64}; }
+      function popcnt32(x){
+        x = x - ((x >>> 1) & 0x55555555);
+        x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+        return (((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24;
+      }
+      function popcntPair(p){
+        const a0 = Number(p.lo & 0xffffffffn);
+        const a1 = Number((p.lo >> 32n) & 0xffffffffn);
+        const b0 = Number(p.hi & 0xffffffffn);
+        const b1 = Number((p.hi >> 32n) & 0xffffffffn);
+        return popcnt32(a0) + popcnt32(a1) + popcnt32(b0) + popcnt32(b1);
+      }
+
+      const state = {
+        N: 4,
+        views: { front: create2D(4,false), side: create2D(4,false), top: create2D(4,false) },
+        results: [],
+        voxelCounts: [],
+        current: 0,
+        solving: false,
+
+        analysis: null, // { minK, maxK, problem }
+        pickedK: null
+      };
+
+      class GridEditor {
+        constructor(canvas, getter, setter) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          this.getData = getter;
+          this.setData = setter;
+          this.dragMode = null;
+          this.lastCell = "-1,-1";
+          this.ro = new ResizeObserver(() => this.resize());
+          this.ro.observe(canvas);
+          this.bind();
+          this.resize();
+        }
+        resize() {
+          const rect = this.canvas.getBoundingClientRect();
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          this.canvas.width = Math.max(100, Math.floor(rect.width * dpr));
+          this.canvas.height = Math.max(100, Math.floor(rect.height * dpr));
+          this.ctx.setTransform(dpr,0,0,dpr,0,0);
+          this.draw();
+        }
+        cellFromEvent(e) {
+          const rect = this.canvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const n = state.N;
+          const cell = Math.min(rect.width, rect.height) / n;
+          return { cx: clamp(Math.floor(x/cell),0,n-1), cy: clamp(Math.floor(y/cell),0,n-1) };
+        }
+        applyCell(cx, cy, v) {
+          const data = this.getData();
+          if (data[cy][cx] !== v) {
+            data[cy][cx] = v;
+            this.setData(data);
+            this.draw();
+            // 改视图后清理分析结果，避免“旧范围”
+            clearAnalysis();
+          }
+        }
+        bind() {
+          this.canvas.addEventListener("pointerdown", e => {
+            e.preventDefault();
+            this.canvas.setPointerCapture(e.pointerId);
+            const { cx, cy } = this.cellFromEvent(e);
+            const data = this.getData();
+            this.dragMode = !data[cy][cx];
+            this.applyCell(cx, cy, this.dragMode);
+            this.lastCell = `${cx},${cy}`;
+          }, { passive: false });
+
+          this.canvas.addEventListener("pointermove", e => {
+            if (this.dragMode === null) return;
+            const { cx, cy } = this.cellFromEvent(e);
+            const key = `${cx},${cy}`;
+            if (key === this.lastCell) return;
+            this.lastCell = key;
+            this.applyCell(cx, cy, this.dragMode);
+          }, { passive: false });
+
+          const up = () => { this.dragMode = null; this.lastCell = "-1,-1"; };
+          this.canvas.addEventListener("pointerup", up);
+          this.canvas.addEventListener("pointercancel", up);
+          this.canvas.addEventListener("pointerleave", up);
+        }
+        draw() {
+          const n = state.N;
+          const data = this.getData();
+          const ctx = this.ctx;
+          const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+          ctx.clearRect(0,0,w,h);
+          const cell = Math.min(w,h)/n;
+          const ox = (w - cell*n)*.5, oy = (h - cell*n)*.5;
+
+          for (let y=0;y<n;y++) for (let x=0;x<n;x++) {
+            ctx.fillStyle = data[y][x] ? "#8db8ff" : "#1a2038";
+            ctx.fillRect(ox + x*cell + 1, oy + y*cell + 1, cell - 2, cell - 2);
+          }
+          ctx.strokeStyle = "#4b578a";
+          ctx.lineWidth = 1;
+          for (let i=0;i<=n;i++) {
+            const p = i*cell;
+            ctx.beginPath(); ctx.moveTo(ox+p, oy); ctx.lineTo(ox+p, oy+n*cell); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ox, oy+p); ctx.lineTo(ox+n*cell, oy+p); ctx.stroke();
+          }
+        }
+      }
+
+      // ======== 连接性检查（selected[x][y][z]）========
+      function isConnected(vox, N) {
+        let total = 0, sx = -1, sy = -1, sz = -1;
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+          if (vox[x][y][z]) { total++; if (sx < 0) { sx = x; sy = y; sz = z; } }
+        }
+        if (total <= 1) return true;
+        const vis = Array.from({length:N},()=>Array.from({length:N},()=>Array(N).fill(false)));
+        const q = [[sx,sy,sz]];
+        vis[sx][sy][sz] = true;
+        let head = 0, cnt = 1;
+        const D = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+        while (head < q.length) {
+          const [x,y,z] = q[head++];
+          for (const [dx,dy,dz] of D) {
+            const nx=x+dx, ny=y+dy, nz=z+dz;
+            if (nx<0||ny<0||nz<0||nx>=N||ny>=N||nz>=N) continue;
+            if (!vox[nx][ny][nz] || vis[nx][ny][nz]) continue;
+            vis[nx][sy][sz] = vis[nx][sy][sz]; // no-op
+            vis[nx][ny][nz] = true;
+            cnt++;
+            q.push([nx,ny,nz]);
+          }
+        }
+        return cnt === total;
+      }
+
+      function countVoxels(vox, N) {
+        let c = 0;
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) if (vox[x][y][z]) c++;
+        return c;
+      }
+
+      // ======== 构建问题（候选体素、约束、连通分量）========
+      function buildProblem(views, N, connectedOnly) {
+        const hasFront = views.front.some(r=>r.some(Boolean));
+        const hasSide  = views.side.some(r=>r.some(Boolean));
+        const hasTop   = views.top.some(r=>r.some(Boolean));
+        if ([hasFront,hasSide,hasTop].filter(Boolean).length < 2) {
+          return { error: "至少填写两个视图（且每个视图至少有一个格子）" };
+        }
+
+        // allow[x][y][z]
+        const allow = Array.from({length:N},()=>Array.from({length:N},()=>Array(N).fill(true)));
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+          if (hasFront && !views.front[z][x]) allow[x][y][z] = false; // front: (x,z)
+          if (hasSide  && !views.side[z][y])  allow[x][y][z] = false; // side: (y,z)
+          if (hasTop   && !views.top[y][x])   allow[x][y][z] = false; // top: (x,y)
+        }
+
+        // 需求单元（必须出现至少一个体素）
+        const reqFront=[], reqSide=[], reqTop=[];
+        if (hasFront) for (let z=0;z<N;z++) for (let x=0;x<N;x++) if (views.front[z][x]) reqFront.push({x,z});
+        if (hasSide)  for (let z=0;z<N;z++) for (let y=0;y<N;y++) if (views.side[z][y])  reqSide.push({y,z});
+        if (hasTop)   for (let y=0;y<N;y++) for (let x=0;x<N;x++) if (views.top[y][x])   reqTop.push({x,y});
+
+        const existsAllowedFront = (x,z)=>{ for(let y=0;y<N;y++) if(allow[x][y][z]) return true; return false; };
+        const existsAllowedSide  = (y,z)=>{ for(let x=0;x<N;x++) if(allow[x][y][z]) return true; return false; };
+        const existsAllowedTop   = (x,y)=>{ for(let z=0;z<N;z++) if(allow[x][y][z]) return true; return false; };
+
+        for (const c of reqFront) if (!existsAllowedFront(c.x,c.z)) return { error: "无解：前视图冲突" };
+        for (const c of reqSide)  if (!existsAllowedSide(c.y,c.z))  return { error: "无解：侧视图冲突" };
+        for (const c of reqTop)   if (!existsAllowedTop(c.x,c.y))   return { error: "无解：俯视图冲突" };
+
+        // 约束 bit 编号（最多 3*N*N <= 147 (N<=7)，我们硬限制 N<=7，所以 <=147，超过128不支持）
+        const mapFront = new Map();
+        const mapSide  = new Map();
+        const mapTop   = new Map();
+        let M = 0;
+        const addKey = (m, k) => { if (!m.has(k)) m.set(k, M++); };
+        if (hasFront) for (const c of reqFront) addKey(mapFront, `${c.x},${c.z}`);
+        if (hasSide)  for (const c of reqSide)  addKey(mapSide,  `${c.y},${c.z}`);
+        if (hasTop)   for (const c of reqTop)   addKey(mapTop,   `${c.x},${c.y}`);
+
+        if (M > 128) return { error: `约束过多（${M}），请减少 N 或减少涂黑面积。` };
+
+        const allMask = {lo:0n, hi:0n};
+        for (let i=0;i<M;i++) setBitPair(allMask, i);
+
+        const voxels = [];
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+          if (!allow[x][y][z]) continue;
+          const cover = {lo:0n, hi:0n};
+          if (hasFront) {
+            const id = mapFront.get(`${x},${z}`);
+            if (id !== undefined) setBitPair(cover, id);
+          }
+          if (hasSide) {
+            const id = mapSide.get(`${y},${z}`);
+            if (id !== undefined) setBitPair(cover, id);
+          }
+          if (hasTop) {
+            const id = mapTop.get(`${x},${y}`);
+            if (id !== undefined) setBitPair(cover, id);
+          }
+          voxels.push({x,y,z, cover});
+        }
+        if (voxels.length === 0) return { error: "无候选体素（请检查输入）。" };
+        if (voxels.length > 260) return { error: `候选体素过多(${voxels.length})，请减少 N 或减少涂黑面积。` };
+
+        // 连通分量（基于 allow，不是基于解）
+        const idx3 = (x,y,z)=> (x*N + y)*N + z;
+        const totalCells = N*N*N;
+        const allowFlat = new Uint8Array(totalCells);
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+          if (allow[x][y][z]) allowFlat[idx3(x,y,z)] = 1;
+        }
+
+        const visited = new Uint8Array(totalCells);
+        const compId = new Int16Array(totalCells);
+        compId.fill(-1);
+
+        const comps = []; // {cells: [linear], size, frontSeen, sideSeen, topSeen}
+        const D = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+
+        for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+          const s = idx3(x,y,z);
+          if (!allowFlat[s] || visited[s]) continue;
+          const q = [s];
+          visited[s] = 1;
+          const cells = [];
+          const frontSeen = hasFront ? new Uint8Array(N*N) : null;
+          const sideSeen  = hasSide  ? new Uint8Array(N*N) : null;
+          const topSeen   = hasTop   ? new Uint8Array(N*N) : null;
+
+          let head = 0;
+          while (head < q.length) {
+            const cur = q[head++];
+            cells.push(cur);
+            compId[cur] = comps.length;
+
+            const zz = cur % N;
+            const t = (cur - zz) / N;
+            const yy = t % N;
+            const xx = (t - yy) / N;
+
+            if (hasFront) frontSeen[zz*N + xx] = 1;
+            if (hasSide)  sideSeen[zz*N + yy]  = 1;
+            if (hasTop)   topSeen[yy*N + xx]   = 1;
+
+            for (const [dx,dy,dz] of D) {
+              const nx=xx+dx, ny=yy+dy, nz=zz+dz;
+              if (nx<0||ny<0||nz<0||nx>=N||ny>=N||nz>=N) continue;
+              const ni = idx3(nx,ny,nz);
+              if (!allowFlat[ni] || visited[ni]) continue;
+              visited[ni] = 1;
+              q.push(ni);
+            }
+          }
+          comps.push({ cells, size: cells.length, frontSeen, sideSeen, topSeen });
+        }
+
+        // 可行分量：一个解（连通体）必须全部在同一 allow 分量中（否则不可能连通）
+        const feasibleCompIds = [];
+        for (let i=0;i<comps.length;i++) {
+          const c = comps[i];
+          let ok = true;
+          if (hasFront) for (const r of reqFront) if (!c.frontSeen[r.z*N + r.x]) { ok = false; break; }
+          if (ok && hasSide)  for (const r of reqSide)  if (!c.sideSeen[r.z*N + r.y])  { ok = false; break; }
+          if (ok && hasTop)   for (const r of reqTop)   if (!c.topSeen[r.y*N + r.x])   { ok = false; break; }
+          if (ok) feasibleCompIds.push(i);
+        }
+
+        if (connectedOnly && feasibleCompIds.length === 0) {
+          return { error: "无解：在“仅连通体”条件下，候选体素分量无法覆盖全部三视图约束。" };
+        }
+
+        // 将 voxels 分配到 comp
+        const compVoxels = comps.map(()=>[]);
+        for (let i=0;i<voxels.length;i++) {
+          const v = voxels[i];
+          const cid = compId[idx3(v.x,v.y,v.z)];
+          compVoxels[cid].push(i);
+        }
+
+        return {
+          error: null,
+          N,
+          hasFront, hasSide, hasTop,
+          reqFront, reqSide, reqTop,
+          allow,
+          voxels, // 全体候选
+          allMask,
+          M,
+          comps,
+          compVoxels,
+          feasibleCompIds: connectedOnly ? feasibleCompIds : comps.map((_,i)=>i), // 若不要求连通，则所有分量都可参与（但解可跨分量）
+          connectedOnly
+        };
+      }
+
+      // ======== 求 K 范围（最小/最大）========
+      async function analyzeRange(problem) {
+        const { voxels, allMask, connectedOnly, comps, compVoxels, feasibleCompIds, M } = problem;
+
+        // 最大 K：
+        let maxK = 0;
+        if (!connectedOnly) {
+          maxK = voxels.length;
+        } else {
+          maxK = Math.max(...feasibleCompIds.map(id => comps[id].size));
+        }
+
+        const lowerBound = (() => {
+          const f = problem.reqFront.length;
+          const s = problem.reqSide.length;
+          const t = problem.reqTop.length;
+          return Math.max(f||0, s||0, t||0, Math.ceil(M/3));
+        })();
+
+        function makeCoverLists(voxelIdxList){
+          const coverLists = Array.from({length: M}, ()=>[]);
+          for (const vi of voxelIdxList) {
+            const c = voxels[vi].cover;
+            if (isZeroPair(c)) continue;
+            for (let i=0;i<M;i++) {
+              const has = (i < 64) ? ((c.lo >> BigInt(i)) & 1n) : ((c.hi >> BigInt(i-64)) & 1n);
+              if (has) coverLists[i].push(vi);
+            }
+          }
+          for (let i=0;i<M;i++) {
+            coverLists[i].sort((a,b)=>{
+              const pa = popcntPair(voxels[a].cover);
+              const pb = popcntPair(voxels[b].cover);
+              return pb - pa;
+            });
+          }
+          return coverLists;
+        }
+
+        function pickNextConstraint(uncovered, coverLists){
+          let best = -1;
+          let bestLen = 1e9;
+          for (let i=0;i<M;i++) {
+            const need = (i < 64) ? ((uncovered.lo >> BigInt(i)) & 1n) : ((uncovered.hi >> BigInt(i-64)) & 1n);
+            if (!need) continue;
+            const len = coverLists[i].length;
+            if (len < bestLen) { bestLen = len; best = i; if (bestLen <= 1) break; }
+          }
+          return best;
+        }
+
+        function existsExactK(voxelIdxList, coverLists, K, needConnected){
+          const chosen = [];
+          const chosenSet = new Uint8Array(problem.voxels.length);
+          let found = null;
+
+          const fillOrder = voxelIdxList.slice().sort((a,b)=> popcntPair(voxels[b].cover) - popcntPair(voxels[a].cover));
+
+          const buildGridAndCheck = () => {
+            const N = problem.N;
+            const sel = Array.from({length:N},()=>Array.from({length:N},()=>Array(N).fill(false)));
+            for (const vi of chosen) {
+              const v = voxels[vi];
+              sel[v.x][v.y][v.z] = true;
+            }
+            if (needConnected && !isConnected(sel, N)) return false;
+            found = sel;
+            return true;
+          };
+
+          function dfsFill(pos, remain, covered){
+            if (found) return true;
+            if (remain === 0) return buildGridAndCheck();
+            if (fillOrder.length - pos < remain) return false;
+            for (let i=pos;i<fillOrder.length;i++) {
+              const vi = fillOrder[i];
+              if (chosenSet[vi]) continue;
+              chosenSet[vi] = 1;
+              chosen.push(vi);
+              if (dfsFill(i+1, remain-1, covered)) return true;
+              chosen.pop();
+              chosenSet[vi] = 0;
+            }
+            return false;
+          }
+
+          function dfsCover(covered){
+            if (found) return true;
+            const uncovered = andPair(allMask, notPair(covered));
+            if (isZeroPair(uncovered)) {
+              const remain = K - chosen.length;
+              if (remain < 0) return false;
+              if (remain === 0) return buildGridAndCheck();
+              return dfsFill(0, remain, covered);
+            }
+
+            const uCnt = popcntPair(uncovered);
+            const lb = Math.ceil(uCnt / 3);
+            if (chosen.length + lb > K) return false;
+
+            const c = pickNextConstraint(uncovered, coverLists);
+            if (c < 0) return false;
+            const options = coverLists[c];
+            if (!options.length) return false;
+
+            for (const vi of options) {
+              if (chosenSet[vi]) continue;
+              chosenSet[vi] = 1;
+              chosen.push(vi);
+              const ncovered = orPair(covered, voxels[vi].cover);
+              if (dfsCover(ncovered)) return true;
+              chosen.pop();
+              chosenSet[vi] = 0;
+            }
+            return false;
+          }
+
+          dfsCover({lo:0n, hi:0n});
+          return found;
+        }
+
+        let minK = Infinity;
+
+        if (!connectedOnly) {
+          const voxelIdxList = voxels.map((_,i)=>i);
+          const coverLists = makeCoverLists(voxelIdxList);
+          for (let K=lowerBound; K<=maxK; K++) {
+            const ok = existsExactK(voxelIdxList, coverLists, K, false);
+            if (ok) { minK = K; break; }
+            if (K % 2 === 0) await sleep0();
+          }
+        } else {
+          for (const cid of feasibleCompIds) {
+            const voxelIdxList = compVoxels[cid];
+            const coverLists = makeCoverLists(voxelIdxList);
+            const ub = comps[cid].size;
+            for (let K=lowerBound; K<=ub; K++) {
+              const ok = existsExactK(voxelIdxList, coverLists, K, true);
+              if (ok) { minK = Math.min(minK, K); break; }
+              if (K % 2 === 0) await sleep0();
+            }
+          }
+        }
+
+        if (!Number.isFinite(minK)) {
+          return { error: "无解：无法满足约束（或连通体限制）。" };
+        }
+        return { error: null, minK, maxK };
+      }
+
+      // ======== 为指定 K 生成解（全部 or 最多3）========
+      async function solveForK(problem, K, mode, onProgress){
+        const { N, voxels, allMask, connectedOnly, comps, compVoxels, feasibleCompIds, M } = problem;
+
+        const maxOut = (mode === "fast") ? 3 : Infinity;
+        const solutions = [];
+
+        function makeCoverLists(voxelIdxList){
+          const coverLists = Array.from({length: M}, ()=>[]);
+          for (const vi of voxelIdxList) {
+            const c = voxels[vi].cover;
+            if (isZeroPair(c)) continue;
+            for (let i=0;i<M;i++) {
+              const has = (i < 64) ? ((c.lo >> BigInt(i)) & 1n) : ((c.hi >> BigInt(i-64)) & 1n);
+              if (has) coverLists[i].push(vi);
+            }
+          }
+          for (let i=0;i<M;i++) {
+            coverLists[i].sort((a,b)=>{
+              const pa = popcntPair(voxels[a].cover);
+              const pb = popcntPair(voxels[b].cover);
+              return pb - pa;
+            });
+          }
+          return coverLists;
+        }
+
+        async function enumerateOnVoxelSet(voxelIdxList, needConnected){
+          const coverLists = makeCoverLists(voxelIdxList);
+          const fillOrder = voxelIdxList.slice().sort((a,b)=> popcntPair(voxels[b].cover) - popcntPair(voxels[a].cover));
+          const chosen = [];
+          const chosenSet = new Uint8Array(problem.voxels.length);
+
+          const record = () => {
+            const sel = Array.from({length:N},()=>Array.from({length:N},()=>Array(N).fill(false)));
+            for (const vi of chosen) {
+              const v = voxels[vi];
+              sel[v.x][v.y][v.z] = true;
+            }
+            if (needConnected && !isConnected(sel, N)) return false;
+            solutions.push(sel);
+            return true;
+          };
+
+          const tStart = performance.now();
+          let visited = 0;
+          const est = Math.max(1, voxelIdxList.length * 300);
+
+          let lastYield = performance.now();
+          async function maybeYield(){
+            const now = performance.now();
+            if (now - tStart > 1000 && mode === "fast") {
+              return true; // 快速模式超时就收工
+            }
+            if (now - lastYield > 12) {
+              const p = clamp((visited / est) * 100, 0, 99.5);
+              onProgress(p);
+              lastYield = now;
+              await sleep0();
+            }
+            return false;
+          }
+
+          async function dfsFill(pos, remain, covered){
+            if (solutions.length >= maxOut) return true;
+            if (remain === 0) return record() && solutions.length >= maxOut;
+            if (fillOrder.length - pos < remain) return false;
+
+            for (let i=pos;i<fillOrder.length;i++) {
+              const vi = fillOrder[i];
+              if (chosenSet[vi]) continue;
+              chosenSet[vi] = 1;
+              chosen.push(vi);
+
+              const stop = await dfsFill(i+1, remain-1, covered);
+
+              chosen.pop();
+              chosenSet[vi] = 0;
+
+              if (stop) return true;
+              if (await maybeYield()) return true;
+            }
+            return false;
+          }
+
+          function pickNextConstraint(uncovered){
+            let best = -1;
+            let bestLen = 1e9;
+            for (let i=0;i<M;i++) {
+              const need = (i < 64) ? ((uncovered.lo >> BigInt(i)) & 1n) : ((uncovered.hi >> BigInt(i-64)) & 1n);
+              if (!need) continue;
+              const len = coverLists[i].length;
+              if (len < bestLen) { bestLen = len; best = i; if (bestLen <= 1) break; }
+            }
+            return best;
+          }
+
+          async function dfsCover(covered){
+            if (solutions.length >= maxOut) return true;
+
+            const uncovered = andPair(allMask, notPair(covered));
+            if (isZeroPair(uncovered)) {
+              const remain = K - chosen.length;
+              if (remain < 0) return false;
+              if (remain === 0) return record() && solutions.length >= maxOut;
+              return await dfsFill(0, remain, covered);
+            }
+
+            const uCnt = popcntPair(uncovered);
+            const lb = Math.ceil(uCnt / 3);
+            if (chosen.length + lb > K) return false;
+
+            const c = pickNextConstraint(uncovered);
+            if (c < 0) return false;
+            const options = coverLists[c];
+            if (!options.length) return false;
+
+            for (const vi of options) {
+              if (chosenSet[vi]) continue;
+              chosenSet[vi] = 1;
+              chosen.push(vi);
+
+              const ncovered = orPair(covered, voxels[vi].cover);
+              visited++;
+
+              const stop = await dfsCover(ncovered);
+
+              chosen.pop();
+              chosenSet[vi] = 0;
+
+              if (stop) return true;
+              if (await maybeYield()) return true;
+            }
+            return false;
+          }
+
+          await dfsCover({lo:0n, hi:0n});
+        }
+
+        if (!connectedOnly) {
+          await enumerateOnVoxelSet(voxels.map((_,i)=>i), false);
+        } else {
+          for (const cid of feasibleCompIds) {
+            if (K > comps[cid].size) continue;
+            await enumerateOnVoxelSet(compVoxels[cid], true);
+            if (solutions.length >= maxOut) break;
+          }
+        }
+
+        onProgress(100);
+        return solutions;
+      }
+
+      // ======== 3D 渲染器（修正默认视角：正面=前视图，左=侧视图，上=俯视图）========
+      class VoxelRenderer {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+          this.N = 0;
+          this.voxel = null;
+
+          // 默认视角：大部分看到前视图（x-z），略看到左侧(y-z)与上方(x-y)
+          this.rotX = 0.22; // 向下俯一点（看到上面）
+          this.rotY = 0.28; // 向右一点（让左侧可见）
+          this.scale = 0.82;
+
+          this.autoRotate = false;
+          this.dragging = false;
+          this.lastX = 0; this.lastY = 0;
+          this.pointers = new Map();
+          this.lastPinchDist = 0;
+          this.facesCache = null;
+          this.needRebuild = true;
+
+          this.ro = new ResizeObserver(() => { this.resize(); this.fitToView(); });
+          this.ro.observe(canvas.parentElement);
+          this.bind();
+          this.resize();
+          this.loop();
+        }
+
+        setData(voxel, N, options = {}) {
+          const { preserveCamera = false } = options;
+          this.voxel = voxel;
+          this.N = N;
+          this.needRebuild = true;
+          if (!preserveCamera) {
+            this.resetCamera();
+            this.fitToView();
+          }
+        }
+
+        resetCamera() {
+          this.rotX = 0.22;
+          this.rotY = 0.28;
+          this.scale = 0.82;
+        }
+
+        setAutoRotate(on) { this.autoRotate = on; }
+        zoom(f) { this.scale = clamp(this.scale * f, 0.2, 4); }
+
+        resize() {
+          const rect = this.canvas.parentElement.getBoundingClientRect();
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          this.canvas.width = Math.max(220, Math.floor(rect.width * dpr));
+          this.canvas.height = Math.max(220, Math.floor(rect.height * dpr));
+          this.ctx.setTransform(dpr,0,0,dpr,0,0);
+        }
+
+        bind() {
+          const c = this.canvas;
+          c.addEventListener("wheel", e => {
+            e.preventDefault();
+            this.zoom(e.deltaY > 0 ? 0.92 : 1.08);
+          }, { passive: false });
+
+          c.addEventListener("pointerdown", e => {
+            c.setPointerCapture(e.pointerId);
+            this.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+            if (this.pointers.size === 1) {
+              this.dragging = true; this.lastX = e.clientX; this.lastY = e.clientY;
+            } else if (this.pointers.size === 2) {
+              const p = [...this.pointers.values()];
+              this.lastPinchDist = Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y);
+            }
+          });
+
+          c.addEventListener("pointermove", e => {
+            if (!this.pointers.has(e.pointerId)) return;
+            this.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+            if (this.pointers.size === 1 && this.dragging) {
+              const dx = e.clientX - this.lastX, dy = e.clientY - this.lastY;
+              this.lastX = e.clientX; this.lastY = e.clientY;
+              this.rotY += dx * 0.01;
+              this.rotX = clamp(this.rotX + dy * 0.01, -1.5, 1.5);
+            } else if (this.pointers.size === 2) {
+              const p = [...this.pointers.values()];
+              const d = Math.hypot(p[0].x-p[1].x, p[0].y-p[1].y);
+              if (this.lastPinchDist > 0) this.zoom(d / this.lastPinchDist);
+              this.lastPinchDist = d;
+            }
+          });
+
+          const end = e => {
+            this.pointers.delete(e.pointerId);
+            if (this.pointers.size === 0) { this.dragging = false; this.lastPinchDist = 0; }
+            else if (this.pointers.size === 1) {
+              const p = [...this.pointers.values()][0];
+              this.lastX = p.x; this.lastY = p.y; this.lastPinchDist = 0;
+            }
+          };
+          c.addEventListener("pointerup", end);
+          c.addEventListener("pointercancel", end);
+        }
+
+        rebuildFaces() {
+          if (!this.voxel || !this.N) { this.facesCache = []; this.needRebuild = false; return; }
+          const N = this.N;
+          const dirs = [
+            {dx:1,dy:0,dz:0,c:"#8fc0ff"},{dx:-1,dy:0,dz:0,c:"#6ca3ec"},
+            {dx:0,dy:1,dz:0,c:"#7fb5f8"},{dx:0,dy:-1,dz:0,c:"#5e93d8"},
+            {dx:0,dy:0,dz:1,c:"#a8ceff"},{dx:0,dy:0,dz:-1,c:"#4f83c9"}
+          ];
+          const has = (x,y,z) => x>=0&&x<N&&y>=0&&y<N&&z>=0&&z<N&&this.voxel[x][y][z];
+          const faceVerts = (x,y,z,d) => {
+            const x0=x-.5,x1=x+.5,y0=y-.5,y1=y+.5,z0=z-.5,z1=z+.5;
+            if (d.dx===1) return [[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]];
+            if (d.dx===-1)return [[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],[x0,y0,z0]];
+            if (d.dy===1) return [[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]];
+            if (d.dy===-1)return [[x0,y0,z1],[x1,y0,z1],[x1,y0,z0],[x0,y0,z0]];
+            if (d.dz===1) return [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+            return [[x0,y1,z0],[x1,y1,z0],[x1,y0,z0],[x0,y0,z0]];
+          };
+
+          const faces = [];
+          for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+            if (!this.voxel[x][y][z]) continue;
+            for (const d of dirs) {
+              if (has(x+d.dx,y+d.dy,z+d.dz)) continue;
+              faces.push({ verts: faceVerts(x,y,z,d), color: d.c });
+            }
+          }
+          this.facesCache = faces;
+          this.needRebuild = false;
+        }
+
+        fitToView() {
+          if (!this.voxel || !this.N) return;
+          if (this.needRebuild) this.rebuildFaces();
+
+          const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+          if (!w || !h) return;
+          const targetW = w * 0.75, targetH = h * 0.75;
+
+          let lo = 0.2, hi = 4.0, best = this.scale;
+          for (let k=0;k<14;k++) {
+            const mid = (lo + hi) * 0.5;
+            const bb = this.projectBounds(mid);
+            const bw = bb.maxX - bb.minX;
+            const bh = bb.maxY - bb.minY;
+            if (bw <= targetW && bh <= targetH) { best = mid; lo = mid; }
+            else hi = mid;
+          }
+          this.scale = best * 0.9;
+        }
+
+        projectBounds(testScale) {
+          const N = this.N;
+          const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+          const cx=(N-1)/2, cy=(N-1)/2, cz=(N-1)/2;
+          const sinX=Math.sin(this.rotX), cosX=Math.cos(this.rotX);
+          const sinY=Math.sin(this.rotY), cosY=Math.cos(this.rotY);
+          const base=Math.min(w,h)*0.11*testScale;
+
+          const transform=(px,py,pz)=>{
+            // 映射：X=px, Y=-pz, Z=py（让正面=前视图 x-z，且z方向与网格一致）
+            let x=px-cx, y=cz-pz, z=py-cy;
+            const x1=x*cosY+z*sinY, z1=-x*sinY+z*cosY;
+            const y2=y*cosX-z1*sinX, z2=y*sinX+z1*cosX;
+            const persp=1/(1+z2*0.12+3.2);
+            return { x:w*0.5 + x1*base/persp, y:h*0.52 - y2*base/persp };
+          };
+
+          let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+          for (let x=0;x<N;x++) for (let y=0;y<N;y++) for (let z=0;z<N;z++) {
+            if (!this.voxel[x][y][z]) continue;
+            const pts = [
+              [x-.5,y-.5,z-.5],[x+.5,y-.5,z-.5],[x+.5,y+.5,z-.5],[x-.5,y+.5,z-.5],
+              [x-.5,y-.5,z+.5],[x+.5,y-.5,z+.5],[x+.5,y+.5,z+.5],[x-.5,y+.5,z+.5]
+            ];
+            for (const p of pts) {
+              const q = transform(p[0],p[1],p[2]);
+              if (q.x<minX) minX=q.x; if (q.x>maxX) maxX=q.x;
+              if (q.y<minY) minY=q.y; if (q.y>maxY) maxY=q.y;
+            }
+          }
+          if (minX > maxX) return { minX:0,minY:0,maxX:1,maxY:1 };
+          return { minX,minY,maxX,maxY };
+        }
+
+        draw() {
+          const ctx = this.ctx;
+          const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+          ctx.clearRect(0,0,w,h);
+
+          if (!this.voxel || !this.N) {
+            ctx.fillStyle = "rgba(230,236,255,.72)";
+            ctx.font = "14px system-ui";
+            ctx.fillText("暂无结果，请先分析并生成。", 16, 26);
+            return;
+          }
+
+          if (this.needRebuild) this.rebuildFaces();
+
+          const N = this.N;
+          const cx=(N-1)/2, cy=(N-1)/2, cz=(N-1)/2;
+          const sinX=Math.sin(this.rotX), cosX=Math.cos(this.rotX);
+          const sinY=Math.sin(this.rotY), cosY=Math.cos(this.rotY);
+          const base=Math.min(w,h)*0.11*this.scale;
+
+          const transform = (px,py,pz) => {
+            let x=px-cx, y=cz-pz, z=py-cy;
+            const x1=x*cosY+z*sinY;
+            const z1=-x*sinY+z*cosY;
+            const y2=y*cosX-z1*sinX;
+            const z2=y*sinX+z1*cosX;
+            const persp=1/(1+z2*0.12+3.2);
+            return { x:w*0.5+x1*base/persp, y:h*0.52-y2*base/persp, z:z2 };
+          };
+
+          const faces = [];
+          for (const f of this.facesCache) {
+            const verts = f.verts.map(p => transform(p[0],p[1],p[2]));
+            const depth = (verts[0].z+verts[1].z+verts[2].z+verts[3].z)*0.25;
+            faces.push({ verts, depth, color: f.color });
+          }
+          faces.sort((a,b)=>a.depth-b.depth);
+
+          for (const f of faces) {
+            ctx.beginPath();
+            ctx.moveTo(f.verts[0].x,f.verts[0].y);
+            ctx.lineTo(f.verts[1].x,f.verts[1].y);
+            ctx.lineTo(f.verts[2].x,f.verts[2].y);
+            ctx.lineTo(f.verts[3].x,f.verts[3].y);
+            ctx.closePath();
+            ctx.fillStyle = f.color;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(18,23,43,.46)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        loop() {
+          const tick = () => {
+            if (this.autoRotate) this.rotY += 0.01;
+            this.draw();
+            requestAnimationFrame(tick);
+          };
+          tick();
+        }
+      }
+
+      const el = {
+        sizeN: document.getElementById("sizeN"),
+        resizeBtn: document.getElementById("resizeBtn"),
+        demoBtn: document.getElementById("demoBtn"),
+        clearAllBtn: document.getElementById("clearAllBtn"),
+        connectedOnly: document.getElementById("connectedOnly"),
+        analyzeBtn: document.getElementById("analyzeBtn"),
+        rangePill: document.getElementById("rangePill"),
+        chooseCard: document.getElementById("chooseCard"),
+        pickMinBtn: document.getElementById("pickMinBtn"),
+        pickMaxBtn: document.getElementById("pickMaxBtn"),
+        customK: document.getElementById("customK"),
+        useCustomBtn: document.getElementById("useCustomBtn"),
+        pickedPill: document.getElementById("pickedPill"),
+        generateBtn: document.getElementById("generateBtn"),
+
+        status: document.getElementById("status"),
+        progressWrap: document.getElementById("progressWrap"),
+        progressBar: document.getElementById("progressBar"),
+        progressText: document.getElementById("progressText"),
+
+        countBadge: document.getElementById("countBadge"),
+        indexBadge: document.getElementById("indexBadge"),
+        prevBtn: document.getElementById("prevBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        zoomInBtn: document.getElementById("zoomInBtn"),
+        zoomOutBtn: document.getElementById("zoomOutBtn"),
+        fitBtn: document.getElementById("fitBtn"),
+        resetCamBtn: document.getElementById("resetCamBtn"),
+        autoRotateBtn: document.getElementById("autoRotateBtn"),
+        voxelCount: document.getElementById("voxelCount"),
+        frontCanvas: document.getElementById("frontCanvas"),
+        sideCanvas: document.getElementById("sideCanvas"),
+        topCanvas: document.getElementById("topCanvas")
+      };
+
+      const frontEditor = new GridEditor(el.frontCanvas, () => deepCopy2D(state.views.front), v => state.views.front = deepCopy2D(v));
+      const sideEditor  = new GridEditor(el.sideCanvas,  () => deepCopy2D(state.views.side),  v => state.views.side = deepCopy2D(v));
+      const topEditor   = new GridEditor(el.topCanvas,   () => deepCopy2D(state.views.top),   v => state.views.top = deepCopy2D(v));
+      const renderer = new VoxelRenderer(document.getElementById("renderCanvas"));
+
+      function setStatus(msg, type="normal") {
+        if (type==="error") el.status.innerHTML = `<span class="danger">${msg}</span>`;
+        else if (type==="ok") el.status.innerHTML = `<span class="ok">${msg}</span>`;
+        else el.status.textContent = msg;
+      }
+      function showProgress(show) {
+        el.progressWrap.style.display = show ? "block" : "none";
+      }
+      function setProgress(p) {
+        const v = clamp(p, 0, 100);
+        el.progressBar.style.width = `${v.toFixed(1)}%`;
+        el.progressText.textContent = `进度：${v.toFixed(1)}%`;
+      }
+      function redrawGrids() { frontEditor.draw(); sideEditor.draw(); topEditor.draw(); }
+
+      function refreshBadges() {
+        const total = state.results.length;
+        const idx = total ? state.current + 1 : 0;
+        el.countBadge.textContent = `结果数: ${total}`;
+        el.indexBadge.textContent = `当前: ${idx} / ${total}`;
+        el.prevBtn.disabled = total <= 1;
+        el.nextBtn.disabled = total <= 1;
+      }
+
+      function updateVoxelCount() {
+        if (!state.results.length) {
+          el.voxelCount.textContent = "当前体素数: 0";
+          return;
+        }
+        el.voxelCount.textContent = `当前体素数: ${state.voxelCounts[state.current] || 0}`;
+      }
+
+      function showCurrentResult(preserveCamera = true) {
+        if (!state.results.length) {
+          renderer.setData(null, 0, { preserveCamera: false });
+          refreshBadges();
+          updateVoxelCount();
+          return;
+        }
+        state.current = clamp(state.current, 0, state.results.length - 1);
+        renderer.setData(state.results[state.current], state.N, { preserveCamera });
+        refreshBadges();
+        updateVoxelCount();
+      }
+
+      function clearAnalysis(){
+        state.analysis = null;
+        state.pickedK = null;
+        el.rangePill.style.display = "none";
+        el.chooseCard.style.display = "none";
+        el.pickedPill.style.display = "none";
+        el.generateBtn.disabled = true;
+        el.customK.value = "0";
+      }
+
+      function resetGrids(n) {
+        state.N = n;
+        state.views.front = create2D(n,false);
+        state.views.side = create2D(n,false);
+        state.views.top = create2D(n,false);
+        state.results = [];
+        state.voxelCounts = [];
+        state.current = 0;
+        clearAnalysis();
+        redrawGrids();
+        showCurrentResult(false);
+        setProgress(0);
+        showProgress(false);
+        setStatus(`已重置为 N=${n}`);
+      }
+
+      function stepResult(dir) {
+        if (!state.results.length) return;
+        const len = state.results.length;
+        state.current = (state.current + dir + len) % len;
+        showCurrentResult(true);
+      }
+
+      function getGenMode(){
+        const v = document.querySelector('input[name="genMode"]:checked')?.value || "fast";
+        return v === "all" ? "all" : "fast";
+      }
+
+      function setPickedK(K){
+        state.pickedK = K;
+        el.pickedPill.style.display = "inline-flex";
+        el.pickedPill.textContent = `已选：K=${K}`;
+        el.generateBtn.disabled = false;
+      }
+
+      async function runAnalyze(){
+        if (state.solving) return;
+        const N = state.N;
+        if (N > 7) { setStatus("N 过大，建议不超过 7。", "error"); return; }
+
+        const t0 = performance.now();
+        const problem = buildProblem(state.views, N, el.connectedOnly.checked);
+        if (problem.error) {
+          setStatus(problem.error, "error");
+          clearAnalysis();
+          return;
+        }
+
+        setStatus("分析中...（会先返回最小/最大体素数）");
+        showProgress(false);
+
+        const { error, minK, maxK } = await analyzeRange(problem);
+        const t1 = performance.now();
+
+        if (error) {
+          setStatus(error, "error");
+          clearAnalysis();
+          return;
+        }
+
+        state.analysis = { minK, maxK, problem };
+        el.rangePill.style.display = "inline-flex";
+        el.rangePill.textContent = `范围：Kmin=${minK}，Kmax=${maxK}`;
+        el.chooseCard.style.display = "block";
+        el.customK.min = String(minK);
+        el.customK.max = String(maxK);
+        el.customK.value = String(minK);
+
+        state.pickedK = null;
+        el.generateBtn.disabled = true;
+        el.pickedPill.style.display = "none";
+
+        const cost = (t1 - t0).toFixed(1);
+        setStatus(`分析完成：Kmin=${minK}，Kmax=${maxK}（耗时 ${cost} ms）。请选择 K 再生成解。`, "ok");
+      }
+
+      async function runSolvePickedK(){
+        if (state.solving) return;
+        if (!state.analysis) { setStatus("请先点击“先分析体素范围”。", "error"); return; }
+        const K = state.pickedK;
+        if (K === null || K === undefined) { setStatus("请先选择或输入 K。", "error"); return; }
+
+        const { minK, maxK, problem } = state.analysis;
+        if (K < minK || K > maxK) {
+          setStatus(`K 超出范围：请输入 ${minK} ~ ${maxK}。`, "error");
+          return;
+        }
+
+        const mode = getGenMode();
+
+        state.solving = true;
+        el.analyzeBtn.disabled = true;
+        el.generateBtn.disabled = true;
+        setProgress(0);
+        showProgress(true);
+        setStatus(`求解中：K=${K}，模式=${mode==="fast"?"快速(≤3解)":"全部解"}...`);
+
+        state.results = [];
+        state.voxelCounts = [];
+        state.current = 0;
+        showCurrentResult(false);
+
+        const t0 = performance.now();
+        const sols = await solveForK(problem, K, mode, p => setProgress(p));
+        const t1 = performance.now();
+
+        state.solving = false;
+        el.analyzeBtn.disabled = false;
+        el.generateBtn.disabled = false;
+        showProgress(false);
+
+        if (!sols.length) {
+          setStatus(`无解：在 K=${K} 下找不到满足约束的解（或连通体限制）。`, "error");
+          return;
+        }
+
+        state.results = sols;
+        state.voxelCounts = sols.map(v => countVoxels(v, state.N));
+        state.current = 0;
+        showCurrentResult(false);
+
+        const cost = (t1 - t0).toFixed(1);
+        const msg = mode==="fast"
+          ? `完成：找到 ${sols.length} 个解（快速模式最多 3 个），耗时 ${cost} ms。`
+          : `完成：共 ${sols.length} 个解，耗时 ${cost} ms。`;
+        setStatus(msg, "ok");
+      }
+
+      // ======== 事件绑定 ========
+      el.resizeBtn.addEventListener("click", () => {
+        const n = clamp(parseInt(el.sizeN.value || "4", 10), 2, 7);
+        el.sizeN.value = String(n);
+        resetGrids(n);
+      });
+
+      el.clearAllBtn.addEventListener("click", () => {
+        resetGrids(state.N);
+        setStatus("已清空全部视图。");
+      });
+
+      el.demoBtn.addEventListener("click", () => {
+        const N = state.N;
+        resetGrids(N);
+        const c = Math.floor(N/2);
+        for (let i = Math.max(0,c-1); i <= Math.min(N-1,c); i++) {
+          state.views.front[c][i] = true;
+          if (c-1 >= 0) state.views.front[c-1][i] = true;
+          state.views.side[c][i] = true;
+          if (c-1 >= 0) state.views.side[c-1][i] = true;
+          for (let j = Math.max(0,c-1); j <= Math.min(N-1,c); j++) state.views.top[j][i] = true;
+        }
+        redrawGrids();
+        setStatus("已填充示例：先点“先分析体素范围”，再选择 K 生成。");
+      });
+
+      document.querySelectorAll("[data-clear]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-clear");
+          state.views[key] = create2D(state.N,false);
+          redrawGrids();
+          clearAnalysis();
+          setStatus(`已清空 ${key} 视图。`);
+        });
+      });
+
+      el.analyzeBtn.addEventListener("click", runAnalyze);
+
+      el.pickMinBtn.addEventListener("click", () => {
+        if (!state.analysis) return setStatus("请先分析范围。", "error");
+        setPickedK(state.analysis.minK);
+      });
+      el.pickMaxBtn.addEventListener("click", () => {
+        if (!state.analysis) return setStatus("请先分析范围。", "error");
+        setPickedK(state.analysis.maxK);
+      });
+      el.useCustomBtn.addEventListener("click", () => {
+        if (!state.analysis) return setStatus("请先分析范围。", "error");
+        const K = parseInt(el.customK.value || "0", 10);
+        if (!Number.isFinite(K)) return;
+        setPickedK(K);
+      });
+      el.generateBtn.addEventListener("click", runSolvePickedK);
+
+      el.prevBtn.addEventListener("click", () => stepResult(-1));
+      el.nextBtn.addEventListener("click", () => stepResult(1));
+
+      el.zoomInBtn.addEventListener("click", () => renderer.zoom(1.15));
+      el.zoomOutBtn.addEventListener("click", () => renderer.zoom(0.87));
+      el.fitBtn.addEventListener("click", () => renderer.fitToView());
+      el.resetCamBtn.addEventListener("click", () => {
+        renderer.resetCamera();
+        renderer.fitToView();
+        setStatus("视角已重置为：正面为前视图，略见左侧与上方。");
+      });
+
+      el.autoRotateBtn.addEventListener("click", () => {
+        renderer.setAutoRotate(!renderer.autoRotate);
+        el.autoRotateBtn.textContent = `自动旋转: ${renderer.autoRotate ? "开" : "关"}`;
+      });
+
+      resetGrids(4);
+      setStatus("先在至少两个视图里涂黑方格，然后点击“先分析体素范围”。");
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <title>九井棋游戏【双人版 + AI】</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#0b1220ee;
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#94a3b8; /* slate-400 */
+      --accent:#38bdf8; /* sky-400 */
+      --x:#60a5fa; /* blue-400 */
+      --o:#f472b6; /* pink-400 */
+      --win:#22c55e; /* green-500 */
+      --can:#fbbf24; /* amber-400 for playable */
+      --shadow: 0 10px 30px rgba(2,8,23,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 800px at 10% 0%, #0b122b, #0f172a 40%) fixed;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      color:var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:16px; display:grid; gap:16px}
+
+    header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .title{font-weight:800; letter-spacing:.4px}
+    .title span{opacity:.75; font-weight:600}
+
+    .panel{background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:12px; position:relative}
+
+    /* ===== Pretty Controls ===== */
+    .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .chip{display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#0c1428,#0a1020); border:1px solid #1f2937; padding:10px 12px; border-radius:14px; color:var(--text); box-shadow: var(--shadow)}
+    .chip label{opacity:.9}
+
+    select,.btn{appearance:none; font:inherit}
+
+    .select{position:relative}
+    .select select{background:#0f1a33; color:var(--text); border:1px solid #1f2937; border-radius:10px; padding:7px 36px 7px 10px; outline:none}
+    .select::after{content:""; position:absolute; right:10px; top:50%; width:10px; height:10px; border-right:2px solid #6b7280; border-bottom:2px solid #6b7280; transform:translateY(-70%) rotate(45deg); pointer-events:none}
+
+    .btn{cursor:pointer; position:relative; overflow:hidden; border:none; border-radius:12px; padding:10px 14px; color:white; font-weight:700; letter-spacing:.3px; transition:transform .08s ease, filter .2s ease, box-shadow .2s ease}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{background:linear-gradient(135deg, #0ea5e9, #8b5cf6); box-shadow: var(--shadow)}
+    .btn.ghost{background:linear-gradient(180deg,#0e1326,#0a1020); color:var(--text); border:1px solid #1f2937}
+    .btn:hover{filter:brightness(1.05); box-shadow:0 12px 30px rgba(2,8,23,.45)}
+
+    .ripple-ink{position:absolute; border-radius:999px; transform:translate(-50%,-50%) scale(0); opacity:.35; background:currentColor; pointer-events:none; animation:ripple .6s ease-out}
+    @keyframes ripple{to{transform:translate(-50%,-50%) scale(12); opacity:0}}
+
+    .layout{display:grid; grid-template-columns:1fr minmax(300px, 360px); gap:16px}
+    @media (max-width: 960px){ .layout{grid-template-columns:1fr} }
+
+    .status{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .badges{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .badge{border-radius:999px; padding:6px 10px; border:1px solid #1f2937; background:#0b1220; color:var(--text); font-size:.9rem}
+    .badge.x{border-color:var(--x)}
+    .badge.o{border-color:var(--o)}
+    .turn{font-weight:700}
+
+    .boardWrap{display:grid; gap:12px}
+    .board{aspect-ratio:1/1; width:min(94vw, 680px); max-width:100%; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+    .mini{position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:8px; border-radius:14px; background:linear-gradient(180deg,#0b1024,#0b1220); border:2px solid #1f2937; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease}
+    .mini.active{border-color:var(--accent); box-shadow:0 0 0 3px #0ea5e955}
+    .mini.won-x{background:linear-gradient(180deg,#0b1220,#0b1a33); border-color:var(--x)}
+    .mini.won-o{background:linear-gradient(180deg,#0b1220,#2a0f2a); border-color:var(--o)}
+    .mini.full{opacity:.85}
+    .cell{aspect-ratio:1/1; display:grid; place-items:center; border-radius:10px; background:#0a1222; border:1px solid #1f2937; cursor:pointer; user-select:none; font-size:clamp(20px, 6vw, 40px); font-weight:800; letter-spacing:.5px; transition:transform .08s ease, background .2s; position:relative; overflow:hidden}
+    .cell:hover{transform:translateY(-1px)}
+    .cell:active{transform:scale(.98)}
+    .cell.disabled{cursor:not-allowed; opacity:.45}
+    .mark-x{color:var(--x)}
+    .mark-o{color:var(--o)}
+    .flash{animation:flash 420ms ease}
+    @keyframes flash{0%{box-shadow:0 0 0 0 rgba(56,189,248,.0);} 30%{box-shadow:0 0 0 8px rgba(56,189,248,.18);} 100%{box-shadow:0 0 0 0 rgba(56,189,248,.0);}}
+
+    .cell.playable{box-shadow: inset 0 0 0 2px rgba(251,191,36,.8), 0 0 0 2px rgba(251,191,36,.22);} 
+    .cell.playable::before{content:""; position:absolute; inset:2px; border-radius:8px; background:radial-gradient(circle at 50% 50%, rgba(251,191,36,.22), rgba(251,191,36,.04) 60%, transparent 70%)}
+
+    .mini .winnerBadge{position:absolute; inset:auto 8px 8px auto; font-size:.9rem; padding:4px 8px; border-radius:999px; border:1px solid #1f2937; background:#0b1220aa}
+
+    .rules{line-height:1.65}
+    .rules h3{margin:.3rem 0 .4rem; font-size:1.1rem}
+    .rules ol{margin:.4rem 0 .6rem 1.3rem}
+    .rules .tip{margin-top:.4rem; color:var(--muted)}
+
+    footer{opacity:.8; font-size:.9rem; text-align:center}
+
+    @media (max-width:600px){
+      .controls{gap:8px}
+      .board{gap:8px}
+      .mini{gap:4px; padding:6px}
+      .cell{border-radius:8px}
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important}
+      .ripple-ink{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <div style="font-size:clamp(20px,3.5vw,28px)">九井棋 <span>（Ultimate Tic-Tac-Toe / Tic-Tac-Ku）</span></div>
+        <div class="hint">双人或对AI对弈，按钮美化与涟漪、手机端优化</div>
+      </div>
+      <div class="controls panel">
+        <div class="chip select"><label>对弈方式：</label>
+          <select id="mode">
+            <option value="pvp">双人</option>
+            <option value="pve">对AI</option>
+          </select>
+        </div>
+        <div class="chip select" id="difficultyChip" style="display:none;"><label>AI难度：</label>
+          <select id="difficulty">
+            <option value="easy">简单（随机）</option>
+            <option value="medium">中等（贪婪）</option>
+            <option value="hard">困难（搜索优化）</option>
+            <option value="pro">专家（迭代加深+置换表）</option>
+          </select>
+        </div>
+        <div class="chip select"><label>胜负条件：</label>
+          <select id="ruleset">
+            <option value="line">大盘连成一线（经典）</option>
+            <option value="five">先赢任意五个小盘（Tic-Tac-Ku）</option>
+          </select>
+        </div>
+        <div class="chip select"><label>先手方：</label>
+          <select id="first">
+            <option value="human">人类先手</option>
+            <option value="ai">AI先手</option>
+          </select>
+        </div>
+        <button class="btn primary" id="startBtn">开始对局</button>
+        <button class="btn ghost" id="undoBtn" title="悔棋（撤回最近一步）" style="display:none;">悔棋</button>
+        <button class="btn primary" id="restartBtn" style="display:none;">重新开局</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="boardWrap">
+        <section class="panel status" id="statusBar">
+          <div class="badges">
+            <span class="badge x">X</span>
+            <span class="badge o">O</span>
+          </div>
+          <div class="turn" id="turnText">轮到：X</div>
+          <div class="hint" id="targetText">自由落点（首手可下任意处）</div>
+        </section>
+        <main class="board" id="board" aria-label="九井棋棋盘"></main>
+      </section>
+
+      <aside class="panel rules">
+        <h3>怎么玩（简要）</h3>
+        <ol>
+          <li>棋盘由 3×3 个<strong>小盘</strong>组成，每个小盘也是 3×3 的井字格，总 81 格。</li>
+          <li>落子：<strong>必须在对手上一手所在小盘的对应位置</strong>指向的那个小盘内落子。若该目标小盘已结束或无空位，则可在<strong>任意</strong>小盘落子。</li>
+          <li>小盘胜利：某方在一个小盘内先连成三（行/列/斜）即赢得该小盘。</li>
+          <li>对局胜利：经典（大盘三连）或 Tic-Tac-Ku（任意五盘）。</li>
+        </ol>
+        <div class="tip">提示：高亮小盘为<strong>可落子</strong>区域；黄色方框即为<strong>可下处</strong>。按“开始对局”后游戏启动，设置锁定。PVE模式下悔棋撤销到玩家上一步。</div>
+      </aside>
+    </div>
+
+    <footer>© 九井棋演示（双人或AI版）。</footer>
+  </div>
+
+<script>
+(function(){
+  const boardEl = document.getElementById('board');
+  const modeEl = document.getElementById('mode');
+  const difficultyChip = document.getElementById('difficultyChip');
+  const difficultyEl = document.getElementById('difficulty');
+  const firstEl = document.getElementById('first');
+  const rulesetEl = document.getElementById('ruleset');
+  const turnText = document.getElementById('turnText');
+  const targetText = document.getElementById('targetText');
+  const startBtn = document.getElementById('startBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  function attachRipple(el){
+    el.addEventListener('click', (e)=>{
+      const r = el.getBoundingClientRect();
+      const span = document.createElement('span');
+      span.className='ripple-ink';
+      const point = e.touches? e.touches[0] : e;
+      const x = point.clientX - r.left; const y = point.clientY - r.top;
+      span.style.left = x+'px'; span.style.top = y+'px';
+      el.appendChild(span);
+      span.addEventListener('animationend', ()=> span.remove());
+    }, {passive:true});
+  }
+  [startBtn, restartBtn, undoBtn].forEach(attachRipple);
+
+  // ===== State =====
+  let S = createInitialState();
+  let history = [];
+  let gameStarted = false;
+  let aiPlayer = 0; // 1 if AI is X, -1 if AI is O, 0 if pvp
+  let humanPlayer = 1; // 1 if human is X, -1 if human is O
+
+  // ===== Constants & helpers =====
+  const LINES3 = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const INF = 1e9|0;
+  const MATE = 1e8|0; // 终局值
+
+  // Build board UI
+  const miniEls = [];
+  const cellEls = [];
+  for(let m=0;m<9;m++){
+    const mini = document.createElement('div');
+    mini.className = 'mini';
+    mini.dataset.idx = m;
+    const winnerBadge = document.createElement('div');
+    winnerBadge.className = 'winnerBadge';
+    winnerBadge.style.display = 'none';
+    mini.appendChild(winnerBadge);
+
+    const cells=[];
+    for(let c=0;c<9;c++){
+      const cell = document.createElement('div');
+      cell.className='cell';
+      cell.dataset.m = m;
+      cell.dataset.c = c;
+      cell.addEventListener('click', onCellClick, {passive:true});
+      mini.appendChild(cell);
+      cells.push(cell);
+    }
+    boardEl.appendChild(mini);
+    miniEls.push(mini);
+    cellEls.push(cells);
+  }
+
+  function createInitialState(){
+    return {
+      cells: Array(81).fill(0), // 0 empty, 1 X, -1 O
+      mini: Array(9).fill(0),   // 0 ongoing, 1 X, -1 O, 2 draw/full
+      target: -1,               // next target mini [0..8] or -1 any
+      player: 1,                // 1 X, -1 O
+      winner: 0,                // 0 none, 1 X, -1 O, 2 draw
+      ruleset: 'line',
+      lastMove: null,
+      hash: 0n,                 // Zobrist hash（搜索用）
+    };
+  }
+
+  // 安全深拷贝（支持 BigInt）
+  function cloneState(src){
+    return {
+      cells: src.cells.slice(),
+      mini: src.mini.slice(),
+      target: src.target,
+      player: src.player,
+      winner: src.winner,
+      ruleset: src.ruleset,
+      lastMove: src.lastMove,
+      hash: src.hash
+    };
+  }
+
+  function coordToIndex(m,c){
+    const rowBig = Math.floor(m/3), colBig = m%3; const row = Math.floor(c/3), col = c%3;
+    return (rowBig*27) + (row*9) + (colBig*3) + col;
+  }
+  function indexToMiniAndCell(idx){
+    const gr = Math.floor(idx/9);
+    const gc = idx % 9;
+    const rowBig = Math.floor(gr/3), colBig = Math.floor(gc/3);
+    const row = gr % 3, col = gc % 3;
+    const m = rowBig*3 + colBig; const c = row*3 + col; return [m,c];
+  }
+  function miniStartIndex(m){ const rowBig = Math.floor(m/3), colBig = m%3; return rowBig*27 + colBig*3; }
+
+  function playableCells(state){
+    const res=[]; const target = state.target;
+    const addIfPlayable = (m,c)=>{
+      if(state.mini[m]!==0 && state.mini[m]!==2) return;
+      const idx = coordToIndex(m,c); if(state.cells[idx]===0) res.push(idx);
+    };
+    if(target===-1 || state.mini[target]!==0){
+      for(let m=0;m<9;m++) if(state.mini[m]===0 || state.mini[m]===2){ for(let c=0;c<9;c++) addIfPlayable(m,c); }
+    }else{ for(let c=0;c<9;c++) addIfPlayable(target,c); }
+    return res;
+  }
+
+  function checkMiniWinner(state, m){
+    const start = miniStartIndex(m);
+    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
+    for(const [a,b,c] of LINES3){ const s=g[a]+g[b]+g[c]; if(s===3) return 1; if(s===-3) return -1; }
+    if(g.every(v=>v!==0)) return 2; return 0;
+  }
+
+  function checkBigWinner(state){
+    if(state.ruleset==='five'){
+      const xCount = state.mini.filter(v=>v===1).length; const oCount = state.mini.filter(v=>v===-1).length;
+      if(xCount>=5) return 1; if(oCount>=5) return -1;
+    } else {
+      const b = state.mini.map(v=> v===1?1:(v===-1?-1:0));
+      for(const [a,b1,c] of LINES3){ const s=b[a]+b[b1]+b[c]; if(s===3) return 1; if(s===-3) return -1; }
+    }
+    if(state.mini.every(v=>v!==0)) return 2; return 0;
+  }
+
+  // 用 cloneState，避免 JSON + BigInt 报错
+  function move(state, idx){
+    const ns = cloneState(state);
+    if(ns.winner || ns.cells[idx]!==0) return ns;
+    const [m,c] = indexToMiniAndCell(idx);
+    if(!(ns.target===-1 || ns.mini[ns.target]!==0 || m===ns.target)) return ns; // 非法
+
+    ns.cells[idx] = ns.player; 
+    ns.lastMove = idx;
+
+    const winMini = checkMiniWinner(ns, m); 
+    if(winMini!==ns.mini[m]) ns.mini[m]=winMini;
+
+    ns.target = c; 
+    if(ns.mini[ns.target]!==0) ns.target = -1;
+
+    ns.winner = checkBigWinner(ns); 
+    ns.player *= -1;
+    // ns.hash 由外层统一 compute
+    return ns;
+  }
+
+  function setRuleset(rs){ S.ruleset = rs; S.winner = checkBigWinner(S); render(); }
+
+  // ========== 强化AI：Zobrist、置换表、迭代加深、启发式 ==========
+  function rand64(){ const hi = Math.floor(Math.random()*0xffffffff)>>>0; const lo = Math.floor(Math.random()*0xffffffff)>>>0; return (BigInt(hi)<<32n) ^ BigInt(lo); }
+  const Z = {
+    cell: Array.from({length:81}, ()=> [rand64(), rand64()]),
+    player: rand64(),
+    target: Array.from({length:10}, ()=> rand64()), // target -1..8 -> 索引 +1
+  };
+
+  function computeHash(state){
+    let h = 0n;
+    for(let i=0;i<81;i++){ const v = state.cells[i]; if(v===1) h^=Z.cell[i][0]; else if(v===-1) h^=Z.cell[i][1]; }
+    h ^= Z.target[state.target+1];
+    if(state.player===1) h ^= Z.player;
+    return h;
+  }
+
+  function doMoveLocal(s, idx){
+    const [m,c] = indexToMiniAndCell(idx);
+    const rec = {
+      idx, m, c,
+      prevPlayer: s.player,
+      prevTarget: s.target,
+      prevMini: s.mini[m],
+      prevWinner: s.winner,
+      prevLast: s.lastMove,
+      prevHash: s.hash,
+    };
+    if(s.player===1) s.hash ^= Z.player;
+
+    s.cells[idx] = s.player;
+    s.hash ^= (s.player===1? Z.cell[idx][0] : Z.cell[idx][1]);
+    s.lastMove = idx;
+
+    const winMini = checkMiniWinner(s, m);
+    if(winMini!==s.mini[m]) s.mini[m]=winMini;
+
+    s.hash ^= Z.target[s.target+1];
+    s.target = c; if(s.mini[s.target]!==0) s.target = -1;
+    s.hash ^= Z.target[s.target+1];
+
+    s.winner = checkBigWinner(s);
+
+    s.player *= -1;
+    if(s.player===1) s.hash ^= Z.player;
+
+    return rec;
+  }
+  function undoMoveLocal(s, rec){
+    if(s.player===1) s.hash ^= Z.player;
+    s.player *= -1;
+
+    s.hash ^= Z.target[s.target+1];
+    s.target = rec.prevTarget;
+    s.hash ^= Z.target[s.target+1];
+
+    const idx = rec.idx;
+    const v = (s.player);
+    s.hash ^= (v===1? Z.cell[idx][0] : Z.cell[idx][1]);
+    s.cells[idx] = 0;
+
+    s.mini[rec.m] = rec.prevMini;
+    s.winner = rec.prevWinner;
+    s.lastMove = rec.prevLast;
+
+    if(s.player===1) s.hash ^= Z.player;
+
+    s.hash = rec.prevHash;
+  }
+
+  const killerMoves = Array.from({length:64}, ()=> [null, null]);
+  const historyScore = new Int32Array(81);
+  function pushKiller(ply, mv){
+    const ks = killerMoves[ply];
+    if(ks[0]!==mv){ ks[1] = ks[0]; ks[0] = mv; }
+  }
+  function bumpHistory(mv, depth){ historyScore[mv] += depth*depth; }
+
+  function evaluateFor(state, p){
+    if(state.winner===2) return 0;
+    if(state.winner===p) return 100000;
+    if(state.winner===-p) return -100000;
+
+    let score = 0;
+
+    // 大盘：线势能
+    const big = state.mini.map(v => v===1?1:(v===-1?-1:0));
+    let pBig = 0;
+    for(const [a,b,c] of LINES3){
+      const s = big[a]+big[b]+big[c];
+      if(s===2*p) pBig += 500;
+      else if(s===p) pBig += 150;
+      else if(s===-2*p) pBig -= 500;
+      else if(s===-p) pBig -= 150;
+    }
+    // 已赢小盘
+    for(let m=0;m<9;m++){
+      if(state.mini[m]===p){ score += 380 + (m===4?80:(m%2===0?40:0)); }
+      else if(state.mini[m]===-p){ score -= 380 + (m===4?80:(m%2===0?40:0)); }
+    }
+
+    // 未结束小盘内部势
+    for(let m=0;m<9;m++){
+      if(state.mini[m]!==0) continue;
+      const start = miniStartIndex(m);
+      const g = [
+        state.cells[start+0], state.cells[start+1], state.cells[start+2],
+        state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2],
+        state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2]
+      ];
+      let miniScore = 0;
+      for(const [a,b,c] of LINES3){
+        const sum = g[a]+g[b]+g[c];
+        if(sum===2*p) miniScore += 60;
+        else if(sum===p) miniScore += 18;
+        else if(sum===-2*p) miniScore -= 60;
+        else if(sum===-p) miniScore -= 18;
+      }
+      if(g[4]===p) miniScore += 12; else if(g[4]===-p) miniScore -= 12;
+      [0,2,6,8].forEach(i=>{
+        if(g[i]===p) miniScore += 5; else if(g[i]===-p) miniScore -= 5;
+      });
+      score += miniScore;
+    }
+
+    // 目标/机动性
+    if(state.target!==-1 && state.mini[state.target]===0){
+      const t = state.target;
+      score += - evaluateMiniAgainst(state, t, -p) * 0.6;
+    } else {
+      score += (playableCells(state).length - 20) * 1.2;
+    }
+
+    return score + pBig;
+  }
+  function evaluateMiniAgainst(state, m, q){
+    const start = miniStartIndex(m);
+    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
+    let s=0;
+    for(const [a,b,c] of LINES3){
+      const sum = g[a]+g[b]+g[c];
+      if(sum===2*q) s += 30;
+      else if(sum===q) s += 8;
+      else if(sum===-2*q) s -= 30;
+      else if(sum===-q) s -= 8;
+    }
+    if(g[4]===q) s+=6; else if(g[4]===-q) s-=6;
+    return s;
+  }
+
+  function orderMoves(state, moves, pvMove, ply){
+    const list = moves.map(idx => {
+      const [m,c] = indexToMiniAndCell(idx);
+      let h = historyScore[idx] | 0;
+
+      if(c===4) h += 120;
+      else if(c===0||c===2||c===6||c===8) h += 60;
+
+      const rec = doMoveLocal(state, idx);
+      const winNow = (state.winner!==0 && state.winner!==2);
+      let local = 0;
+      if(winNow) local += 900000;
+      else{
+        if(rec.prevMini===0 && state.mini[rec.m]!==0 && state.mini[rec.m]!==2) local += 1500;
+
+        const oppTarget = state.target;
+        if(oppTarget!==-1 && state.mini[oppTarget]===0){
+          local += (evaluateMiniAgainst(state, oppTarget, state.player) * -1) | 0;
+        }
+      }
+      undoMoveLocal(state, rec);
+
+      const ks = killerMoves[ply];
+      if(ks[0]===idx) h += 5000;
+      else if(ks[1]===idx) h += 3000;
+
+      return {idx, key: h + local};
+    });
+
+    if(pvMove!=null){
+      for(const it of list){ if(it.idx===pvMove) it.key += 800000; }
+    }
+
+    list.sort((a,b)=> b.key - a.key);
+    return list.map(x=>x.idx);
+  }
+
+  const TT = new Map(); // key: hash(BigInt string) -> {depth, score, flag, best}
+  const TT_EXACT=0, TT_LOWER=1, TT_UPPER=2;
+
+  function staticEval(state){ return evaluateFor(state, state.player); }
+  function terminalScore(state){
+    if(state.winner===2) return 0;
+    if(state.winner!==0) return -MATE;
+    return 0;
+  }
+
+  function negamax(state, depth, alpha, beta, ply, deadline, pvMove){
+    if(performance.now() > deadline) return {aborted:true};
+    if(state.winner!==0){
+      return {score: terminalScore(state), move: null, aborted:false};
+    }
+    if(depth===0){
+      return {score: staticEval(state)|0, move: null, aborted:false};
+    }
+
+    const key = state.hash.toString();
+    const t = TT.get(key);
+    if(t && t.depth>=depth){
+      if(t.flag===TT_EXACT) return {score: t.score, move: t.best, aborted:false};
+      if(t.flag===TT_LOWER && t.score>alpha) alpha = t.score;
+      else if(t.flag===TT_UPPER && t.score<beta) beta = t.score;
+      if(alpha>=beta) return {score: t.score, move: t.best, aborted:false};
+    }
+
+    const moves = playableCells(state);
+    if(moves.length===0){ return {score:0, move:null, aborted:false}; }
+
+    const ordered = orderMoves(state, moves, t?.best ?? pvMove, ply);
+
+    let bestMove = ordered[0];
+    let value = -INF;
+    const alphaOrig = alpha;
+
+    for(let i=0;i<ordered.length;i++){
+      const mv = ordered[i];
+      const rec = doMoveLocal(state, mv);
+
+      let nextDepth = depth - 1;
+      if(depth>=3 && i>=6){ nextDepth = depth - 2; }
+
+      const child = negamax(state, nextDepth, -beta, -alpha, ply+1, deadline, t?.best);
+      undoMoveLocal(state, rec);
+
+      if(child.aborted) return {aborted:true};
+
+      const score = -child.score;
+      if(score > value){ value = score; bestMove = mv; }
+      if(score > alpha) alpha = score;
+
+      if(alpha>=beta){
+        pushKiller(ply, mv);
+        bumpHistory(mv, depth);
+        break;
+      }
+    }
+
+    const flag = value<=alphaOrig ? TT_UPPER : (value>=beta ? TT_LOWER : TT_EXACT);
+    TT.set(key, {depth, score:value, flag, best:bestMove});
+    return {score:value, move:bestMove, aborted:false};
+  }
+
+  function aiSearchStrong(state, timeMs, maxDepth=14){
+    const W = {
+      cells: state.cells.slice(),
+      mini: state.mini.slice(),
+      target: state.target,
+      player: state.player,
+      winner: state.winner,
+      ruleset: state.ruleset,
+      lastMove: state.lastMove,
+      hash: 0n,
+    };
+    W.hash = computeHash(W);
+
+    const deadline = performance.now() + Math.max(100, timeMs|0);
+    let best = null, bestScore = -INF;
+    let pv = null;
+
+    for(let d=2; d<=maxDepth; d++){
+      const r = negamax(W, d, -INF, INF, 0, deadline, pv);
+      if(r.aborted) break;
+      if(r.move!=null){ best = r.move; bestScore = r.score; pv = r.move; }
+      if(bestScore> MATE/2) break;
+    }
+    if(best==null){
+      const mvs = playableCells(state);
+      if(mvs.length===0) return undefined;
+      best = orderMoves(W, mvs, null, 0)[0];
+    }
+    return best;
+  }
+
+  // ===== AI Logic =====
+  function aiMove() {
+    if (S.winner !== 0 || S.player !== aiPlayer) return;
+    const difficulty = difficultyEl.value;
+    let bestMove;
+
+    if (difficulty === 'easy') {
+      bestMove = aiEasy(S);
+    } else if (difficulty === 'medium') {
+      bestMove = aiMedium(S);
+    } else if (difficulty === 'hard') {
+      bestMove = aiSearchStrong(S, 600, 13); // 困难：~0.6s
+    } else { // pro
+      bestMove = aiSearchStrong(S, 1500, 14); // 专家：~1.5s
+    }
+
+    if (bestMove !== undefined) {
+      history.push(cloneState(S));         // ✅ 不用 JSON
+      S = move(S, bestMove);
+      S.hash = computeHash(S);             // ✅ 更新哈希
+      render();
+    }
+  }
+
+  function aiEasy(state) {
+    const moves = playableCells(state);
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  function aiMedium(state) {
+    const moves = playableCells(state);
+    let bestScore = -Infinity;
+    let bestIdx;
+    for (const idx of moves) {
+      const testState = move(state, idx);
+      const score = evaluateFor(testState, aiPlayer);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = idx;
+      }
+    }
+    return bestIdx;
+  }
+
+  // ===== Rendering / Controls =====
+  function render(){
+    const playable = new Set(playableCells(S));
+    for(let m=0;m<9;m++){
+      const mini = miniEls[m]; mini.classList.toggle('active', S.target===-1 ? (S.mini[m]===0 || S.mini[m]===2) : m===S.target);
+      mini.classList.toggle('won-x', S.mini[m]===1); mini.classList.toggle('won-o', S.mini[m]===-1); mini.classList.toggle('full', S.mini[m]===2);
+      const badge = mini.querySelector('.winnerBadge');
+      if(S.mini[m]===1){ badge.textContent='X 赢'; badge.style.display='block'; }
+      else if(S.mini[m]===-1){ badge.textContent='O 赢'; badge.style.display='block'; }
+      else if(S.mini[m]===2){ badge.textContent='和'; badge.style.display='block'; }
+      else badge.style.display='none';
+
+      for(let c=0;c<9;c++){
+        const cell = cellEls[m][c]; const idx = coordToIndex(m,c); const v = S.cells[idx];
+        cell.textContent = v===1?'X':(v===-1?'O':'');
+        cell.className = 'cell'+(v===1?' mark-x':v===-1?' mark-o':'');
+        const enabled = playable.has(idx) && S.winner===0 && gameStarted;
+        cell.classList.toggle('disabled', !enabled);
+        cell.classList.toggle('playable', enabled);
+        if(idx===S.lastMove) cell.classList.add('flash'); else cell.classList.remove('flash');
+      }
+    }
+    const thinking = (S.player === aiPlayer && S.winner===0 && gameStarted && modeEl.value==='pve');
+    turnText.textContent = S.winner? (S.winner===2? '平局' : `胜者：${S.winner===1?'X':'O'}`) : `轮到：${S.player===1?'X':'O'}`;
+    targetText.textContent = S.winner? (S.winner===2? '对局结束（平局）' : '对局结束') :
+      (thinking ? 'AI思考中…' : (S.target===-1 ? '可在任意未结束的小盘落子' : `请在第 ${S.target+1} 个小盘中落子`));
+
+    if (thinking) {
+      setTimeout(aiMove, 10);
+    }
+  }
+
+  function lockSettings() {
+    modeEl.disabled = true;
+    rulesetEl.disabled = true;
+    firstEl.disabled = true;
+    difficultyEl.disabled = true;
+    startBtn.style.display = 'none';
+    undoBtn.style.display = 'inline-block';
+    restartBtn.style.display = 'inline-block';
+  }
+
+  function unlockSettings() {
+    modeEl.disabled = false;
+    rulesetEl.disabled = false;
+    firstEl.disabled = false;
+    difficultyEl.disabled = false;
+    startBtn.style.display = 'inline-block';
+    undoBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+  }
+
+  function resetGame(){
+    S = createInitialState(); S.ruleset = rulesetEl.value; history.length = 0;
+    gameStarted = false;
+    unlockSettings();
+    const isPve = modeEl.value === 'pve';
+    difficultyChip.style.display = isPve ? 'flex' : 'none';
+    if (isPve) {
+      const isHumanFirst = firstEl.value === 'human';
+      if (isHumanFirst) {
+        humanPlayer = 1; // 人类 X
+        aiPlayer = -1;   // AI O
+        S.player = 1;
+      } else {
+        humanPlayer = -1; // 人类 O
+        aiPlayer = 1;     // AI X
+        S.player = 1;
+      }
+    } else {
+      aiPlayer = 0;
+      const isHumanFirst = firstEl.value === 'human';
+      S.player = isHumanFirst ? 1 : -1;
+    }
+    S.hash = computeHash(S);
+    render();
+  }
+
+  function startGame() {
+    if (gameStarted) return;
+    gameStarted = true;
+    lockSettings();
+    if (modeEl.value === 'pve' && S.player === aiPlayer) {
+      render(); // 会触发 AI 思考
+      return;
+    }
+    render();
+  }
+
+  function undo(){ 
+    if(history.length===0 || !gameStarted) return; 
+    const stepsToUndo = (modeEl.value === 'pve' && S.player === humanPlayer && history.length >= 2) ? 2 : 1;
+    for(let i=0; i<stepsToUndo; i++){
+      if(history.length===0) break;
+      S = history.pop();
+    }
+    S.hash = computeHash(S);
+    render(); 
+  }
+
+  function onCellClick(e){
+    if (!gameStarted || S.winner !== 0) return;
+    const idx = coordToIndex(+e.currentTarget.dataset.m, +e.currentTarget.dataset.c);
+    const legalSet = new Set(playableCells(S)); if(!legalSet.has(idx)) return;
+    if (modeEl.value === 'pve' && S.player === aiPlayer) return; // AI回合禁止点击
+    history.push(cloneState(S)); // ✅ 不用 JSON
+    S = move(S, idx);
+    S.hash = computeHash(S);     // ✅ 更新哈希
+    render();
+  }
+
+  // Wire controls
+  modeEl.addEventListener('change', () => {
+    const isPve = modeEl.value === 'pve';
+    difficultyChip.style.display = isPve ? 'flex' : 'none';
+    resetGame();
+  });
+  firstEl.addEventListener('change', resetGame);
+  rulesetEl.addEventListener('change', ()=>{ setRuleset(rulesetEl.value); S.hash = computeHash(S); });
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', resetGame);
+  undoBtn.addEventListener('click', undo);
+  difficultyEl.addEventListener('change', resetGame);
+
+  // Initial
+  resetGame(); render();
+})();
+</script>
+</body>
+</html>

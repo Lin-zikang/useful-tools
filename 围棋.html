@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>围棋</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    body {
+      background: radial-gradient(circle, #6a7db3, #a2c2e5);
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      color: #ffffff;
+    }
+    canvas {
+      margin-top: 80px;
+      box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
+      cursor: pointer;
+      background-color: #fefefe;
+      border-radius: 15px;
+    }
+    .btn-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .btn-wrap span {
+      display: inline-block;
+      padding: 12px 30px;
+      color: #fff;
+      background-color: #00aaff;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    .btn-wrap span:hover {
+      background-color: #0077cc;
+      transform: scale(1.1);
+    }
+    #result-wrap {
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      color: #f2f2f2;
+      margin-top: 10px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    @media (max-width: 600px) {
+      canvas {
+        width: 90%;
+        height: auto;
+      }
+      #result-wrap {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="chess" width="570px" height="570px"></canvas>
+  <div id="result-wrap">--围棋对战--</div>
+  <div class="btn-wrap">
+    <div id="endgame">
+      <span>结束对局</span>
+    </div>
+    <div id="restart" class="restart" style="display: none;">
+      <span>重新开始</span>
+    </div>
+  </div>
+  
+  <script>
+    const size = 19;
+    let over = false;
+    let me = true; // true：轮到玩家（黑棋），false：轮到AI（白棋）
+    let chessBoard = Array.from({ length: size }, () => Array(size).fill(0));
+    let koPosition = null;
+
+    const CAPTURE_THRESHOLD = 20;  // 捕获超过20子判定为胜利
+    let capturedByBlack = 0;  // 玩家（黑棋）捕获白子
+    let capturedByWhite = 0;  // AI（白棋）捕获黑子
+    
+    const chess = document.getElementById("chess");
+    const ctx = chess.getContext('2d');
+    ctx.strokeStyle = '#bfbfbf';
+
+    function drawBoard() {
+      ctx.clearRect(0, 0, chess.width, chess.height);
+      for (let i = 0; i < size; i++) {
+        ctx.beginPath();
+        ctx.moveTo(15 + i * 30, 15);
+        ctx.lineTo(15 + i * 30, chess.height - 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(15, 15 + i * 30);
+        ctx.lineTo(chess.width - 15, 15 + i * 30);
+        ctx.stroke();
+      }
+    }
+
+    function drawStone(x, y, isBlack) {
+      ctx.beginPath();
+      ctx.arc(15 + x * 30, 15 + y * 30, 13, 0, Math.PI * 2);
+      ctx.fillStyle = isBlack ? '#000' : '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#666';
+      ctx.stroke();
+    }
+
+    // 获取连片棋子的所有“气”
+    function getGroupLiberty(x, y, board, visited = new Set()) {
+      const key = `${x},${y}`;
+      if (visited.has(key)) return [];
+      visited.add(key);
+      
+      const color = board[x][y];
+      let liberties = [];
+      const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+      
+      for (const [dx, dy] of directions) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+          if (board[nx][ny] === 0) {
+            liberties.push([nx, ny]);
+          } else if (board[nx][ny] === color) {
+            liberties = liberties.concat(getGroupLiberty(nx, ny, board, visited));
+          }
+        }
+      }
+      return [...new Set(liberties.map(p => p.join(',')))].map(p => p.split(',').map(Number));
+    }
+
+    // 判断在 (x,y) 落子是否合法
+    function isValidMove(x, y, color) {
+      if (x < 0 || x >= size || y < 0 || y >= size) return false;
+      if (chessBoard[x][y] !== 0) return false;
+      if (koPosition && x === koPosition[0] && y === koPosition[1]) return false;
+      
+      const tempBoard = chessBoard.map(row => [...row]);
+      tempBoard[x][y] = color;
+      const liberties = getGroupLiberty(x, y, tempBoard);
+      if (liberties.length > 0) return true;
+      
+      let captured = false;
+      const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+      for (const [dx, dy] of directions) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < size && ny >= 0 && ny < size && tempBoard[nx][ny] === 3 - color) {
+          const enemyLiberties = getGroupLiberty(nx, ny, tempBoard);
+          if (enemyLiberties.length === 0) {
+            captured = true;
+            break;
+          }
+        }
+      }
+      return captured;
+    }
+
+    // 吃子操作：检查四周敌方棋子，若无气则移除
+    function captureStones(x, y, color) {
+      let captured = 0;
+      let capturedPositions = [];
+      const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+      for (const [dx, dy] of directions) {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < size && ny >= 0 && ny < size && chessBoard[nx][ny] === 3 - color) {
+          const visited = new Set();
+          const liberties = getGroupLiberty(nx, ny, chessBoard, visited);
+          if (liberties.length === 0) {
+            captured += visited.size;
+            for (const pos of visited) {
+              const [px, py] = pos.split(',').map(Number);
+              chessBoard[px][py] = 0;
+              ctx.clearRect(px * 30, py * 30, 30, 30);
+              capturedPositions.push([px, py]);
+            }
+          }
+        }
+      }
+      if (captured === 1) {
+        koPosition = capturedPositions[0];
+      } else {
+        koPosition = null;
+      }
+      return captured;
+    }
+
+    // 结束对局并判定胜负
+    function endGame(winner) {
+      if (over) return;
+      over = true;
+      let resultText = `你（黑）捕获的子数：${capturedByBlack}，AI（白）捕获的子数：${capturedByWhite}。`;
+      if (winner === 'black') {
+        resultText += " 你获胜！";
+      } else if (winner === 'white') {
+        resultText += " AI获胜！";
+      }
+      document.getElementById("result-wrap").textContent = resultText;
+      document.getElementById("endgame").style.display = "none";
+      document.getElementById("restart").style.display = "block";
+    }
+
+    // 新增：判断捕获过多子后直接判胜
+    function checkCaptureThreshold() {
+      if (capturedByBlack >= CAPTURE_THRESHOLD) {
+        endGame('black');
+      } else if (capturedByWhite >= CAPTURE_THRESHOLD) {
+        endGame('white');
+      }
+    }
+
+    // AI落子
+    function aiMove() {
+      let bestScore = -Infinity;
+      let bestMoves = [];
+      let validMoves = [];
+      
+      for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+          if (isValidMove(x, y, 2)) {
+            validMoves.push([x, y]);
+          }
+        }
+      }
+      
+      if (validMoves.length === 0) {
+        me = true;
+        document.getElementById("result-wrap").textContent = "AI选择Pass！";
+        return;
+      }
+      
+      for (const [x, y] of validMoves) {
+        let score = 0;
+        const centerDist = Math.abs(x - ((size - 1) / 2)) + Math.abs(y - ((size - 1) / 2));
+        score += (30 - centerDist);
+        
+        const directions = [[-1,0],[1,0],[0,-1],[0,1]];
+        let adjacentFriendly = 0;
+        let adjacentEnemyBonus = 0;
+        let adjacentTotal = 0;
+        for (const [dx, dy] of directions) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+            if (chessBoard[nx][ny] !== 0) {
+              adjacentTotal++;
+              if (chessBoard[nx][ny] === 2) {
+                adjacentFriendly++;
+              } else if (chessBoard[nx][ny] === 1) {
+                const libs = getGroupLiberty(nx, ny, chessBoard);
+                if (libs.length === 1) {
+                  adjacentEnemyBonus += 300; // 提子机会
+                } else {
+                  adjacentEnemyBonus += (10 / libs.length);
+                }
+              }
+            }
+          }
+        }
+        if (adjacentTotal === 0) {
+          score -= 50;
+        } else {
+          score += adjacentFriendly * 20;
+          score += adjacentEnemyBonus;
+        }
+        score += Math.random() * 10;
+        if (score > bestScore) {
+          bestScore = score;
+          bestMoves = [[x, y]];
+        } else if (score === bestScore) {
+          bestMoves.push([x, y]);
+        }
+      }
+      
+      if (bestMoves.length > 0) {
+        const [x, y] = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        setTimeout(() => {
+          chessBoard[x][y] = 2;
+          drawStone(x, y, false);
+          let captured = captureStones(x, y, 2);
+          if (captured > 0) {
+            capturedByWhite += captured;
+            checkCaptureThreshold();
+            if (over) return;
+          }
+          me = true;
+        }, 500);
+      }
+    }
+
+    drawBoard();
+
+    chess.addEventListener('click', (e) => {
+      if (over || !me) return;
+      
+      const rect = chess.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / (rect.width / size));
+      const y = Math.floor((e.clientY - rect.top) / (rect.height / size));
+      
+      if (isValidMove(x, y, 1)) {
+        chessBoard[x][y] = 1;
+        drawStone(x, y, true);
+        let captured = captureStones(x, y, 1);
+        if (captured > 0) {
+          capturedByBlack += captured;
+          checkCaptureThreshold();
+          if (over) return;
+        }
+        me = false;
+        aiMove();
+      }
+    });
+
+    document.getElementById("endgame").addEventListener('click', () => {
+      endGame();
+    });
+
+    document.getElementById("restart").addEventListener('click', () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>

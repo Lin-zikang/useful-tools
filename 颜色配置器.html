@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>颜色配置器</title>
+<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+<style>
+    @keyframes gradientBackground {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(270deg, #6a89cc, #00a8ff, #0c2461);
+        background-size: 600% 600%;
+        animation: gradientBackground 15s ease infinite;
+        margin: 40px;
+        text-align: center;
+        transition: background-color 0.5s;
+    }
+    #colorPicker {
+        height: 100px;
+        width: 300px;
+        border: 2px solid #ffffff;
+        border-radius: 12px;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+    }
+    #colorPicker:hover {
+        transform: scale(1.1);
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.4);
+    }
+    #hexColor {
+        height: 50px;
+        width: 280px;
+        font-size: 18px;
+        border: 2px solid #ffffff;
+        border-radius: 12px;
+        padding: 10px;
+        margin-top: 20px;
+        background: #fff;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+        transition: box-shadow 0.3s, transform 0.3s;
+    }
+    #hexColor:focus {
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.4);
+        transform: scale(1.1);
+    }
+    h2 {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        animation: fadeIn 2s ease-out;
+    }
+    p {
+        color: #ff7f50; /* 橙色 */
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<h2>颜色配置器</h2>
+
+<input type="color" id="colorPicker">
+<p>十六进制颜色代码: <input type="text" id="hexColor" value="#ffffff"></p>
+
+<script>
+var colorPicker = document.getElementById('colorPicker');
+var hexColor = document.getElementById('hexColor');
+
+function updateColor(value) {
+    hexColor.value = value;
+    colorPicker.value = value;
+}
+
+colorPicker.addEventListener('input', function() {
+    updateColor(colorPicker.value);
+});
+
+hexColor.addEventListener('input', function() {
+    updateColor(hexColor.value);
+});
+</script>
+
+</body>
+</html>

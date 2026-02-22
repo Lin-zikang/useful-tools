@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>计算器</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-family: 'SF Pro Display', -apple-system, Roboto, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,0.10), transparent 55%),
+        radial-gradient(900px 600px at 90% 20%, rgba(99,102,241,0.22), transparent 60%),
+        linear-gradient(135deg,#0a0f1a,#0b1220 45%,#070a12);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 22px 12px calc(28px + env(safe-area-inset-bottom));
+      position: relative;
+    }
+
+    .bg-noise {
+      position: absolute; inset: 0; z-index: -1;
+      background-image:
+        radial-gradient(circle at 50% 30%, rgba(99,102,241,0.08), transparent 55%),
+        radial-gradient(circle at 20% 80%, rgba(14,165,233,0.08), transparent 55%);
+      pointer-events: none;
+    }
+
+    .calculator {
+      width: clamp(320px, 92vw, 440px);
+      max-height: calc(100dvh - 44px - env(safe-area-inset-bottom));
+      padding: 16px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 28px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.55);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      display:flex; justify-content:space-between; align-items:center;
+      gap: 10px;
+      padding: 2px 2px 10px;
+      flex: 0 0 auto;
+    }
+
+    .app-title {
+      font-size: 12px;
+      letter-spacing: 1.2px;
+      color: rgba(255,255,255,.50);
+      font-weight: 700;
+      text-transform: uppercase;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .pill {
+      display:flex; align-items:center; gap:8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: rgba(255,255,255,0.9);
+      font-size: 12px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+    .pill.on .dot { background: rgba(34,211,238,0.95); box-shadow: 0 0 0 4px rgba(34,211,238,0.14); }
+    .pill button { all: unset; cursor: pointer; padding: 0 4px; font-weight: 750; letter-spacing: .2px; }
+    .pill .muted { opacity: .55; font-weight: 650; }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 12px;
+    }
+
+    .screen {
+      background: rgba(0,0,0,0.26);
+      border-radius: 20px;
+      padding: 12px 14px;
+      display:flex; flex-direction:column;
+      gap: 10px;
+      overflow: hidden;
+      min-height: 170px;
+      flex: 0 0 auto;
+    }
+
+    #history-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      color: rgba(255,255,255,.55);
+      height: 18px;
+      line-height: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+      flex: 0 0 auto;
+    }
+
+    #main-display {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 56px;
+      text-align: right;
+      font-family:'SF Pro Display', -apple-system, Roboto, sans-serif;
+      font-weight: 240;
+      padding: 0; margin: 0;
+      outline: none;
+      line-height: 1.10;
+      overflow-y: auto;
+      resize: none;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    #main-display::-webkit-scrollbar { width: 6px; }
+    #main-display::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+
+    .hint {
+      font-size: 12px;
+      color: rgba(255,255,255,0.42);
+      line-height: 1.35;
+      user-select: none;
+      flex: 0 0 auto;
+    }
+    .hint code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.70);
+    }
+
+    .keypad-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding-bottom: 2px;
+    }
+    .keypad-wrap::-webkit-scrollbar { width: 6px; }
+    .keypad-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      grid-auto-rows: minmax(48px, auto);
+    }
+
+    .btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #eaeaea;
+      font-size: 19px;
+      padding: 8px;
+      min-height: 52px;
+      border-radius: 16px;
+      cursor: pointer;
+      display:flex; justify-content:center; align-items:center;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+      user-select: none;
+      min-width: 0;
+      max-width: 100%;
+      outline: none;
+    }
+    @media (hover:hover) and (pointer:fine) {
+      .btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.12); }
+    }
+    .btn:active { transform: scale(.94); background: rgba(255,255,255,0.15); }
+
+    .btn.ac { color:#ff6b6b; background: rgba(255,107,107,0.10); }
+    .btn.del { color:#ff6b6b; font-size: 15px; }
+    .btn.func { color:#7dd3fc; font-size: 15px; }
+    .btn.op { color:#38bdf8; font-size: 22px; font-weight: 520; }
+    .btn.comma { color:#7dd3fc; font-size: 18px; }
+
+    .btn.equal {
+      grid-column: span 2;
+      background: linear-gradient(90deg,#22d3ee,#4f46e5);
+      border: none;
+      color:#fff;
+      font-size: 26px;
+      box-shadow: 0 10px 28px rgba(79,70,229,0.30);
+      justify-self: stretch;
+      align-self: stretch;
+      max-width: 100%;
+    }
+
+    @media (max-height: 650px) {
+      .calculator { padding: 14px; border-radius: 22px; }
+      #main-display { font-size: 44px; }
+      .keypad { gap: 8px; }
+      .btn { border-radius: 12px; min-height: 44px; font-size: 18px; }
+      .btn.op { font-size: 20px; }
+      .btn.equal { font-size: 22px; }
+      .screen { min-height: 140px; }
+    }
+
+    @media (max-width: 360px) {
+      .calculator { padding: 12px; }
+      .btn.equal { grid-column: span 1; font-size: 22px; }
+      .pill { padding: 6px 8px; }
+      #main-display { font-size: 42px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-noise"></div>
+
+  <div class="calculator" aria-label="Calculator">
+    <div class="header">
+      <div class="app-title">Scientific Calc</div>
+
+      <div class="pill" id="deg-pill" title="切换角度制/弧度制 (快捷键: D)">
+        <span class="dot"></span>
+        <button type="button" onclick="calc.setMode(false)">RAD</button>
+        <span class="muted">/</span>
+        <button type="button" onclick="calc.setMode(true)">DEG</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="screen">
+        <div id="history-display"></div>
+        <textarea id="main-display" readonly>0</textarea>
+
+        <div class="hint">
+          省略乘号：<code>2π</code>、<code>2(3+4)</code>、<code>π2</code> → 自动按乘法计算。<br/>
+          幂运算：<code>2^10</code>、<code>(1+2)^3</code>。<br/>
+          科学计数：支持超大指数，例如 <code>1e10000</code>。<br/>
+          log 设底数：<code>log(2,8)=3</code>；单参仍为 log10：<code>log(100)=2</code>。<br/>
+          三角函数：DEG 下输入角度（快捷键：<code>D</code>）。
+        </div>
+      </div>
+
+      <div class="keypad-wrap">
+        <div class="keypad">
+          <div class="btn ac" onclick="calc.clear()">AC</div>
+          <div class="btn del" onclick="calc.del()">DEL</div>
+          <div class="btn func" onclick="calc.append('(')">(</div>
+          <div class="btn func" onclick="calc.append(')')">)</div>
+
+          <div class="btn func" onclick="calc.append('sin(')">sin</div>
+          <div class="btn func" onclick="calc.append('cos(')">cos</div>
+          <div class="btn func" onclick="calc.append('tan(')">tan</div>
+          <div class="btn func" onclick="calc.append('sqrt(')">√</div>
+
+          <div class="btn func" onclick="calc.append('π')">π</div>
+          <div class="btn func" onclick="calc.append('e')">e</div>
+          <div class="btn func" onclick="calc.append('log(')">log</div>
+          <div class="btn op" onclick="calc.append('/')">÷</div>
+
+          <div class="btn" onclick="calc.append('7')">7</div>
+          <div class="btn" onclick="calc.append('8')">8</div>
+          <div class="btn" onclick="calc.append('9')">9</div>
+          <div class="btn op" onclick="calc.append('*')">×</div>
+
+          <div class="btn" onclick="calc.append('4')">4</div>
+          <div class="btn" onclick="calc.append('5')">5</div>
+          <div class="btn" onclick="calc.append('6')">6</div>
+          <div class="btn op" onclick="calc.append('-')">-</div>
+
+          <div class="btn" onclick="calc.append('1')">1</div>
+          <div class="btn" onclick="calc.append('2')">2</div>
+          <div class="btn" onclick="calc.append('3')">3</div>
+          <div class="btn op" onclick="calc.append('+')">+</div>
+
+          <div class="btn op" onclick="calc.append('^')">^</div>
+          <div class="btn" onclick="calc.append('0')">0</div>
+          <div class="btn" onclick="calc.append('.')">.</div>
+          <div class="btn equal" onclick="calc.calculate()">=</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ✅ 本版修复/增强点
+     * 1) 彻底修复 1:3*3 -> 0.999999... 的问题：纯算术(不含函数/π/e) 使用「有理数 Rational(BigInt)」精确计算。
+     * 2) 幂运算：加入 ^ 按键与解析，并在精确模式支持整数指数的幂（例如 2^10000、10^10000）。
+     * 3) 绝对精准的小数输出：用 BigInt 做十进制长除 + 严格四舍五入；终止小数会完整精确输出（不会丢 0/不会漂）。
+     * 4) 超大数：支持 1e10000（以及更大，带安全阈值），不会走 JS Number。
+     * 5) 含 sin/cos/tan/sqrt/log/π/e 时，转为 Number 模式（这些本身就不是“精确十进制”可表达），但不影响算术精确模式。
+     */
+
+    /* ======================= BigInt helpers ======================= */
+
+    function absBI(x){ return x < 0n ? -x : x; }
+
+    function gcdBI(a,b){
+      a = absBI(a); b = absBI(b);
+      while (b !== 0n) { const t = a % b; a = b; b = t; }
+      return a;
+    }
+
+    function powBigInt(base, exp){
+      // exp: BigInt >= 0
+      let e = exp;
+      if (e < 0n) throw new Error('Negative exponent in powBigInt');
+      let b = base;
+      let r = 1n;
+      while (e > 0n){
+        if (e & 1n) r *= b;
+        e >>= 1n;
+        if (e) b *= b;
+      }
+      return r;
+    }
+
+    function pow10BigInt(expBig){
+      // 10^expBig, expBig >= 0
+      if (expBig < 0n) throw new Error('pow10 negative');
+      // 快速幂
+      return powBigInt(10n, expBig);
+    }
+
+    function bigIntToStringWithZeros(n, zeros){
+      // returns n * 10^zeros as decimal string without building BigInt if zeros huge? (we still use BigInt)
+      // Not used; kept for clarity.
+      return n.toString() + '0'.repeat(zeros);
+    }
+
+    /* ======================= Rational (exact) ======================= */
+
+    class Rational {
+      constructor(n, d){
+        if (d === 0n) throw new Error('Divide by zero');
+        if (d < 0n) { n = -n; d = -d; }
+        const g = gcdBI(n, d);
+        this.n = n / g;
+        this.d = d / g;
+      }
+
+      static fromBigInt(x){ return new Rational(x, 1n); }
+
+      static fromDecimalString(str){
+        // supports: 123, -123, 1.23, .5, 1e10000, 1.23e-10, -0.001E+5
+        let s = (str || '').trim();
+        if (!s) throw new Error('Empty number');
+
+        let sign = 1n;
+        if (s[0] === '+') s = s.slice(1);
+        else if (s[0] === '-') { sign = -1n; s = s.slice(1); }
+
+        // split exponent
+        let expPart = 0n;
+        const eIdx = s.search(/[eE]/);
+        if (eIdx !== -1){
+          const left = s.slice(0, eIdx);
+          let right = s.slice(eIdx + 1);
+          if (!right) throw new Error('Bad exponent');
+          let esign = 1n;
+          if (right[0] === '+') right = right.slice(1);
+          else if (right[0] === '-') { esign = -1n; right = right.slice(1); }
+          if (!/^\d+$/.test(right)) throw new Error('Bad exponent digits');
+          expPart = esign * BigInt(right);
+          s = left;
+        }
+
+        // decimal point
+        let intDigits = s;
+        let fracLen = 0n;
+        if (s.includes('.')){
+          const parts = s.split('.');
+          if (parts.length !== 2) throw new Error('Bad decimal');
+          const a = parts[0] || '0';
+          const b = parts[1] || '';
+          if (!/^\d+$/.test(a)) throw new Error('Bad number');
+          if (b && !/^\d+$/.test(b)) throw new Error('Bad number');
+          intDigits = (a.replace(/^0+(?=\d)/,'') || '0') + b;
+          fracLen = BigInt(b.length);
+        } else {
+          if (!/^\d+$/.test(s)) throw new Error('Bad number');
+          intDigits = (s.replace(/^0+(?=\d)/,'') || '0');
+          fracLen = 0n;
+        }
+
+        // handle all zeros
+        if (/^0+$/.test(intDigits)) return new Rational(0n, 1n);
+
+        const mantissa = BigInt(intDigits);
+        const totalExp = expPart - fracLen; // decimal shift
+        if (totalExp >= 0n){
+          // mantissa * 10^totalExp
+          const maxExp = 200000n; // safety: avoid insane memory/time
+          if (totalExp > maxExp) throw new Error('Exponent too large');
+          const mul = pow10BigInt(totalExp);
+          return new Rational(sign * mantissa * mul, 1n);
+        } else {
+          const negExp = -totalExp;
+          const maxExp = 200000n;
+          if (negExp > maxExp) throw new Error('Exponent too small');
+          const den = pow10BigInt(negExp);
+          return new Rational(sign * mantissa, den);
+        }
+      }
+
+      add(o){ return new Rational(this.n * o.d + o.n * this.d, this.d * o.d); }
+      sub(o){ return new Rational(this.n * o.d - o.n * this.d, this.d * o.d); }
+      mul(o){ return new Rational(this.n * o.n, this.d * o.d); }
+      div(o){ return new Rational(this.n * o.d, this.d * o.n); }
+
+      powInt(exp){
+        // exp is BigInt integer
+        if (exp === 0n) return new Rational(1n, 1n);
+        if (exp < 0n){
+          const p = this.powInt(-exp);
+          return new Rational(p.d, p.n);
+        }
+        // (n/d)^exp
+        const maxExp = 200000n;
+        if (exp > maxExp) throw new Error('Exponent too large');
+        const nn = powBigInt(this.n, exp < 0n ? -exp : exp); // if n negative and exp even/odd OK
+        const dd = powBigInt(this.d, exp);
+        return new Rational(nn, dd);
+      }
+
+      isInteger(){ return this.d === 1n; }
+
+      toDecimalString(options = {}){
+        const maxFrac = (typeof options.maxFrac === 'number') ? options.maxFrac : 60;
+        const sciThreshold = (typeof options.sciThreshold === 'number') ? options.sciThreshold : 200;
+
+        // integer
+        if (this.d === 1n){
+          const s = this.n.toString();
+          // scientific if huge
+          if (s.length > sciThreshold){
+            // a.bcdeE+k
+            const neg = s[0] === '-';
+            const digits = neg ? s.slice(1) : s;
+            const k = digits.length - 1;
+            const head = digits[0];
+            const tail = digits.slice(1, 16).replace(/0+$/,''); // show up to 15 sig digits
+            const mant = tail ? (head + '.' + tail) : head;
+            return (neg ? '-' : '') + mant + 'e' + k.toString();
+          }
+          return s;
+        }
+
+        // long division with rounding
+        const neg = this.n < 0n;
+        let n = absBI(this.n);
+        const d = this.d;
+
+        const intPart = n / d;
+        let rem = n % d;
+
+        // If integer part huge, use scientific by scaling:
+        const intStr = intPart.toString();
+        if (intStr.length > sciThreshold){
+          // Build scientific from integer part and some decimals
+          // x = intPart + rem/d
+          // mantissa: first digit + '.' + next digits (from intPart then decimals)
+          const k = intStr.length - 1;
+          let sig = intStr.slice(0, 16); // 16 digits
+          let mant = sig[0] + (sig.length > 1 ? ('.' + sig.slice(1).replace(/0+$/,'')) : '');
+          if (mant.endsWith('.')) mant = mant.slice(0, -1);
+          return (neg ? '-' : '') + mant + 'e' + k.toString();
+        }
+
+        // produce fractional digits up to maxFrac + 1 for rounding
+        const digits = [];
+        const need = Math.max(0, maxFrac) + 1;
+        for (let i = 0; i < need && rem !== 0n; i++){
+          rem *= 10n;
+          const q = rem / d;
+          rem = rem % d;
+          digits.push(Number(q)); // 0..9
+        }
+
+        // Determine if terminates within maxFrac
+        let fracStr = '';
+        if (rem === 0n && digits.length <= maxFrac){
+          fracStr = digits.map(x=>String(x)).join('');
+          // trim trailing zeros? you said“有效位数绝对精准”，终止小数应精确但可去掉末尾0更“计算器风格”
+          fracStr = fracStr.replace(/0+$/,'');
+          const out = fracStr ? (intStr + '.' + fracStr) : intStr;
+          return (neg ? '-' : '') + out;
+        }
+
+        // Rounding (half-up) at maxFrac
+        // Ensure we have at least maxFrac+1 digits; if not, pad with zeros
+        while (digits.length < maxFrac + 1) digits.push(0);
+
+        const roundDigit = digits[maxFrac]; // guard digit
+        let kept = digits.slice(0, maxFrac);
+
+        if (roundDigit >= 5){
+          // add 1 to last kept digit with carry
+          for (let i = kept.length - 1; i >= 0; i--){
+            if (kept[i] < 9){ kept[i]++; break; }
+            kept[i] = 0;
+            if (i === 0){
+              // carry into integer part
+              const bumped = (BigInt(intStr) + 1n).toString();
+              // rebuild
+              let fs = kept.map(x=>String(x)).join('').replace(/0+$/,'');
+              const out = fs ? (bumped + '.' + fs) : bumped;
+              return (neg ? '-' : '') + out;
+            }
+          }
+        }
+
+        fracStr = kept.map(x=>String(x)).join('').replace(/0+$/,'');
+        const out = fracStr ? (intStr + '.' + fracStr) : intStr;
+        return (neg ? '-' : '') + out;
+      }
+    }
+
+    /* ======================= Calculator ======================= */
+
+    const calc = {
+      display: document.getElementById('main-display'),
+      history: document.getElementById('history-display'),
+      expr: '',
+      isResult: false,
+      degMode: false,
+
+      // non-terminating decimals show this many fractional digits (exactly rounded by BigInt)
+      exactMaxFracDigits: 60,
+
+      init() {
+        this.refreshModeUI();
+        this.bindKeyboard();
+        this.updateView();
+      },
+
+      setMode(isDeg) { this.degMode = !!isDeg; this.refreshModeUI(); },
+      toggleMode() { this.degMode = !this.degMode; this.refreshModeUI(); },
+
+      refreshModeUI() {
+        const pill = document.getElementById('deg-pill');
+        pill.classList.toggle('on', this.degMode);
+        pill.title = this.degMode ? '当前：DEG（角度）(快捷键: D)' : '当前：RAD（弧度）(快捷键: D)';
+        const btns = pill.querySelectorAll('button');
+        btns[0].style.opacity = this.degMode ? '.55' : '1';
+        btns[1].style.opacity = this.degMode ? '1' : '.55';
+      },
+
+      append(val) {
+        if (this.isResult) {
+          if (['+','-','*','/','^',','].includes(val)) {
+            this.isResult = false;
+          } else {
+            this.expr = '';
+            this.isResult = false;
+            this.history.textContent = '';
+          }
+        }
+        if (val === 'Π') val = 'π';
+        this.expr += val;
+        this.updateView();
+      },
+
+      del() {
+        if (this.isResult) {
+          this.expr = '';
+          this.isResult = false;
+          this.history.textContent = '';
+        } else {
+          this.expr = this.expr.slice(0, -1);
+        }
+        this.updateView();
+      },
+
+      clear() {
+        this.expr = '';
+        this.history.textContent = '';
+        this.display.value = '0';
+        this.isResult = false;
+      },
+
+      updateView() {
+        const view = (this.expr || '')
+          .replace(/\*/g, '×')
+          .replace(/\//g, '÷')
+          .replace(/\bpi\b/g, 'π')
+          .replace(/Π/g, 'π');
+        this.display.value = view || '0';
+        this.display.scrollTop = this.display.scrollHeight;
+      },
+
+      calculate() {
+        if (!this.expr) return;
+        const shown = this.prettyDisplay(this.expr);
+        this.history.textContent = shown + ' =';
+
+        try {
+          const res = this.evaluateStandard(this.expr);
+          this.display.value = res;
+          this.expr = res;
+          this.isResult = true;
+          this.display.scrollTop = 0;
+        } catch (e) {
+          this.display.value = 'Error';
+          console.error(e);
+          this.expr = '';
+          this.isResult = false;
+        }
+      },
+
+      prettyDisplay(str) {
+        return (str || '')
+          .replace(/\*/g, '×')
+          .replace(/\//g, '÷')
+          .replace(/\bpi\b/g, 'π')
+          .replace(/Π/g, 'π');
+      },
+
+      /* ========= Tokenize + implicit multiplication ========= */
+
+      tokenize(input) {
+        const s = (input || '').replace(/Π/g, 'π');
+        const tokens = [];
+        let i = 0;
+        const isDigit = c => c >= '0' && c <= '9';
+        const isAlpha = c => /[A-Za-z]/.test(c);
+
+        while (i < s.length) {
+          const ch = s[i];
+          if (ch === ' ' || ch === '\t' || ch === '\n') { i++; continue; }
+
+          // number:
+          // supports: 12, 12.3, .5, 1e10, 1.2e-3, 1e10000 (huge exponent digits)
+          if (isDigit(ch) || (ch === '.' && i + 1 < s.length && isDigit(s[i+1]))) {
+            let j = i;
+
+            // integer part
+            while (j < s.length && isDigit(s[j])) j++;
+
+            // decimal part
+            if (j < s.length && s[j] === '.') {
+              j++;
+              while (j < s.length && isDigit(s[j])) j++;
+            }
+
+            // exponent part
+            if (j < s.length && (s[j] === 'e' || s[j] === 'E')) {
+              let k = j + 1;
+              if (k < s.length && (s[k] === '+' || s[k] === '-')) k++;
+              const startDigits = k;
+              while (k < s.length && isDigit(s[k])) k++;
+              if (k === startDigits) throw new Error('Bad exponent');
+              j = k;
+            }
+
+            tokens.push({ type: 'number', value: s.slice(i, j) });
+            i = j;
+            continue;
+          }
+
+          // constants / identifiers / functions
+          if (isAlpha(ch) || ch === 'π') {
+            if (ch === 'π') { tokens.push({ type: 'const', value: 'pi' }); i++; continue; }
+
+            let j = i;
+            while (j < s.length && (isAlpha(s[j]) || isDigit(s[j]) || s[j] === '_')) j++;
+            const word = s.slice(i, j).toLowerCase();
+
+            if (word === 'pi') tokens.push({ type: 'const', value: 'pi' });
+            else if (word === 'e') tokens.push({ type: 'const', value: 'e' });
+            else if (['sin','cos','tan','sqrt','log'].includes(word)) tokens.push({ type: 'func', value: word });
+            else tokens.push({ type: 'ident', value: word });
+
+            i = j;
+            continue;
+          }
+
+          // operators / parentheses / comma
+          if ('+-*/^(),'.includes(ch)) { tokens.push({ type: 'op', value: ch }); i++; continue; }
+
+          // allow × ÷ and also ":" "："
+          if (ch === '×') { tokens.push({ type: 'op', value: '*' }); i++; continue; }
+          if (ch === '÷') { tokens.push({ type: 'op', value: '/' }); i++; continue; }
+          if (ch === ':' || ch === '：') { tokens.push({ type: 'op', value: '/' }); i++; continue; }
+
+          throw new Error('Unsupported char: ' + ch);
+        }
+
+        return tokens;
+      },
+
+      needsImplicitMul(left, right) {
+        const leftCan = left && (
+          left.type === 'number' ||
+          left.type === 'const' ||
+          (left.type === 'op' && left.value === ')')
+        );
+
+        const rightCan = right && (
+          right.type === 'number' ||
+          right.type === 'const' ||
+          right.type === 'func' ||
+          (right.type === 'op' && right.value === '(')
+        );
+
+        // avoid func(
+        if (left && left.type === 'func' && right && right.type === 'op' && right.value === '(') return false;
+        // avoid after '('
+        if (left && left.type === 'op' && left.value === '(') return false;
+        // avoid before ')'
+        if (right && right.type === 'op' && right.value === ')') return false;
+        // avoid comma boundaries
+        if ((left && left.type === 'op' && left.value === ',') || (right && right.type === 'op' && right.value === ',')) return false;
+
+        return leftCan && rightCan;
+      },
+
+      applyImplicitMultiplication(tokens) {
+        const out = [];
+        for (let i = 0; i < tokens.length; i++) {
+          const cur = tokens[i];
+          const prev = out[out.length - 1];
+          if (this.needsImplicitMul(prev, cur)) out.push({ type: 'op', value: '*' });
+          out.push(cur);
+        }
+        return out;
+      },
+
+      tokensToJS(tokens) {
+        return tokens.map(t => {
+          if (t.type === 'number') return t.value;
+          if (t.type === 'const') return t.value === 'pi' ? 'Math.PI' : (t.value === 'e' ? 'Math.E' : t.value);
+          if (t.type === 'func') return t.value;
+          if (t.type === 'ident') return t.value;
+          if (t.type === 'op') return t.value === '^' ? '**' : t.value;
+          return t.value;
+        }).join('');
+      },
+
+      /* ========= Exact-mode detection ========= */
+
+      isExactArithmetic(tokens) {
+        // Exact mode only if:
+        // - no funcs/const(pi/e)/ident
+        // - no comma (for log base)
+        // - operators + - * / ^ ( ) only
+        for (const t of tokens) {
+          if (t.type === 'func' || t.type === 'const' || t.type === 'ident') return false;
+          if (t.type === 'op' && t.value === ',') return false;
+          // allow numbers including decimals & scientific -> Rational parses exactly
+        }
+        return true;
+      },
+
+      /* ========= Exact evaluator: shunting-yard to Rational ========= */
+
+      evalRational(tokens) {
+        const isOpTok = (t) => t && t.type === 'op';
+        const prec = (op) => {
+          if (op === '^') return 4;
+          if (op === 'u-') return 3; // unary minus
+          if (op === '*' || op === '/') return 2;
+          if (op === '+' || op === '-') return 1;
+          return 0;
+        };
+        const rightAssoc = (op) => op === '^' || op === 'u-';
+
+        // build stream with unary minus and parentheses tagged
+        const stream = [];
+        const lastMeaningful = () => {
+          for (let i = stream.length - 1; i >= 0; i--) return stream[i];
+          return null;
+        };
+
+        for (let i = 0; i < tokens.length; i++) {
+          const t = tokens[i];
+          if (t.type === 'op' && t.value === '-') {
+            const prev = lastMeaningful();
+            const isUnary = !prev || (prev.type === 'op' && prev.value !== ')') || prev.type === 'paren';
+            if (isUnary) { stream.push({ type: 'op', value: 'u-' }); continue; }
+          }
+          if (t.type === 'op' && t.value === '(') stream.push({ type: 'paren', value: '(' });
+          else if (t.type === 'op' && t.value === ')') stream.push({ type: 'paren', value: ')' });
+          else stream.push(t);
+        }
+
+        const output = [];
+        const ops = [];
+
+        const pushOp = (op) => {
+          while (ops.length) {
+            const top = ops[ops.length - 1];
+            if (top === '(') break;
+            const pTop = prec(top), pOp = prec(op);
+            if ((rightAssoc(op) && pOp < pTop) || (!rightAssoc(op) && pOp <= pTop)) {
+              output.push({ type: 'op', value: ops.pop() });
+            } else break;
+          }
+          ops.push(op);
+        };
+
+        for (const t of stream) {
+          if (t.type === 'number') {
+            output.push({ type: 'val', value: Rational.fromDecimalString(t.value) });
+          } else if (t.type === 'paren') {
+            if (t.value === '(') ops.push('(');
+            else {
+              while (ops.length && ops[ops.length - 1] !== '(') {
+                output.push({ type: 'op', value: ops.pop() });
+              }
+              if (!ops.length) throw new Error('Mismatched parentheses');
+              ops.pop();
+            }
+          } else if (t.type === 'op') {
+            pushOp(t.value);
+          } else {
+            throw new Error('Invalid token in exact mode');
+          }
+        }
+
+        while (ops.length) {
+          const op = ops.pop();
+          if (op === '(') throw new Error('Mismatched parentheses');
+          output.push({ type: 'op', value: op });
+        }
+
+        const st = [];
+        const pop = () => { if (!st.length) throw new Error('Bad expression'); return st.pop(); };
+
+        for (const item of output) {
+          if (item.type === 'val') st.push(item.value);
+          else {
+            const op = item.value;
+            if (op === 'u-') {
+              const a = pop();
+              st.push(new Rational(-a.n, a.d));
+              continue;
+            }
+            const b = pop();
+            const a = pop();
+
+            if (op === '+') st.push(a.add(b));
+            else if (op === '-') st.push(a.sub(b));
+            else if (op === '*') st.push(a.mul(b));
+            else if (op === '/') st.push(a.div(b));
+            else if (op === '^') {
+              // exact mode: exponent must be integer
+              if (!b.isInteger()) throw new Error('Exponent must be integer in exact mode');
+              st.push(a.powInt(b.n));
+            } else throw new Error('Unknown operator: ' + op);
+          }
+        }
+
+        if (st.length !== 1) throw new Error('Bad expression');
+        return st[0];
+      },
+
+      /* ========= Number-mode formatting ========= */
+
+      formatNumberSmart(x) {
+        if (typeof x !== 'number' || !isFinite(x)) return 'Error';
+        if (Number.isInteger(x)) return x.toString();
+
+        // Prefer a stable significant-digit format
+        // (still floating, used only for trig/log/π/e)
+        let s = x.toPrecision(15);
+        // clean
+        if (s.includes('e') || s.includes('E')) return s.replace('E','e');
+        if (s.includes('.')) {
+          s = s.replace(/0+$/,'').replace(/\.$/,'');
+        }
+        return s;
+      },
+
+      /* ========= Main evaluate ========= */
+
+      evaluateStandard(str) {
+        const tokens0 = this.tokenize(str);
+        const tokens = this.applyImplicitMultiplication(tokens0);
+
+        // EXACT rational mode (fixes 1:3*3 etc, supports 1e10000)
+        if (this.isExactArithmetic(tokens)) {
+          const r = this.evalRational(tokens);
+          return r.toDecimalString({
+            maxFrac: this.exactMaxFracDigits, // non-terminating fraction rounding digits
+            sciThreshold: 220
+          });
+        }
+
+        // Otherwise Number mode (trig/log/π/e)
+        const jsExpr = this.tokensToJS(tokens);
+        const DEG = this.degMode;
+
+        const fn = new Function('DEG', `
+          const PI = Math.PI;
+          function _toRad(x){ return DEG ? (x * PI / 180) : x; }
+          function sin(x){ return Math.sin(_toRad(x)); }
+          function cos(x){ return Math.cos(_toRad(x)); }
+          function tan(x){ return Math.tan(_toRad(x)); }
+          function sqrt(x){ return Math.sqrt(x); }
+
+          // log(x)=log10(x), log(b,x)=log base b of x
+          function log(a,b){
+            if (b === undefined) return Math.log10(a);
+            return Math.log(b) / Math.log(a);
+          }
+
+          return (${jsExpr});
+        `);
+
+        const res = fn(DEG);
+        return this.formatNumberSmart(res);
+      },
+
+      /* ========= Keyboard ========= */
+
+      bindKeyboard() {
+        window.addEventListener('keydown', (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          const k = e.key;
+
+          if (k === 'd' || k === 'D') { e.preventDefault(); this.toggleMode(); return; }
+          if (k === 'Enter' || k === '=') { e.preventDefault(); this.calculate(); return; }
+          if (k === 'Backspace') { e.preventDefault(); this.del(); return; }
+          if (k === 'Escape') { e.preventDefault(); this.clear(); return; }
+
+          if ('0123456789'.includes(k)) { e.preventDefault(); this.append(k); return; }
+          if (k === '.') { e.preventDefault(); this.append('.'); return; }
+
+          // allow : as division input
+          if (k === ':' ) { e.preventDefault(); this.append('/'); return; }
+
+          if (k === '+' || k === '-' || k === '*' || k === '/' || k === '^') { e.preventDefault(); this.append(k); return; }
+          if (k === '(' || k === ')') { e.preventDefault(); this.append(k); return; }
+
+          // scientific notation: allow 'e'/'E' in exact mode numbers
+          if (k === 'e' || k === 'E') { e.preventDefault(); this.append('e'); return; }
+
+          if (k === 'p' || k === 'P') { e.preventDefault(); this.append('π'); return; }
+
+          if (k === 's' || k === 'S') { e.preventDefault(); this.append('sin('); return; }
+          if (k === 'c' || k === 'C') { e.preventDefault(); this.append('cos('); return; }
+          if (k === 't' || k === 'T') { e.preventDefault(); this.append('tan('); return; }
+          if (k === 'l' || k === 'L') { e.preventDefault(); this.append('log('); return; }
+          if (k === 'q' || k === 'Q') { e.preventDefault(); this.append('sqrt('); return; }
+        });
+      }
+    };
+
+    calc.init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>摩斯电码转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #282c34;
+            color: #61dafb;
+            text-align: center;
+            padding: 50px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #61dafb;
+            color: #282c34;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #21a1f1;
+        }
+        #output {
+            margin-top: 20px;
+            font-size: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>摩斯电码转换器</h1>
+    <input type="text" id="inputText" placeholder="输入文本或摩斯电码" />
+    <button onclick="convert()">转换</button>
+    <div id="output"></div>
+
+    <script>
+        const morseCode = {
+            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
+            'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
+            'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+            'Y': '-.--', 'Z': '--..',
+            '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....', '6': '-....',
+            '7': '--...', '8': '---..', '9': '----.',
+            ' ': '/',
+            // 中文和符号的摩斯电码可以根据需要添加
+        };
+
+        const morseToText = Object.fromEntries(Object.entries(morseCode).map(([key, value]) => [value, key]));
+
+        function convert() {
+            const input = document.getElementById('inputText').value.trim();
+            let output = '';
+
+            // 判断输入是文本还是摩斯电码
+            if (input.includes('.') || input.includes('-')) {
+                // 解密摩斯电码
+                const morseChars = input.split(' ');
+                for (let morseChar of morseChars) {
+                    if (morseToText[morseChar]) {
+                        output += morseToText[morseChar];
+                    } else {
+                        output += '? '; // 未知摩斯电码用问号表示
+                    }
+                }
+            } else {
+                // 加密文本
+                for (let char of input.toUpperCase()) {
+                    if (morseCode[char]) {
+                        output += morseCode[char] + ' ';
+                    } else {
+                        output += '? '; // 未知字符用问号表示
+                    }
+                }
+            }
+
+            document.getElementById('output').innerText = output.trim();
+        }
+    </script>
+</body>
+</html>

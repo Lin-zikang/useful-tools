@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64转图片</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #00c6ff, #0072ff); /* 蓝色渐变背景 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.7);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            background-color: #222;
+            color: #fff;
+            border: none;
+            resize: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #0072ff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+            transition: transform 0.3s ease;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Base64转图片</h1>
+        <textarea id="base64Input" placeholder="在这里粘贴Base64字符串" rows="6"></textarea>
+        <br>
+        <button class="btn" id="downloadBtn">下载图片</button>
+    </div>
+
+    <script>
+        const downloadBtn = document.getElementById('downloadBtn');
+        const base64Input = document.getElementById('base64Input');
+
+        // 正则表达式，检查Base64格式是否正确
+        const base64Regex = /^data:image\/(png|jpeg|jpg|gif);base64,/;
+
+        // 下载Base64字符串对应的图片
+        downloadBtn.addEventListener('click', function() {
+            let base64Data = base64Input.value.trim();
+            
+            // 检查Base64字符串格式是否正确
+            if (!base64Regex.test(base64Data)) {
+                alert('请输入有效的Base64字符串（包括正确的data:image格式）');
+                return;  // 阻止后续操作
+            }
+            
+            // 如果Base64字符串没有正确的前缀，自动添加png格式
+            if (base64Data && !base64Data.startsWith('data:image')) {
+                base64Data = 'data:image/png;base64,' + base64Data;
+            }
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = base64Data;
+            link.download = 'image.png';  // 设置下载文件名
+            link.click();  // 自动触发下载
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 预览器</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.css">
+    <style>
+        /* 页面背景效果：渐变色并加上动感 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b, #6ac5fc); /* 更丰富的渐变色 */
+            background-size: 300% 300%;
+            animation: gradientAnimation 5s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* 标题样式 */
+        h1 {
+            font-size: 3em;
+            color: white;
+            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* 编辑器和预览区容器样式，改为横向布局 */
+        .container {
+            display: flex;
+            gap: 10px; /* 更小的间隙，保持宽大效果 */
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%; /* 容器宽度占满屏幕 */
+            max-width: 100%; /* 容器最大宽度为100% */
+            padding: 0 0; /* 去除多余的内边距 */
+        }
+
+        #editor {
+            width: 98%; /* 极宽的输入框，接近全屏 */
+            height: 500px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            font-family: monospace;
+            resize: none;
+            white-space: pre-wrap;
+            background-color: #f5f5f5;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #preview {
+            width: 98%; /* 极宽的输出框，接近全屏 */
+            height: 500px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #ffffff;
+            overflow-y: auto;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <h1>Markdown预览器</h1>
+        <div class="container">
+            <textarea id="editor" placeholder="在这里输入Markdown内容..."></textarea>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <script>
+        // 初始化 Markdown-it 解析器
+        const md = window.markdownit();
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+
+        // 当编辑器的内容发生变化时，更新预览
+        editor.addEventListener('input', function() {
+            const markdownText = editor.value;
+            const html = md.render(markdownText);
+            preview.innerHTML = html;
+        });
+    </script>
+
+</body>
+</html>

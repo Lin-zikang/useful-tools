@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 计算器</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            animation: fadeIn 2s ease-in-out;
+        }
+        label, p {
+            font-size: 1em;
+            margin: 10px;
+        }
+        input, button {
+            padding: 15px;
+            margin: 10px;
+            border-radius: 30px;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            transition: all 0.3s ease;
+            width: 80%;
+            max-width: 300px;
+        }
+        input {
+            background-color: #f3f3f3;
+            color: #333;
+        }
+        input:focus {
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #00b894;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #00cec9;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.3em;
+            animation: fadeIn 2s ease-in-out;
+        }
+        .warning {
+            color: red;
+            font-size: 1.1em;
+            margin-top: 10px;
+            animation: shake 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>BMI 计算器</h1>
+    <p>请输入您的身高（米）和体重（公斤），计算您的BMI值并查看健康报告。</p>
+
+    <label for="height">身高（米）：</label>
+    <input type="number" id="height" placeholder="例如：1.75" step="0.01" required>
+    <br>
+    <label for="weight">体重（公斤）：</label>
+    <input type="number" id="weight" placeholder="例如：70" step="0.1" required>
+    <br>
+    <button onclick="calculateBMI()">计算 BMI</button>
+
+    <div class="result" id="result"></div>
+    <div class="warning" id="warning"></div>
+
+    <script>
+        function calculateBMI() {
+            const height = parseFloat(document.getElementById('height').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const warningDiv = document.getElementById('warning');
+            const resultDiv = document.getElementById('result');
+            warningDiv.innerHTML = ''; // 清空警告信息
+            resultDiv.innerHTML = '';  // 清空计算结果
+
+            // 检查是否为空输入
+            if (isNaN(height) || isNaN(weight)) {
+                warningDiv.innerHTML = "请输入身高和体重！";
+                return;
+            }
+
+            // 检查输入是否合理
+            if (height < 0.5 || height > 3 || weight < 5 || weight > 200) {
+                warningDiv.innerHTML = "请输入有效的身高和体重值！身高应在 0.5 米到 3 米之间，体重应在 5 公斤到 200 公斤之间。";
+                return;
+            }
+
+            const bmi = weight / (height * height);
+            let status = '';
+            let healthReport = '';
+
+            if (bmi < 18.5) {
+                status = "体重过轻";
+                healthReport = "您的BMI低于18.5，说明您可能营养不良，建议增加营养丰富的食物，保证身体健康。";
+            } else if (bmi >= 18.5 && bmi < 24.9) {
+                status = "正常体重";
+                healthReport = "您的BMI处于正常范围，保持良好的饮食和锻炼习惯，可以帮助您维持健康体重。";
+            } else if (bmi >= 25 && bmi < 29.9) {
+                status = "超重";
+                healthReport = "您的BMI在25以上，说明您有超重问题。建议采取适量运动和健康饮食，控制体重。";
+            } else {
+                status = "肥胖";
+                healthReport = "您的BMI值超过30，处于肥胖范围，可能增加患多种疾病的风险。建议尽快咨询专业医生，制定健康的减肥计划。";
+            }
+
+            resultDiv.innerHTML = ` 
+                <h2>您的BMI值是：${bmi.toFixed(2)}</h2>
+                <p>健康状况：${status}</p>
+                <p>${healthReport}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

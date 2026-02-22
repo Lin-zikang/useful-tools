@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>五子棋</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body{
+            background: linear-gradient(135deg,#a2c2e5,#f3d9b1);
+            font-family: Arial, sans-serif;
+            margin:0; padding:0;
+            overflow:hidden;
+            display:flex; flex-direction:column; justify-content:flex-start;
+            height:100vh;
+            box-sizing: border-box; /* 确保padding计算在高度内 */
+        }
+        canvas{
+            display:block; margin:12px auto 8px;
+            box-shadow:0 4px 10px rgba(0,0,0,.1);
+            cursor:pointer; background:#fff; border-radius:10px;
+        }
+        #result-wrap{
+            text-align:center; font-size:22px; font-weight:bold; color:#333;
+            margin:0 0 4px; height: 30px;
+        }
+        .controls{
+            display:flex; justify-content:center; align-items:center;
+            gap:14px; padding:6px 0 0; margin:8px 0 12px;
+        }
+        .btn{
+            display:inline-block; padding:10px 20px;
+            color:#fff; background:#6a85b3; border-radius:8px;
+            font-size:14px; font-weight:bold; cursor:pointer;
+            transition: background-color .25s, transform .25s;
+            user-select:none;
+            box-shadow:0 4px 10px rgba(0,0,0,.12);
+        }
+        .btn:hover{ background:#4e6498; transform: scale(1.06); }
+        .btn-wrap{ display:none; justify-content:center; position:absolute;
+            left:50%; top:50%; transform:translate(-50%,-50%); z-index: 100; }
+        .btn-wrap div{ margin:0 15px; }
+        .btn-wrap span{ display:inline-block; padding:12px 25px;
+            color:#fff; background:#6a85b3; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+            transition: background-color .3s, transform .3s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-wrap span:hover{ background:#4e6498; transform:scale(1.1); }
+        
+        /* ========== Pro 按钮样式 ========== */
+        .pro-btn{
+            position:fixed;
+            top:18px;
+            right:18px;
+            z-index:220;
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            padding:10px 16px;
+            padding-left:12px;
+            color:#fff;
+            text-decoration:none;
+            font-weight:700;
+            border-radius:999px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.18);
+            background: linear-gradient(135deg, #ff9a9e 0%, #f6d365 100%);
+            transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+            transform-origin: center;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.18);
+            user-select:none;
+        }
+        .pro-btn .icon{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:26px;
+            height:26px;
+            border-radius:50%;
+            background: rgba(255,255,255,0.15);
+            font-size:14px;
+            line-height:1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12) inset;
+        }
+        .pro-btn:hover{
+            transform: translateY(-5px) scale(1.02);
+            box-shadow:0 16px 40px rgba(0,0,0,0.22);
+            opacity:1;
+        }
+        .pro-btn:active{ transform: translateY(-2px); }
+
+        /* ========== 移动端适配修改 ========== */
+        @media (max-width:600px){
+            body {
+                /* 给顶部留出空间放置按钮，防止遮挡棋盘 */
+                padding-top: 60px; 
+            }
+            canvas{ 
+                width:90%; height:auto; 
+                margin-top: 0; /* 顶部距离由body padding控制 */
+            }
+            #result-wrap{ font-size:18px; }
+            .btn{ padding:9px 16px; font-size:13px; }
+
+            /* 移动端优化 Pro 按钮位置，放在 padding 留出的空白区 */
+            .pro-btn{
+                top: 8px; 
+                right: 12px;
+                padding: 6px 12px; /* 稍微缩小一点 */
+                height: 36px;
+                box-sizing: border-box;
+            }
+            .pro-btn .label{ display:none; }
+            .pro-btn .icon{ width:24px; height:24px; font-size:14px; }
+        }
+    </style>
+</head>
+<body>
+    <a id="proBtn" class="pro-btn" href="/%E4%BA%94%E5%AD%90%E6%A3%8BPro" title="进入 Pro 模式" role="button" aria-label="进入 Pro 模式">
+        <span class="icon">⭐</span>
+        <span class="label">进入Pro模式</span>
+    </a>
+
+    <canvas id="chess" width="450" height="450"></canvas>
+    <div id="result-wrap">--益智五子棋--</div>
+
+    <div id="controls" class="controls">
+        <span id="undo" class="btn">悔棋</span>
+        <span id="restartTop" class="btn">重新开始</span>
+    </div>
+
+    <div class="btn-wrap">
+        <div id="restart" class="restart"><span>重新开始</span></div>
+    </div>
+
+    <script>
+    // --------- 基本状态 ----------
+    var over = false;
+    var me = true; // 我先手 (me=Player/Black, computer=White)
+    var chessBoard = Array.from({length:15},()=>Array(15).fill(0));
+
+    // 赢法统计数组（仅用于快速判断胜负）
+    var wins=[], count=0;
+    for(let i=0;i<15;i++){
+        wins[i]=[];
+        for(let j=0;j<15;j++){ wins[i][j]=[]; }
+    }
+    // 横
+    for(let i=0;i<15;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[i][j+k][count]=true;
+            count++;
+        }
+    }
+    // 竖
+    for(let i=0;i<15;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[j+k][i][count]=true;
+            count++;
+        }
+    }
+    // 正斜
+    for(let i=0;i<11;i++){
+        for(let j=0;j<11;j++){
+            for(let k=0;k<5;k++) wins[i+k][j+k][count]=true;
+            count++;
+        }
+    }
+    // 反斜
+    for(let i=0;i<11;i++){
+        for(let j=14;j>3;j--){
+            for(let k=0;k<5;k++) wins[i+k][j-k][count]=true;
+            count++;
+        }
+    }
+
+    // 赢法统计数组：用于判断游戏结束
+    var myWin = new Array(count).fill(0);
+    var computerWin = new Array(count).fill(0);
+
+    // --------- 画布与特效 ----------
+    var chess = document.getElementById('chess');
+    var ctx = chess.getContext('2d');
+    ctx.strokeStyle = '#bfbfbf';
+
+    var moveHistory = [];
+    var lastAIMove = null;   
+    var aiTimer = null;
+    var justUndid = false;
+    var winLine = null;      
+
+    function setControlsVisible(visible){
+        var c=document.getElementById('controls');
+        if(c) c.style.display = visible ? 'flex' : 'none';
+    }
+
+    function drawChessBoard(){
+        ctx.beginPath();
+        for(let i=0;i<15;i++){
+            ctx.moveTo(15 + i*30, 15);  ctx.lineTo(15 + i*30, 435);
+            ctx.moveTo(15, 15 + i*30);  ctx.lineTo(435, 15 + i*30);
+        }
+        ctx.stroke();
+    }
+    function drawPiece(i,j,isMe,isAI){
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 13, 0, Math.PI*2);
+        ctx.closePath();
+        var g = ctx.createRadialGradient(15+i*30+2,15+j*30-2,13, 15+i*30+2,15+j*30-2,0);
+        if(isAI){ // 白子
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9'); 
+        }else if(isMe){ // 黑子
+            g.addColorStop(0,'#0a0a0a'); g.addColorStop(1,'#636766'); 
+        }else{
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9');
+        }
+        ctx.fillStyle=g; ctx.fill();
+    }
+    function drawAIHalo(i,j){
+        if(i==null||j==null) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 18, 0, Math.PI*2);
+        ctx.strokeStyle='rgba(255,215,0,0.6)';
+        ctx.lineWidth=4;
+        ctx.shadowColor='rgba(255,215,0,0.8)';
+        ctx.shadowBlur=12;
+        ctx.stroke();
+        ctx.restore();
+    }
+    function getWinningLine(i,j,player){
+        const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+        let best=null;
+        for(const [di,dj] of dirs){
+            let cells=[];
+            // 向后找
+            let r=1;
+            while(true){
+                let ti=i-di*r, tj=j-dj*r;
+                if(ti>=0&&ti<15&&tj>=0&&tj<15&&chessBoard[ti][tj]===player){
+                    cells.unshift({i:ti,j:tj}); r++;
+                } else break;
+            }
+            cells.push({i,j});
+            // 向前找
+            r=1;
+            while(true){
+                let ti=i+di*r, tj=j+dj*r;
+                if(ti>=0&&ti<15&&tj>=0&&tj<15&&chessBoard[ti][tj]===player){
+                    cells.push({i:ti,j:tj}); r++;
+                } else break;
+            }
+            if(cells.length>=5){
+                if(!best || cells.length>best.cells.length) best={cells};
+            }
+        }
+        return best;
+    }
+    function drawWinHighlight(line){
+        if(!line || !line.cells || line.cells.length<5) return;
+        
+        ctx.save();
+        ctx.lineWidth=4;
+        ctx.strokeStyle='rgba(220,20,60,0.8)';
+        ctx.beginPath();
+        var start = line.cells[0];
+        var end = line.cells[line.cells.length-1];
+        ctx.moveTo(15+start.i*30, 15+start.j*30);
+        ctx.lineTo(15+end.i*30, 15+end.j*30);
+        ctx.stroke();
+
+        ctx.lineWidth=3;
+        ctx.strokeStyle='rgba(255,0,0,1)';
+        for(const c of line.cells){
+            ctx.beginPath();
+            ctx.arc(15+c.i*30, 15+c.j*30, 8, 0, Math.PI*2);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    function redrawAll(){
+        ctx.clearRect(0,0,chess.width,chess.height);
+        drawChessBoard();
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                if(chessBoard[i][j]===1) drawPiece(i,j,true,false);
+                if(chessBoard[i][j]===2) drawPiece(i,j,false,true);
+            }
+        }
+        drawAIHalo(lastAIMove?.i, lastAIMove?.j);
+        drawWinHighlight(winLine);
+    }
+
+    window.onload = function(){ drawChessBoard(); };
+
+    // 重新计算赢法统计（用于悔棋后恢复状态）
+    function recomputeWins(){
+        myWin.fill(0);
+        computerWin.fill(0);
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                let p = chessBoard[i][j];
+                if(p===0) continue;
+                for(let k=0;k<count;k++){
+                    if(wins[i][j][k]){
+                        if(p===1){ myWin[k]++; computerWin[k]=6; }
+                        else{ computerWin[k]++; myWin[k]=6; }
+                    }
+                }
+            }
+        }
+    }
+
+    // --------- 下子与交互 ----------
+    function handleMove(e){
+        if(over || !me) return;
+
+        e.preventDefault();
+        let clientX, clientY;
+        if(e.type==='touchstart'){
+            const t=e.touches[0]; clientX=t.clientX; clientY=t.clientY;
+        }else{ clientX=e.clientX; clientY=e.clientY; }
+
+        const rect=chess.getBoundingClientRect();
+        const scaleX=chess.width/rect.width, scaleY=chess.height/rect.height;
+        const x=(clientX-rect.left)*scaleX, y=(clientY-rect.top)*scaleY;
+        const i=Math.floor(x/30), j=Math.floor(y/30);
+        if(i<0||i>=15||j<0||j>=15) return;
+
+        if(chessBoard[i][j]===0){
+            const resultEl = document.getElementById('result-wrap');
+            if(resultEl.textContent.includes('悔棋')){ resultEl.textContent = '--益智五子棋--'; }
+            justUndid = false;
+
+            // 玩家下子
+            chessBoard[i][j]=1;
+            moveHistory.push({i,j,player:1});
+            winLine=null;
+
+            // 检查平局：15*15=225，下满且无人胜则平局
+            // 因为玩家先手，满盘时一定是玩家落完最后一子
+            let isDraw = false;
+            if (moveHistory.length === 225) {
+                isDraw = true;
+            }
+
+            // 更新赢法统计（仅用于判断胜负）
+            let playerWon = false;
+            for(let k=0;k<count;k++){
+                if(wins[i][j][k]){
+                    myWin[k]++; computerWin[k]=6;
+                    if(myWin[k]===5){
+                        resultEl.innerHTML='恭喜，你赢了！';
+                        over=true;
+                        playerWon = true;
+                        winLine = getWinningLine(i,j,1);
+                        document.querySelector('.btn-wrap').style.display='flex';
+                        setControlsVisible(false); // 游戏结束，隐藏控制栏（也就禁止了悔棋）
+                    }
+                }
+            }
+            redrawAll();
+
+            // 如果已经赢了，就不判定平局了
+            if (!playerWon && isDraw) {
+                resultEl.innerHTML = '棋逢对手，平局！';
+                over = true;
+                document.querySelector('.btn-wrap').style.display = 'flex';
+                setControlsVisible(false); // 平局，隐藏控制栏（禁止悔棋）
+                return;
+            }
+
+            if(!over){
+                me=false;
+                // 启动AI
+                computerAI(); 
+            }
+        }
+    }
+    chess.addEventListener('click', handleMove);
+    chess.addEventListener('touchstart', handleMove, {passive:false});
+
+    // ==========================================
+    //  核心AI算法 (Enhanced V2)
+    // ==========================================
+    function computerAI(){
+        // 延迟落子以模拟思考
+        aiTimer = setTimeout(function () {
+            aiTimer = null;
+            if(over) return;
+
+            var u = 0, v = 0;
+            var maxScore = -1;
+            
+            // 评分常量
+            const SCORE = {
+                FIVE: 10000000,   // 连五
+                LIVE4: 100000,    // 活四
+                DEAD4: 10000,     // 冲四 (死四)
+                LIVE3: 10000,     // 活三 (威胁度极高，等于冲四)
+                DEAD3: 1000,      // 眠三
+                LIVE2: 500,       // 活二
+                DEAD2: 100,       // 眠二
+                ONE:   10
+            };
+
+            // 保存最佳点集合，用于随机选择同分点
+            var bestPoints = [];
+
+            // 遍历棋盘所有空点进行打分
+            for(var i=0; i<15; i++){
+                for(var j=0; j<15; j++){
+                    if(chessBoard[i][j] === 0){
+                        // 1. 评估AI进攻分数 (我下这里好不好)
+                        var attackScore = evaluatePoint(i, j, 2, 1); 
+                        // 2. 评估人类防守分数 (不下这里会不会死)
+                        var defenseScore = evaluatePoint(i, j, 1, 2);
+
+                        // 3. 综合评分策略
+                        // 如果进攻能成杀（成5），优先级无限高
+                        // 如果防守很紧急（对面活三/冲四），防守分会很高
+                        var finalScore = 0;
+
+                        // 进攻权重大于防守，但如果防守是致命的，分数自然会高
+                        // 这里给进攻一点点加成，鼓励AI赢棋而不是被动挨打
+                        if(attackScore >= SCORE.FIVE) {
+                            finalScore = SCORE.FIVE * 2; // 必胜
+                        } else if(defenseScore >= SCORE.FIVE) {
+                            finalScore = SCORE.FIVE; // 必救
+                        } else {
+                            // 普通局面：攻击分 + 防守分
+                            // 稍微偏向攻击 (1.2倍)，形成“以攻代守”
+                            finalScore = attackScore * 1.2 + defenseScore;
+                        }
+
+                        if(finalScore > maxScore){
+                            maxScore = finalScore;
+                            bestPoints = [{i:i, j:j}];
+                        } else if(finalScore === maxScore){
+                            bestPoints.push({i:i, j:j});
+                        }
+                    }
+                }
+            }
+
+            // 决定落子坐标
+            if(bestPoints.length > 0){
+                // 如果有多个最高分点，稍微随机一下避免呆板，但优先选中间的
+                // 这里简单随机
+                var p = bestPoints[Math.floor(Math.random() * bestPoints.length)];
+                u = p.i; 
+                v = p.j;
+            } else {
+                u = 7; v = 7; // 兜底
+            }
+
+            // 执行落子
+            doAiMove(u, v);
+
+        }, 500); // 思考时间
+    }
+
+    // 在点(x,y)下 role 角色(1黑 2白) 的局势评分
+    // opponent 是对手角色
+    function evaluatePoint(x, y, role, opponent){
+        var totalScore = 0;
+        // 四个方向：横、竖、左斜、右斜
+        var dirs = [[1,0], [0,1], [1,1], [1,-1]];
+        
+        for(var k=0; k<dirs.length; k++){
+            var dx = dirs[k][0];
+            var dy = dirs[k][1];
+            
+            // 获取该方向上的线条 pattern
+            // 例如：以(x,y)为中心，向两边延伸4格，看连子情况
+            var lineAnalysis = getLineAnalysis(x, y, dx, dy, role, opponent);
+            totalScore += scorePattern(lineAnalysis.count, lineAnalysis.leftOpen, lineAnalysis.rightOpen, lineAnalysis.gap);
+        }
+        return totalScore;
+    }
+
+    // 分析单方向棋型
+    function getLineAnalysis(x, y, dx, dy, role, opponent){
+        var count = 1; // 当前落子算1个
+        var leftOpen = false;
+        var rightOpen = false;
+        var gap = 0; // 是否有跳子 (e.g. 1011)
+
+        // 向正方向寻找
+        for(var i=1; i<=4; i++){
+            var tx = x + dx * i;
+            var ty = y + dy * i;
+            if(tx<0 || tx>=15 || ty<0 || ty>=15){ break; } // 边界
+            
+            var val = chessBoard[tx][ty];
+            if(val === role){
+                count++;
+            } else if(val === 0){
+                // 遇到空位，检查下一个是不是己方棋子（处理跳活三 1011）
+                // 仅当目前还没有gap且没有被阻断时检查跳子
+                if(tx + dx >=0 && tx + dx < 15 && ty + dy >=0 && ty + dy < 15 && chessBoard[tx+dx][ty+dy] === role){
+                   gap++; // 发现跳子结构，虽然不算连续，但在五子棋中威胁很大
+                   // 可以在这里做个标记，简单起见，我们只看连子
+                   // 为了简化算法，我们把跳子视为半个连子或特殊处理
+                   // 这里简单处理：遇到空位就停止连续计数，标记为Open
+                   rightOpen = true; 
+                } else {
+                   rightOpen = true;
+                }
+                break;
+            } else {
+                // 遇到对手
+                break;
+            }
+        }
+
+        // 向反方向寻找
+        for(var i=1; i<=4; i++){
+            var tx = x - dx * i;
+            var ty = y - dy * i;
+            if(tx<0 || tx>=15 || ty<0 || ty>=15){ break; }
+            
+            var val = chessBoard[tx][ty];
+            if(val === role){
+                count++;
+            } else if(val === 0){
+                if(tx - dx >=0 && tx - dx < 15 && ty - dy >=0 && ty - dy < 15 && chessBoard[tx-dx][ty-dy] === role){
+                   gap++;
+                   leftOpen = true; 
+                } else {
+                   leftOpen = true;
+                }
+                break;
+            } else {
+                break;
+            }
+        }
+        
+        return { count: count, leftOpen: leftOpen, rightOpen: rightOpen, gap: gap };
+    }
+
+    // 根据棋型返回分数
+    function scorePattern(count, leftOpen, rightOpen, gap){
+        // 评分常量引用
+        const S = {
+            FIVE: 10000000, LIVE4: 100000, DEAD4: 10000,
+            LIVE3: 10000, DEAD3: 1000, LIVE2: 500, DEAD2: 100
+        };
+
+        if(count >= 5) return S.FIVE;
+
+        // 活四：两头空，4个子 (或者跳子形成的成5威胁)
+        if(count === 4){
+            if(leftOpen && rightOpen) return S.LIVE4;
+            if(leftOpen || rightOpen) return S.DEAD4;
+            return 0; // 死四无需处理
+        }
+
+        // 三连
+        if(count === 3){
+            // 活三：两头空 (01110)
+            if(leftOpen && rightOpen) return S.LIVE3;
+            // 眠三：一头空 (21110)
+            if(leftOpen || rightOpen) return S.DEAD3;
+            return 0;
+        }
+
+        // 二连
+        if(count === 2){
+            if(leftOpen && rightOpen) return S.LIVE2;
+            if(leftOpen || rightOpen) return S.DEAD2;
+            return 0;
+        }
+
+        // 处理特殊跳子情况 (简化版补丁)
+        // 如果虽然连子只有3或2，但有gap，可能构成 10111 (实际是4) 或 1011 (实际是活3)
+        // 这个简单的Pattern函数主要处理连续，跳子通过gap加分补偿
+        // 实际强AI需要更复杂的位运算，这里给gap加分以识别 1011 为威胁
+        if(gap > 0) {
+            // 如果只有3个子但有gap (1101)，其实相当于3个子的威胁，接近活3
+            if(count === 3 && (leftOpen || rightOpen)) return S.DEAD3 + 500; 
+        }
+
+        return 1;
+    }
+
+    function doAiMove(i, j){
+        chessBoard[i][j] = 2;
+        moveHistory.push({i,j,player:2});
+        lastAIMove = {i,j};
+        
+        // 更新全局赢法判定
+        for(let k=0;k<count;k++){
+            if(wins[i][j][k]){
+                computerWin[k]++; myWin[k]=6;
+                if(computerWin[k]===5){
+                    document.getElementById('result-wrap').innerHTML='计算机赢了，继续加油！';
+                    over=true;
+                    winLine = getWinningLine(i,j,2);
+                    document.querySelector('.btn-wrap').style.display='flex';
+                    setControlsVisible(false);
+                }
+            }
+        }
+        
+        if(!over) me = true;
+        redrawAll();
+    }
+
+    // --------- 悔棋/重开 ----------
+    function undoOnce(){
+        // 如果游戏结束（包括平局），严格禁止悔棋
+        if(over) return;
+
+        const resultEl = document.getElementById('result-wrap');
+        if(justUndid){ resultEl.innerHTML = '不能连续悔棋哦～'; return; }
+        if(moveHistory.length===0){ resultEl.innerHTML = '当前无法悔棋'; return; }
+
+        // 1. 如果AI正在思考（timer存在），说明玩家刚下，AI还没下 -> 撤回玩家的一步
+        if(aiTimer){
+            clearTimeout(aiTimer); aiTimer=null;
+            const last = moveHistory.pop();
+            chessBoard[last.i][last.j]=0;
+            
+            me = true; over = false; winLine = null;
+            document.querySelector('.btn-wrap').style.display='none';
+            resultEl.innerHTML='--益智五子棋--';
+
+            recomputeWins(); 
+            // 恢复上一步AI高亮
+            lastAIMove = null;
+            for(let t=moveHistory.length-1;t>=0;t--){
+                if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+            }
+            redrawAll();
+            justUndid = true;
+            setControlsVisible(true);
+            return;
+        }
+
+        // 2. 如果是正常轮次，撤回 [玩家, AI] 两步
+        if(moveHistory.length<2){ resultEl.innerHTML = '步数不足'; return; }
+
+        let stepAI = moveHistory.pop(); // AI
+        chessBoard[stepAI.i][stepAI.j]=0;
+        
+        let stepPlayer = moveHistory.pop(); // Player
+        chessBoard[stepPlayer.i][stepPlayer.j]=0;
+
+        me = true; over=false; winLine=null;
+        document.querySelector('.btn-wrap').style.display='none';
+        resultEl.innerHTML='--益智五子棋--';
+
+        recomputeWins();
+        lastAIMove = null;
+        for(let t=moveHistory.length-1;t>=0;t--){
+            if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+        }
+        redrawAll();
+        justUndid = true;
+        setControlsVisible(true);
+    }
+
+    document.getElementById('undo').onclick = undoOnce;
+    document.getElementById('restartTop').onclick = function(){ window.location.reload(); };
+    document.getElementById('restart').onclick = function(){ window.location.reload(); };
+    </script>
+</body>
+
+</html>

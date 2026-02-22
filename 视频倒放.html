@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MP4视频倒放器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    :root {
+      --primary: #4a90e2;
+      --primary-light: #6fafed;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --text: #333333;
+      --radius: 20px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.1);
+      --transition: 0.3s ease;
+      --font: "Segoe UI", Tahoma, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); }
+    .container {
+      max-width: 900px; margin: 40px auto; padding: 20px;
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    h1 { text-align: center; margin-bottom: 20px; font-weight: 500; }
+    .controls {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    /* Upload area style */
+    .upload-area {
+      flex: 1; border: 2px dashed #ccc; border-radius: var(--radius);
+      padding: 40px; text-align: center; color: #888; cursor: pointer;
+      transition: all var(--transition);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      background: var(--primary-light); color: #fff; border-color: var(--primary);
+    }
+    .controls button {
+      margin-left: 16px; padding: 10px 24px;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: var(--radius); font-size: 1rem; cursor: pointer;
+      box-shadow: var(--shadow); transition: background var(--transition), transform var(--transition);
+      display: none;
+    }
+    .controls button:disabled { background: #aaa; cursor: not-allowed; }
+    .controls button:hover:not(:disabled) {
+      background: var(--primary-light); transform: translateY(-2px);
+    }
+    .preview {
+      display: none; flex-direction: column; gap: 20px;
+    }
+    .preview video {
+      width: 100%; display: none; border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .download {
+      text-align: center; margin-top: 20px;
+    }
+    .download a {
+      display: inline-flex; align-items: center;
+      padding: 10px 16px; background: var(--primary);
+      color: #fff; text-decoration: none;
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      transition: background var(--transition), transform var(--transition);
+    }
+    .download a:hover {
+      background: var(--primary-light); transform: translateY(-2px);
+    }
+    .download a svg {
+      width: 20px; height: 20px; margin-right: 8px;
+      fill: #fff;
+    }
+    /* 全屏加载遮罩 */
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: flex; align-items: center;
+      justify-content: center; z-index: 999; visibility: hidden; opacity: 0;
+      transition: opacity var(--transition), visibility var(--transition);
+    }
+    .overlay.active { visibility: visible; opacity: 1; }
+    .loader {
+      background: var(--card); padding: 30px; border-radius: var(--radius);
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .spinner {
+      width: 48px; height: 48px; border: 6px solid #eee;
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 1s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-bar {
+      width: 300px; height: 8px; background: #ddd;
+      border-radius: 4px; overflow: hidden; margin: 10px auto 0;
+    }
+    .progress {
+      width: 0; height: 100%; background: var(--primary);
+      transition: width 0.2s ease;
+    }
+    #statusText {
+      margin-top: 10px;
+    }
+    #percentText {
+      margin-top: 5px; font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>MP4视频倒放器</h1>
+    <div class="controls">
+      <input type="file" id="fileInput" accept="video/mp4" style="display:none;">
+      <label for="fileInput" class="upload-area" id="uploadArea">
+        <div style="font-size:48px;">⬆</div>
+        <p>点击或拖拽文件到此处上传</p>
+      </label>
+      <button id="startBtn">开始倒放</button>
+    </div>
+    <div class="preview" id="preview">
+      <video id="origVideo" controls muted title="原视频预览"></video>
+      <video id="resultVideo" controls muted title="倒放后预览"></video>
+    </div>
+    <div class="download" id="downloadLink"></div>
+  </div>
+  <div class="overlay" id="overlay">
+    <div class="loader">
+      <div class="spinner"></div>
+      <p id="statusText">准备中...</p>
+      <p id="percentText">0%</p>
+      <div class="progress-bar"><div class="progress" id="progress"></div></div>
+    </div>
+  </div>
+  <script>
+    const fileInput   = document.getElementById('fileInput');
+    const uploadArea  = document.getElementById('uploadArea');
+    const startBtn    = document.getElementById('startBtn');
+    const origVideo   = document.getElementById('origVideo');
+    const resultVideo = document.getElementById('resultVideo');
+    const downloadDiv = document.getElementById('downloadLink');
+    const overlay     = document.getElementById('overlay');
+    const statusText  = document.getElementById('statusText');
+    const percentText = document.getElementById('percentText');
+    const progressBar = document.getElementById('progress');
+
+    // Drag and drop upload
+    uploadArea.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', e => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        handleFile(files[0]);
+      }
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      origVideo.src = URL.createObjectURL(file);
+      origVideo.style.display = 'block';
+      document.getElementById('preview').style.display = 'flex';
+      startBtn.style.display = 'inline-block';
+      startBtn.disabled = false;
+      downloadDiv.innerHTML = '';
+      uploadArea.style.display = 'none';
+    }
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      overlay.classList.add('active');
+      statusText.textContent = '解码音频...';
+      percentText.textContent = '0%';
+      progressBar.style.width = '0%';
+
+      const file = fileInput.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Audio decode and reverse
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+        Array.prototype.reverse.call(audioBuffer.getChannelData(i));
+      }
+      statusText.textContent = '采集视频帧...';
+
+      // Capture frames
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      await new Promise(r => video.onloadedmetadata = r);
+      const total = video.duration;
+      const FPS = 30;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      const frames = [];
+      const count = Math.ceil(total * FPS);
+      for (let i = 0; i < count; i++) {
+        const t = total - (i / FPS);
+        await new Promise(res => {
+          video.currentTime = Math.max(0, t);
+          video.onseeked = res;
+        });
+        ctx.drawImage(video, 0, 0);
+        const c = document.createElement('canvas');
+        c.width = canvas.width;
+        c.height = canvas.height;
+        c.getContext('2d').drawImage(canvas, 0, 0);
+        frames.push(c);
+        const percent = Math.round((i + 1) / count * 100);
+        progressBar.style.width = percent + '%';
+        percentText.textContent = percent + '%';
+      }
+
+      statusText.textContent = '合成与录制中...';
+
+      // Merge audio and video
+      const streamDest = audioCtx.createMediaStreamDestination();
+      const srcNode = audioCtx.createBufferSource();
+      srcNode.buffer = audioBuffer;
+      srcNode.connect(streamDest);
+
+      const videoStream = canvas.captureStream(FPS);
+      const combined = new MediaStream([
+        ...videoStream.getVideoTracks(),
+        ...streamDest.stream.getAudioTracks()
+      ]);
+
+      const mime = MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')
+        ? 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"'
+        : 'video/webm; codecs=vp8,opus';
+      const recorder = new MediaRecorder(combined, { mimeType: mime });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mime });
+        const url = URL.createObjectURL(blob);
+        resultVideo.src = url;
+        resultVideo.style.display = 'block';
+        downloadDiv.innerHTML = `
+          <a href="${url}" download="reversed.mp4">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.67v6h4V9h3.67L12 2z"/>
+            </svg>下载视频
+          </a>`;
+        overlay.classList.remove('active');
+        startBtn.disabled = false;
+      };
+      recorder.start();
+
+      // Play audio and draw frames
+      srcNode.start();
+      let idx = 0;
+      const intervalId = setInterval(() => {
+        if (idx < frames.length) {
+          ctx.drawImage(frames[idx], 0, 0);
+          idx++;
+        } else {
+          clearInterval(intervalId);
+          recorder.stop();
+        }
+      }, 1000 / FPS);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>汇率转换器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #ff7e5f, #feb47b);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #fff;
+            background: #333;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 1.3rem;
+        }
+
+        .result span {
+            font-weight: bold;
+        }
+
+        .currency-section {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .currency-section h3 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>汇率转换器</h1>
+
+        <div class="currency-section">
+            <h3>待转换货币</h3>
+            <input type="number" id="amount" placeholder="输入金额" />
+            <select id="fromCurrency">
+                <option value="USD">美元 (USD)</option>
+                <option value="EUR">欧元 (EUR)</option>
+                <option value="GBP">英镑 (GBP)</option>
+                <option value="CNY">人民币 (CNY)</option>
+                <option value="JPY">日元 (JPY)</option>
+                <option value="AUD">澳大利亚元 (AUD)</option>
+                <option value="CAD">加拿大元 (CAD)</option>
+                <option value="RUB">俄罗斯卢布 (RUB)</option>
+                <option value="HKD">港元 (HKD)</option>
+                <option value="SGD">新加坡元 (SGD)</option>
+                <option value="CHF">瑞士法郎 (CHF)</option>
+                <option value="KRW">韩元 (KRW)</option>
+            </select>
+        </div>
+
+        <div class="currency-section">
+            <h3>目标转换货币</h3>
+            <select id="toCurrency">
+                <option value="CNY">人民币 (CNY)</option>
+                <option value="USD">美元 (USD)</option>
+                <option value="EUR">欧元 (EUR)</option>
+                <option value="GBP">英镑 (GBP)</option>
+                <option value="JPY">日元 (JPY)</option>
+                <option value="AUD">澳大利亚元 (AUD)</option>
+                <option value="CAD">加拿大元 (CAD)</option>
+                <option value="RUB">俄罗斯卢布 (RUB)</option>
+                <option value="HKD">港元 (HKD)</option>
+                <option value="SGD">新加坡元 (SGD)</option>
+                <option value="CHF">瑞士法郎 (CHF)</option>
+                <option value="KRW">韩元 (KRW)</option>
+            </select>
+        </div>
+
+        <button onclick="convertCurrency()">转换</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // 2026年2月最新汇率数据（基于中国人民银行中间价）
+        const exchangeRates = {
+            USD: { CNY: 6.9457, EUR: 0.8478, GBP: 0.7385, AUD: 1.4439, CAD: 1.3601, JPY: 156.58, RUB: 77.32, HKD: 7.7976, SGD: 1.2736, CHF: 0.7769, KRW: 1462.50 },
+            CNY: { USD: 0.1440, EUR: 0.1220, GBP: 0.1063, AUD: 0.2079, CAD: 0.1958, JPY: 22.54, RUB: 11.13, HKD: 1.1227, SGD: 0.1834, CHF: 0.1119, KRW: 210.67 },
+            EUR: { USD: 1.1795, CNY: 8.1923, GBP: 0.8711, AUD: 1.7033, CAD: 1.6043, JPY: 184.70, RUB: 91.20, HKD: 9.2000, SGD: 1.5020, CHF: 0.9164, KRW: 1725.00 },
+            GBP: { USD: 1.3540, CNY: 9.4053, EUR: 1.1480, AUD: 1.9550, CAD: 1.8417, JPY: 212.00, RUB: 104.70, HKD: 10.5600, SGD: 1.7250, CHF: 1.0520, KRW: 1980.00 },
+            AUD: { USD: 0.6926, CNY: 4.8103, EUR: 0.5871, GBP: 0.5115, CAD: 0.9420, JPY: 108.50, RUB: 53.55, HKD: 5.4000, SGD: 0.8820, CHF: 0.5380, KRW: 1013.00 },
+            CAD: { USD: 0.7352, CNY: 5.1071, EUR: 0.6233, GBP: 0.5430, AUD: 1.0615, JPY: 115.10, RUB: 56.85, HKD: 5.7300, SGD: 0.9360, CHF: 0.5710, KRW: 1075.00 },
+            JPY: { USD: 0.00639, CNY: 0.04437, EUR: 0.00541, GBP: 0.00472, AUD: 0.00922, CAD: 0.00869, RUB: 0.494, HKD: 0.0498, SGD: 0.00813, CHF: 0.00496, KRW: 9.34 },
+            RUB: { USD: 0.01293, CNY: 0.0898, EUR: 0.01096, GBP: 0.00955, AUD: 0.01867, CAD: 0.01759, JPY: 2.024, HKD: 0.1008, SGD: 0.01647, CHF: 0.01005, KRW: 18.92 },
+            HKD: { USD: 0.1282, CNY: 0.8908, EUR: 0.1087, GBP: 0.0947, AUD: 0.1852, CAD: 0.1745, JPY: 20.08, RUB: 9.92, SGD: 0.1633, CHF: 0.0996, KRW: 187.50 },
+            SGD: { USD: 0.7852, CNY: 5.4531, EUR: 0.6658, GBP: 0.5797, AUD: 1.1338, CAD: 1.0684, JPY: 123.00, RUB: 60.72, HKD: 6.1250, CHF: 0.6100, KRW: 1148.00 },
+            CHF: { USD: 1.2872, CNY: 8.9412, EUR: 1.0912, GBP: 0.9506, AUD: 1.8587, CAD: 1.7513, JPY: 201.60, RUB: 99.50, HKD: 10.0400, SGD: 1.6393, KRW: 1882.00 },
+            KRW: { USD: 0.000684, CNY: 0.004747, EUR: 0.000580, GBP: 0.000505, AUD: 0.000987, CAD: 0.000930, JPY: 0.1071, RUB: 0.0529, HKD: 0.00533, SGD: 0.000871, CHF: 0.000531 }
+        };
+
+        function convertCurrency() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = document.getElementById('toCurrency').value;
+
+            if (isNaN(amount) || amount <= 0) {
+                document.getElementById('result').innerText = "请输入有效金额";
+                return;
+            }
+
+            if (fromCurrency === toCurrency) {
+                document.getElementById('result').innerText = "请选择不同的货币进行转换";
+                return;
+            }
+
+            const rate = exchangeRates[fromCurrency][toCurrency];
+            if (rate === undefined) {
+                document.getElementById('result').innerText = "汇率未提供或无效";
+            } else {
+                const result = amount * rate;
+                document.getElementById('result').innerHTML = `<span>${amount}</span> ${fromCurrency} = <span>${result.toFixed(5)}</span> ${toCurrency}`;
+            }
+        }
+    </script>
+</body>
+</html>

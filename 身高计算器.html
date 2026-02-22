@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>身高预测器</title>
+    <style>
+        /* 基础重置 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f8ff, #e6f7ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator-container {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .calculator-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333333;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555555;
+            font-weight: 500;
+        }
+
+        select, input[type="number"], input[type="radio"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dddddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: #1e90ff;
+            outline: none;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+            color: #555555;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffffff;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .calculate-btn {
+            background-color: #28a745;
+        }
+
+        .calculate-btn:hover {
+            background-color: #218838;
+        }
+
+        .clear-btn {
+            background-color: #dc3545;
+        }
+
+        .clear-btn:hover {
+            background-color: #c82333;
+        }
+
+        .share-btn {
+            background-color: #007bff;
+        }
+
+        .share-btn:hover {
+            background-color: #0069d9;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 6px solid #1e90ff;
+            border-radius: 6px;
+            display: none;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .result p {
+            margin: 10px 0;
+            color: #333333;
+            font-size: 1.1em;
+        }
+
+        .result strong {
+            color: #1e90ff;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .calculator-container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .radio-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .buttons button {
+                width: 100%;
+            }
+        }
+
+        /* 错误提示样式 */
+        .error-message {
+            color: #dc3545;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <h1>身高预测器</h1>
+    <form id="heightCalculatorForm">
+        <div class="form-group">
+            <label for="formula">计算公式</label>
+            <select id="formula" name="formula" required>
+                <option value="who" selected>WHO公式</option>
+                <option value="mid">双亲身高公式</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>单位类型</label>
+            <div class="radio-group">
+                <label><input type="radio" name="unitType" value="si" checked> 国际单位 (厘米)</label>
+                <label><input type="radio" name="unitType" value="imperial"> 英制单位 (英寸)</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>性别</label>
+            <div class="radio-group">
+                <label><input type="radio" name="gender" value="male" checked> 男</label>
+                <label><input type="radio" name="gender" value="female"> 女</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="fatherHeight">父亲身高</label>
+            <input type="number" id="fatherHeight" name="fatherHeight" min="50" max="250" required placeholder="请输入父亲身高">
+            <div id="fatherHeightError" class="error-message"></div>
+        </div>
+        <div class="form-group">
+            <label for="motherHeight">母亲身高</label>
+            <input type="number" id="motherHeight" name="motherHeight" min="50" max="250" required placeholder="请输入母亲身高">
+            <div id="motherHeightError" class="error-message"></div>
+        </div>
+        <div class="buttons">
+            <button type="button" class="calculate-btn" id="calculateBtn">计算</button>
+            <button type="reset" class="clear-btn">清空</button>
+            <button type="button" class="share-btn" id="shareBtn">分享</button>
+        </div>
+    </form>
+
+    <div class="result" id="resultContainer">
+        <p><strong>预测身高:</strong> <span id="resultHeight"></span></p>
+        <p><strong>身高误差范围:</strong> ±7.5 厘米</p>
+    </div>
+</div>
+
+<script>
+    // 定义合理的身高范围
+    const MIN_HEIGHT = 50; // 厘米
+    const MAX_HEIGHT = 250; // 厘米
+
+    // 获取元素
+    const calculateBtn = document.getElementById('calculateBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultHeight = document.getElementById('resultHeight');
+    const fatherHeightInput = document.getElementById('fatherHeight');
+    const motherHeightInput = document.getElementById('motherHeight');
+    const fatherHeightError = document.getElementById('fatherHeightError');
+    const motherHeightError = document.getElementById('motherHeightError');
+
+    // 计算按钮事件
+    calculateBtn.addEventListener('click', function() {
+        // 清除之前的错误提示
+        fatherHeightError.textContent = '';
+        motherHeightError.textContent = '';
+
+        const formula = document.getElementById('formula').value;
+        const unitType = document.querySelector('input[name="unitType"]:checked').value;
+        const gender = document.querySelector('input[name="gender"]:checked').value;
+        let fatherHeight = parseFloat(fatherHeightInput.value);
+        let motherHeight = parseFloat(motherHeightInput.value);
+        let valid = true;
+
+        // 验证父亲身高
+        if (isNaN(fatherHeight)) {
+            fatherHeightError.textContent = '请输入有效的父亲身高。';
+            valid = false;
+        } else if (fatherHeight < MIN_HEIGHT || fatherHeight > MAX_HEIGHT) {
+            fatherHeightError.textContent = `父亲身高应在 ${MIN_HEIGHT} 厘米到 ${MAX_HEIGHT} 厘米之间。`;
+            valid = false;
+        }
+
+        // 验证母亲身高
+        if (isNaN(motherHeight)) {
+            motherHeightError.textContent = '请输入有效的母亲身高。';
+            valid = false;
+        } else if (motherHeight < MIN_HEIGHT || motherHeight > MAX_HEIGHT) {
+            motherHeightError.textContent = `母亲身高应在 ${MIN_HEIGHT} 厘米到 ${MAX_HEIGHT} 厘米之间。`;
+            valid = false;
+        }
+
+        if (!valid) {
+            resultContainer.style.display = 'none';
+            return;
+        }
+
+        // 如果使用英制单位，转换为厘米
+        if (unitType === 'imperial') {
+            fatherHeight *= 2.54; // 英寸转厘米
+            motherHeight *= 2.54;
+        }
+
+        let predictedHeight;
+        if (formula === 'who') {
+            if (gender === 'male') {
+                predictedHeight = (fatherHeight + motherHeight + 13) / 2;
+            } else {
+                predictedHeight = (fatherHeight + motherHeight - 13) / 2;
+            }
+        } else if (formula === 'mid') {
+            if (gender === 'male') {
+                predictedHeight = (fatherHeight + motherHeight) * 1.08 / 2;
+            } else {
+                predictedHeight = (fatherHeight * 0.923 + motherHeight) / 2;
+            }
+        }
+
+        // 如果使用英制单位，转换回英寸
+        let displayHeight = predictedHeight;
+        if (unitType === 'imperial') {
+            displayHeight = predictedHeight / 2.54;
+            displayHeight = displayHeight.toFixed(2) + ' 英寸';
+        } else {
+            displayHeight = predictedHeight.toFixed(2) + ' 厘米';
+        }
+
+        resultHeight.innerText = displayHeight;
+        resultContainer.style.display = 'block';
+    });
+
+    // 分享按钮事件
+    shareBtn.addEventListener('click', function() {
+        const formula = document.getElementById('formula').value;
+        const unitType = document.querySelector('input[name="unitType"]:checked').value;
+        const gender = document.querySelector('input[name="gender"]:checked').value;
+        const fatherHeightVal = fatherHeightInput.value;
+        const motherHeightVal = motherHeightInput.value;
+        const resultHeightVal = resultHeight.innerText;
+
+        if (!resultHeightVal) {
+            alert('请先计算身高再进行分享。');
+            return;
+        }
+
+        // 构建分享内容
+        let unitText = unitType === 'si' ? '厘米' : '英寸';
+        let formulaText = formula === 'who' ? 'WHO公式' : '双亲身高公式';
+        let genderText = gender === 'male' ? '男孩' : '女孩';
+
+        let shareContent = `
+【身高预测器】
+计算公式: ${formulaText}
+性别: ${genderText}
+父亲身高: ${fatherHeightVal} ${unitText}
+母亲身高: ${motherHeightVal} ${unitText}
+预测身高: ${resultHeightVal}
+身高误差范围: ±7.5 厘米
+        `.trim();
+
+        // 复制到剪贴板
+        navigator.clipboard.writeText(shareContent).then(function() {
+            alert('计算数据已复制到剪贴板！您可以粘贴并分享给他人。');
+        }, function(err) {
+            alert('无法复制计算数据。');
+        });
+    });
+</script>
+
+</body>
+</html>

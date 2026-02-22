@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>日历</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <style>
+    /* 全局样式重置 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: '微软雅黑', Arial, sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #333;
+    }
+    /* 日历主容器 */
+    .calendar {
+      width: 360px;
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    /* 日历头部 */
+    .header {
+      background: #5563DE;
+      color: #fff;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header .month-year {
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+    .header button {
+      background: rgba(255,255,255,0.3);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .header button:hover {
+      background: rgba(255,255,255,0.6);
+    }
+    /* 星期标题 */
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f7f7f7;
+      text-align: center;
+      padding: 10px 0;
+      font-weight: bold;
+      color: #666;
+    }
+    /* 日期格子 */
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      padding: 10px;
+      gap: 5px;
+    }
+    .days div {
+      padding: 10px 0;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+    .days div:hover {
+      background: #e0e0e0;
+      cursor: pointer;
+    }
+    .today {
+      background: #FF6B6B;
+      color: #fff;
+    }
+    /* 底部操作区 */
+    .footer {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 15px;
+      background: #f9f9f9;
+    }
+    .footer .jump-area {
+      display: flex;
+      gap: 10px;
+    }
+    .footer input[type="date"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .footer button {
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .footer .jump-btn {
+      background: #2ecc71;
+      color: #fff;
+    }
+    .footer .jump-btn:hover {
+      background: #27ae60;
+    }
+    .footer .today-btn {
+      background: #3498db;
+      color: #fff;
+    }
+    .footer .today-btn:hover {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar">
+    <div class="header">
+      <button id="prev">&lt;</button>
+      <div class="month-year" id="monthYear"></div>
+      <button id="next">&gt;</button>
+    </div>
+    <div class="weekdays">
+      <div>日</div>
+      <div>一</div>
+      <div>二</div>
+      <div>三</div>
+      <div>四</div>
+      <div>五</div>
+      <div>六</div>
+    </div>
+    <div class="days" id="days"></div>
+    <div class="footer">
+      <div class="jump-area">
+        <input type="date" id="jumpDate">
+        <button class="jump-btn" id="jumpBtn">跳转</button>
+      </div>
+      <button class="today-btn" id="todayBtn">回到今天</button>
+    </div>
+  </div>
+
+  <script>
+    // 获取当前日期
+    let today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
+
+    // DOM节点
+    const monthYear = document.getElementById('monthYear');
+    const daysContainer = document.getElementById('days');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const jumpDate = document.getElementById('jumpDate');
+    const todayBtn = document.getElementById('todayBtn');
+
+    // 月份名称
+    const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+
+    // 渲染日历函数
+    function renderCalendar(month, year) {
+      daysContainer.innerHTML = '';
+      monthYear.textContent = months[month] + ' ' + year;
+
+      // 当月第一天星期几和天数
+      const firstDay = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+
+      // 补齐空白格
+      for (let i = 0; i < firstDay; i++) {
+        let blankCell = document.createElement('div');
+        daysContainer.appendChild(blankCell);
+      }
+
+      // 创建日期格子
+      for (let d = 1; d <= totalDays; d++) {
+        let dayCell = document.createElement('div');
+        dayCell.textContent = d;
+        if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+          dayCell.classList.add('today');
+        }
+        daysContainer.appendChild(dayCell);
+      }
+    }
+
+    // 上一个月
+    prevBtn.addEventListener('click', function() {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    // 下一个月
+    nextBtn.addEventListener('click', function() {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    // 跳转到指定日期（限制100年内）
+    jumpBtn.addEventListener('click', function() {
+      const selectedDate = new Date(jumpDate.value);
+      if (!isNaN(selectedDate)) {
+        const diffYear = Math.abs(selectedDate.getFullYear() - today.getFullYear());
+        if (diffYear >= 100) {
+          alert("跳转的日期距离当前日期超过100年，无法跳转！");
+          return;
+        }
+        currentYear = selectedDate.getFullYear();
+        currentMonth = selectedDate.getMonth();
+        renderCalendar(currentMonth, currentYear);
+      }
+    });
+
+    // 回到今天按钮
+    todayBtn.addEventListener('click', function() {
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth();
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    // 初次渲染
+    renderCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>

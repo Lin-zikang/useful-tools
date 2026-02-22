@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>速算练习</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f8ff;
+            flex-direction: column;
+            background: linear-gradient(135deg, #6fa3ef, #9b59b6);
+            animation: backgroundAnimation 5s ease infinite;
+        }
+        
+        @keyframes backgroundAnimation {
+            0% {
+                background: linear-gradient(135deg, #6fa3ef, #9b59b6);
+            }
+            50% {
+                background: linear-gradient(135deg, #9b59b6, #6fa3ef);
+            }
+            100% {
+                background: linear-gradient(135deg, #6fa3ef, #9b59b6);
+            }
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .container {
+            text-align: center;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            width: 320px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="number"] {
+            padding: 12px;
+            font-size: 18px;
+            width: 70%;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            outline: none;
+            transition: 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.7);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .answer-feedback {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #444;
+            transition: opacity 0.3s ease;
+        }
+
+        .answer-feedback.success {
+            color: green;
+        }
+
+        .answer-feedback.error {
+            color: red;
+        }
+
+        /* Hide the check answer button by default */
+        #checkAnswerButton {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">速算练习</div>
+    <div class="container">
+        <div class="question" id="question">点击按钮生成问题</div>
+        <input type="number" id="userAnswer" placeholder="填写答案" />
+        <button id="checkAnswerButton" onclick="checkAnswer()">检查答案</button>
+        <button onclick="generateQuestion()">生成新问题</button>
+        <div class="answer-feedback" id="feedback"></div>
+    </div>
+
+    <script>
+        let correctAnswer = 0;
+
+        function generateQuestion() {
+            const num1 = Math.floor(Math.random() * 10) + 1; // Random number between 1 and 10
+            const num2 = Math.floor(Math.random() * 90) + 10; // Random number between 10 and 99
+            const operators = ['+', '-', '*', '/'];
+            const randomOperator = operators[Math.floor(Math.random() * operators.length)];
+
+            let question = `${num1} ${randomOperator} ${num2}`;
+            
+            // Calculate the correct answer based on the operator
+            switch (randomOperator) {
+                case '+':
+                    correctAnswer = num1 + num2;
+                    break;
+                case '-':
+                    correctAnswer = num1 - num2;
+                    break;
+                case '*':
+                    correctAnswer = num1 * num2;
+                    if (correctAnswer > 99) {
+                        return generateQuestion(); // If multiplication result exceeds 99, regenerate question
+                    }
+                    break;
+                case '/':
+                    while (num1 % num2 !== 0) {
+                        num1 = Math.floor(Math.random() * 10) + 1;
+                    }
+                    correctAnswer = num1 / num2;
+                    break;
+            }
+
+            document.getElementById('question').innerText = question;
+            document.getElementById('checkAnswerButton').style.display = 'inline-block'; // Show the check answer button
+            document.getElementById('feedback').innerText = ''; // Clear previous feedback
+            document.getElementById('userAnswer').value = ''; // Clear previous answer
+        }
+
+        function checkAnswer() {
+            const userAnswer = parseInt(document.getElementById('userAnswer').value);
+            const feedback = document.getElementById('feedback');
+
+            if (isNaN(userAnswer)) {
+                feedback.innerText = '请输入一个有效的答案。';
+                feedback.classList.remove('success', 'error');
+            } else if (userAnswer === correctAnswer) {
+                feedback.innerText = '恭喜你，答案正确！';
+                feedback.classList.add('success');
+                feedback.classList.remove('error');
+            } else {
+                feedback.innerText = `答案错误。正确答案是：${correctAnswer}`;
+                feedback.classList.add('error');
+                feedback.classList.remove('success');
+            }
+        }
+    </script>
+</body>
+</html>
