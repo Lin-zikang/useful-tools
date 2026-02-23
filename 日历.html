@@ -1,137 +1,190 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>日历</title>
-	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
   <style>
-    /* 全局样式重置 */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 全局重置 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
-      font-family: '微软雅黑', Arial, sans-serif;
-      background: linear-gradient(135deg, #74ABE2, #5563DE);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+      background: #f5f5f5;
+      padding: 1rem;
       color: #333;
     }
-    /* 日历主容器 */
     .calendar {
-      width: 360px;
+      max-width: 800px;
+      margin: 0 auto;
       background: #fff;
-      border-radius: 15px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       overflow: hidden;
     }
-    /* 日历头部 */
-    .header {
-      background: #5563DE;
-      color: #fff;
-      padding: 15px;
+    .calendar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 1rem;
+      background: #0078d7;
+      color: #fff;
     }
-    .header .month-year {
-      font-size: 1.3em;
+    .calendar-header button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      padding: 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .calendar-header button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .calendar-header .month-year {
+      font-size: 1.25rem;
       font-weight: bold;
     }
-    .header button {
-      background: rgba(255,255,255,0.3);
-      border: none;
+    /* 星期名称 */
+    .day-names {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #eee;
+      border-bottom: 1px solid #ddd;
+    }
+    .day-names div {
+      text-align: center;
+      padding: 0.5rem 0;
+      font-weight: bold;
+    }
+    /* 日历网格 */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .day-cell {
+      border-bottom: 1px solid #eee;
+      border-right: 1px solid #eee;
+      min-height: 80px;
+      padding: 4px;
+      position: relative;
+      cursor: pointer;
+    }
+    .day-cell:nth-child(7n) {
+      border-right: none;
+    }
+    .day-cell .solar-date {
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    .day-cell .lunar-date {
+      font-size: 0.75rem;
+      color: #777;
+    }
+    .day-cell .festival {
+      font-size: 0.75rem;
+      color: #d9534f;
+    }
+    .day-cell .note-indicator {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      background: #0078d7;
       border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      font-size: 18px;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.3s;
     }
-    .header button:hover {
-      background: rgba(255,255,255,0.6);
+    .day-cell.today {
+      background: #e6f2ff;
     }
-    /* 星期标题 */
-    .weekdays {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      background: #f7f7f7;
-      text-align: center;
-      padding: 10px 0;
-      font-weight: bold;
-      color: #666;
+    .day-cell.other-month {
+      color: #bbb;
     }
-    /* 日期格子 */
-    .days {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      padding: 10px;
-      gap: 5px;
+    /* 备注弹窗 */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      z-index: 999;
     }
-    .days div {
-      padding: 10px 0;
+    .modal {
+      background: #fff;
       border-radius: 8px;
-      transition: background 0.3s;
+      max-width: 400px;
+      width: 100%;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
-    .days div:hover {
-      background: #e0e0e0;
-      cursor: pointer;
+    .modal h2 {
+      margin-bottom: 0.5rem;
     }
-    .today {
-      background: #FF6B6B;
-      color: #fff;
-    }
-    /* 底部操作区 */
-    .footer {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 15px;
-      background: #f9f9f9;
-    }
-    .footer .jump-area {
-      display: flex;
-      gap: 10px;
-    }
-    .footer input[type="date"] {
-      flex: 1;
-      padding: 8px;
+    .modal textarea {
+      width: 100%;
+      height: 120px;
+      resize: vertical;
+      padding: 0.5rem;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      border-radius: 4px;
+      font-family: inherit;
     }
-    .footer button {
-      padding: 8px;
+    .modal .buttons {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+    .modal button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
-      font-weight: bold;
-      transition: background 0.3s;
     }
-    .footer .jump-btn {
-      background: #2ecc71;
+    .modal .save-btn {
+      background: #0078d7;
       color: #fff;
     }
-    .footer .jump-btn:hover {
-      background: #27ae60;
+    .modal .cancel-btn {
+      background: #ccc;
+      color: #333;
     }
-    .footer .today-btn {
-      background: #3498db;
-      color: #fff;
-    }
-    .footer .today-btn:hover {
-      background: #2980b9;
+    @media (max-width: 600px) {
+      .calendar-header {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .calendar-header .month-year {
+        font-size: 1rem;
+      }
+      .day-cell {
+        min-height: 60px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="calendar">
-    <div class="header">
-      <button id="prev">&lt;</button>
-      <div class="month-year" id="monthYear"></div>
-      <button id="next">&gt;</button>
+  <div class="calendar" id="calendar">
+    <div class="calendar-header">
+      <button id="prevMonth" aria-label="上个月">&lt;</button>
+      <div class="month-year" id="monthYearLabel"></div>
+      <button id="nextMonth" aria-label="下个月">&gt;</button>
     </div>
-    <div class="weekdays">
+    <div class="day-names">
       <div>日</div>
       <div>一</div>
       <div>二</div>
@@ -140,104 +193,238 @@
       <div>五</div>
       <div>六</div>
     </div>
-    <div class="days" id="days"></div>
-    <div class="footer">
-      <div class="jump-area">
-        <input type="date" id="jumpDate">
-        <button class="jump-btn" id="jumpBtn">跳转</button>
-      </div>
-      <button class="today-btn" id="todayBtn">回到今天</button>
+    <div class="calendar-grid" id="calendarGrid">
+      <!-- 日历数据插入位置 -->
     </div>
   </div>
-
+  <div class="modal-backdrop" id="noteModalBackdrop">
+    <div class="modal">
+      <h2 id="noteModalDate"></h2>
+      <textarea id="noteText" placeholder="在这里记录备注..."></textarea>
+      <div class="buttons">
+        <button class="cancel-btn" id="cancelNote">取消</button>
+        <button class="save-btn" id="saveNote">保存</button>
+      </div>
+    </div>
+  </div>
   <script>
-    // 获取当前日期
-    let today = new Date();
-    let currentMonth = today.getMonth();
-    let currentYear = today.getFullYear();
+    // 使用自执行函数避免污染全局命名空间
+    (function() {
+      const monthYearLabel = document.getElementById('monthYearLabel');
+      const calendarGrid = document.getElementById('calendarGrid');
+      const prevBtn = document.getElementById('prevMonth');
+      const nextBtn = document.getElementById('nextMonth');
+      const noteModalBackdrop = document.getElementById('noteModalBackdrop');
+      const noteModalDate = document.getElementById('noteModalDate');
+      const noteText = document.getElementById('noteText');
+      const cancelNoteBtn = document.getElementById('cancelNote');
+      const saveNoteBtn = document.getElementById('saveNote');
 
-    // DOM节点
-    const monthYear = document.getElementById('monthYear');
-    const daysContainer = document.getElementById('days');
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    const jumpBtn = document.getElementById('jumpBtn');
-    const jumpDate = document.getElementById('jumpDate');
-    const todayBtn = document.getElementById('todayBtn');
+      let selectedDate = null;
+      // 当前显示的月份，以每月第一天表示
+      let current = new Date();
+      current.setDate(1);
 
-    // 月份名称
-    const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+      // 农历节日映射表
+      const lunarFestivals = {
+        '正月初一': '春节',
+        '正月十五': '元宵节',
+        '二月初二': '龙抬头',
+        '五月初五': '端午节',
+        '七月初七': '七夕节',
+        '八月十五': '中秋节',
+        '九月初九': '重阳节',
+        '腊月初八': '腊八节',
+        '腊月二十四': '小年',
+        '腊月二十九': '除夕',
+        '腊月三十': '除夕'
+      };
 
-    // 渲染日历函数
-    function renderCalendar(month, year) {
-      daysContainer.innerHTML = '';
-      monthYear.textContent = months[month] + ' ' + year;
+      // 公历节日映射表
+      const solarFestivals = {
+        '1-1': '元旦',
+        '2-14': '情人节',
+        '3-8': '妇女节',
+        '5-1': '劳动节',
+        '6-1': '儿童节',
+        '10-1': '国庆节',
+        '12-25': '圣诞节'
+      };
 
-      // 当月第一天星期几和天数
-      const firstDay = new Date(year, month, 1).getDay();
-      const totalDays = new Date(year, month + 1, 0).getDate();
-
-      // 补齐空白格
-      for (let i = 0; i < firstDay; i++) {
-        let blankCell = document.createElement('div');
-        daysContainer.appendChild(blankCell);
+      // 格式化日期作为本地存储键名，YYYY-MM-DD
+      function formatDateKey(date) {
+        return date.toISOString().split('T')[0];
       }
 
-      // 创建日期格子
-      for (let d = 1; d <= totalDays; d++) {
-        let dayCell = document.createElement('div');
-        dayCell.textContent = d;
-        if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
-          dayCell.classList.add('today');
+      // 从本地存储读取指定日期的备注
+      function getNoteForDate(date) {
+        const key = 'note_' + formatDateKey(date);
+        return localStorage.getItem(key) || '';
+      }
+
+      // 保存备注，如传入空文本则删除
+      function saveNoteForDate(date, text) {
+        const key = 'note_' + formatDateKey(date);
+        if (text) {
+          localStorage.setItem(key, text);
+        } else {
+          localStorage.removeItem(key);
         }
-        daysContainer.appendChild(dayCell);
       }
-    }
 
-    // 上一个月
-    prevBtn.addEventListener('click', function() {
-      currentMonth--;
-      if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
+      // 打开备注编辑弹窗
+      function openNoteModal(date) {
+        selectedDate = new Date(date);
+        const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+        // 显示日期标题
+        noteModalDate.textContent = selectedDate.toLocaleDateString('zh-CN', options);
+        // 填充已保存的内容
+        noteText.value = getNoteForDate(selectedDate);
+        noteModalBackdrop.style.display = 'flex';
+        // 聚焦文本框
+        noteText.focus();
       }
-      renderCalendar(currentMonth, currentYear);
-    });
 
-    // 下一个月
-    nextBtn.addEventListener('click', function() {
-      currentMonth++;
-      if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
+      // 关闭弹窗
+      function closeNoteModal() {
+        noteModalBackdrop.style.display = 'none';
+        selectedDate = null;
       }
-      renderCalendar(currentMonth, currentYear);
-    });
 
-    // 跳转到指定日期（限制100年内）
-    jumpBtn.addEventListener('click', function() {
-      const selectedDate = new Date(jumpDate.value);
-      if (!isNaN(selectedDate)) {
-        const diffYear = Math.abs(selectedDate.getFullYear() - today.getFullYear());
-        if (diffYear >= 100) {
-          alert("跳转的日期距离当前日期超过100年，无法跳转！");
-          return;
+      cancelNoteBtn.addEventListener('click', () => {
+        closeNoteModal();
+      });
+      saveNoteBtn.addEventListener('click', () => {
+        if (selectedDate) {
+          saveNoteForDate(selectedDate, noteText.value.trim());
+          closeNoteModal();
+          // 保存后重新渲染日历以更新标记
+          renderCalendar();
         }
-        currentYear = selectedDate.getFullYear();
-        currentMonth = selectedDate.getMonth();
-        renderCalendar(currentMonth, currentYear);
+      });
+      // 点击遮罩层关闭弹窗
+      noteModalBackdrop.addEventListener('click', (event) => {
+        if (event.target === noteModalBackdrop) {
+          closeNoteModal();
+        }
+      });
+
+      // 上个月按钮
+      prevBtn.addEventListener('click', () => {
+        current.setMonth(current.getMonth() - 1);
+        renderCalendar();
+      });
+      // 下个月按钮
+      nextBtn.addEventListener('click', () => {
+        current.setMonth(current.getMonth() + 1);
+        renderCalendar();
+      });
+
+      /**
+       * 获取指定日期的农历信息
+       * @param {Date} date
+       * @return {Object} 包含 lunarString（如“正月初七”）和 festival（节日名称，可为空）
+       */
+      function getLunarInfo(date) {
+        // 使用国际化API获取农历信息
+        const dtf = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', { dateStyle: 'full' });
+        const parts = dtf.formatToParts(date);
+        let monthName = '';
+        let dayName = '';
+        for (const p of parts) {
+          if (p.type === 'month') monthName = p.value;
+          if (p.type === 'day') dayName = p.value;
+        }
+        const lunarString = monthName + dayName;
+        let festival = '';
+        // 先取农历节日
+        if (lunarFestivals[lunarString]) {
+          festival = lunarFestivals[lunarString];
+        }
+        // 其次取公历节日
+        const solarKey = (date.getMonth() + 1) + '-' + date.getDate();
+        if (solarFestivals[solarKey]) {
+          festival = solarFestivals[solarKey];
+        }
+        return { lunarString, festival };
       }
-    });
 
-    // 回到今天按钮
-    todayBtn.addEventListener('click', function() {
-      currentYear = today.getFullYear();
-      currentMonth = today.getMonth();
-      renderCalendar(currentMonth, currentYear);
-    });
-
-    // 初次渲染
-    renderCalendar(currentMonth, currentYear);
+      /**
+       * 渲染当前月份的日历
+       */
+      function renderCalendar() {
+        calendarGrid.innerHTML = '';
+        const year = current.getFullYear();
+        const month = current.getMonth();
+        // 设置标题：例如 2026年2月
+        monthYearLabel.textContent = `${year}年${month + 1}月`;
+        // 获取当前月份第一天是星期几（0-6，0为周日）
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        // 获取当前月份天数
+        const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+        // 上一月份的最后一天日期
+        const lastDateOfPrevMonth = new Date(year, month, 0).getDate();
+        const days = [];
+        // 填充上个月的部分日期，使第一行保持完整
+        for (let i = firstDayIndex - 1; i >= 0; i--) {
+          days.push({ date: new Date(year, month - 1, lastDateOfPrevMonth - i), currentMonth: false });
+        }
+        // 填充当前月日期
+        for (let i = 1; i <= lastDateOfMonth; i++) {
+          days.push({ date: new Date(year, month, i), currentMonth: true });
+        }
+        // 填充下个月的日期，确保总数为42个（6行）
+        let nextDay = 1;
+        while (days.length < 42) {
+          days.push({ date: new Date(year, month + 1, nextDay++), currentMonth: false });
+        }
+        const todayKey = formatDateKey(new Date());
+        // 创建每个日期单元格
+        days.forEach(({ date, currentMonth: inCurrent }) => {
+          const dayCell = document.createElement('div');
+          dayCell.classList.add('day-cell');
+          if (!inCurrent) {
+            dayCell.classList.add('other-month');
+          }
+          // 公历日期
+          const solarDate = document.createElement('div');
+          solarDate.classList.add('solar-date');
+          solarDate.textContent = date.getDate();
+          dayCell.appendChild(solarDate);
+          // 农历日期和节日
+          const { lunarString, festival } = getLunarInfo(date);
+          const lunarDiv = document.createElement('div');
+          lunarDiv.classList.add('lunar-date');
+          lunarDiv.textContent = lunarString;
+          dayCell.appendChild(lunarDiv);
+          if (festival) {
+            const festDiv = document.createElement('div');
+            festDiv.classList.add('festival');
+            festDiv.textContent = festival;
+            dayCell.appendChild(festDiv);
+          }
+          // 如果有备注，显示标识点
+          if (getNoteForDate(date)) {
+            const indicator = document.createElement('div');
+            indicator.classList.add('note-indicator');
+            dayCell.appendChild(indicator);
+          }
+          // 如果是今天，则高亮
+          const dateKey = formatDateKey(date);
+          if (dateKey === todayKey) {
+            dayCell.classList.add('today');
+          }
+          // 点击单元格打开编辑
+          dayCell.addEventListener('click', () => {
+            openNoteModal(date);
+          });
+          calendarGrid.appendChild(dayCell);
+        });
+      }
+      // 初次渲染
+      renderCalendar();
+    })();
   </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
