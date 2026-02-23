@@ -1,14 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<!-- saved from url=(0052)https://useful-tools.top/%E4%B9%9D%E4%BA%95%E6%A3%8B -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>九井棋游戏</title>
-  <link
-    rel="icon"
-    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
-    type="image/png"
-  />
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
   <style>
     :root{
       --bg: #0b0f14;
@@ -302,6 +298,18 @@
       .grid{ gap: 5px; }
       .cell{ font-size: 20px; border-radius: 11px; }
       .overlayMark{ font-size: 46px; }
+
+      /* 调整按钮布局，确保手机端显示“开始对局”按钮 */
+      .controls .row .btns{
+        flex-basis: 100%;
+        margin-top: 8px;
+      }
+      .controls .row .btns button{
+        flex: 1 1 auto;
+      }
+      .controls .row > div[style*="flex:1"]{
+        display: none;
+      }
     }
   </style>
 </head>
@@ -315,17 +323,17 @@
         <div class="row">
           <div class="label">对弈方式：</div>
           <div class="seg" id="modeSeg">
-            <label class="chip"><input type="radio" name="mode" value="pvp" checked /> 双人</label>
-            <label class="chip"><input type="radio" name="mode" value="pve" /> 对AI</label>
+            <label class="chip"><input type="radio" name="mode" value="pvp" checked=""> 双人</label>
+            <label class="chip"><input type="radio" name="mode" value="pve"> 对AI</label>
           </div>
         </div>
 
         <div class="row">
           <div class="label">AI难度：</div>
-          <select id="difficulty" disabled>
+          <select id="difficulty" disabled="">
             <option value="easy">简单（随机）</option>
             <option value="medium">中等（贪婪）</option>
-            <option value="hard" selected>困难（搜索优化）</option>
+            <option value="hard" selected="">困难（搜索优化）</option>
             <option value="expert">专家（迭代加深+置换表）</option>
           </select>
         </div>
@@ -333,21 +341,21 @@
         <div class="row">
           <div class="label">胜负条件：</div>
           <select id="winMode">
-            <option value="classic" selected>大盘连成一线（经典）</option>
+            <option value="classic" selected="">大盘连成一线（经典）</option>
             <option value="ku">先赢任意五个小盘（Tic-Tac-Ku）</option>
           </select>
         </div>
 
         <div class="row">
           <div class="label">先手方：</div>
-          <select id="firstPlayer" disabled>
-            <option value="human" selected>人类先手</option>
+          <select id="firstPlayer" disabled="">
+            <option value="human" selected="">人类先手</option>
             <option value="ai">AI先手</option>
           </select>
           <div style="flex:1"></div>
           <div class="btns">
             <button id="btnStart">开始对局</button>
-            <button id="btnUndo" disabled>悔棋</button>
+            <button id="btnUndo" disabled="">悔棋</button>
             <button id="btnReset">重新开局</button>
           </div>
         </div>
@@ -363,7 +371,7 @@
       </div>
 
       <div class="boardWrap">
-        <div class="board" id="board"></div>
+        <div class="board" id="board"><div class="small" data-sb="0"><div class="grid"><div class="cell disabled" data-sb="0" data-c="0"></div><div class="cell disabled" data-sb="0" data-c="1"></div><div class="cell disabled" data-sb="0" data-c="2"></div><div class="cell disabled" data-sb="0" data-c="3"></div><div class="cell disabled" data-sb="0" data-c="4"></div><div class="cell disabled" data-sb="0" data-c="5"></div><div class="cell disabled" data-sb="0" data-c="6"></div><div class="cell disabled" data-sb="0" data-c="7"></div><div class="cell disabled" data-sb="0" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="1"><div class="grid"><div class="cell disabled" data-sb="1" data-c="0"></div><div class="cell disabled" data-sb="1" data-c="1"></div><div class="cell disabled" data-sb="1" data-c="2"></div><div class="cell disabled" data-sb="1" data-c="3"></div><div class="cell disabled" data-sb="1" data-c="4"></div><div class="cell disabled" data-sb="1" data-c="5"></div><div class="cell disabled" data-sb="1" data-c="6"></div><div class="cell disabled" data-sb="1" data-c="7"></div><div class="cell disabled" data-sb="1" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="2"><div class="grid"><div class="cell disabled" data-sb="2" data-c="0"></div><div class="cell disabled" data-sb="2" data-c="1"></div><div class="cell disabled" data-sb="2" data-c="2"></div><div class="cell disabled" data-sb="2" data-c="3"></div><div class="cell disabled" data-sb="2" data-c="4"></div><div class="cell disabled" data-sb="2" data-c="5"></div><div class="cell disabled" data-sb="2" data-c="6"></div><div class="cell disabled" data-sb="2" data-c="7"></div><div class="cell disabled" data-sb="2" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="3"><div class="grid"><div class="cell disabled" data-sb="3" data-c="0"></div><div class="cell disabled" data-sb="3" data-c="1"></div><div class="cell disabled" data-sb="3" data-c="2"></div><div class="cell disabled" data-sb="3" data-c="3"></div><div class="cell disabled" data-sb="3" data-c="4"></div><div class="cell disabled" data-sb="3" data-c="5"></div><div class="cell disabled" data-sb="3" data-c="6"></div><div class="cell disabled" data-sb="3" data-c="7"></div><div class="cell disabled" data-sb="3" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="4"><div class="grid"><div class="cell disabled" data-sb="4" data-c="0"></div><div class="cell disabled" data-sb="4" data-c="1"></div><div class="cell disabled" data-sb="4" data-c="2"></div><div class="cell disabled" data-sb="4" data-c="3"></div><div class="cell disabled" data-sb="4" data-c="4"></div><div class="cell disabled" data-sb="4" data-c="5"></div><div class="cell disabled" data-sb="4" data-c="6"></div><div class="cell disabled" data-sb="4" data-c="7"></div><div class="cell disabled" data-sb="4" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="5"><div class="grid"><div class="cell disabled" data-sb="5" data-c="0"></div><div class="cell disabled" data-sb="5" data-c="1"></div><div class="cell disabled" data-sb="5" data-c="2"></div><div class="cell disabled" data-sb="5" data-c="3"></div><div class="cell disabled" data-sb="5" data-c="4"></div><div class="cell disabled" data-sb="5" data-c="5"></div><div class="cell disabled" data-sb="5" data-c="6"></div><div class="cell disabled" data-sb="5" data-c="7"></div><div class="cell disabled" data-sb="5" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="6"><div class="grid"><div class="cell disabled" data-sb="6" data-c="0"></div><div class="cell disabled" data-sb="6" data-c="1"></div><div class="cell disabled" data-sb="6" data-c="2"></div><div class="cell disabled" data-sb="6" data-c="3"></div><div class="cell disabled" data-sb="6" data-c="4"></div><div class="cell disabled" data-sb="6" data-c="5"></div><div class="cell disabled" data-sb="6" data-c="6"></div><div class="cell disabled" data-sb="6" data-c="7"></div><div class="cell disabled" data-sb="6" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="7"><div class="grid"><div class="cell disabled" data-sb="7" data-c="0"></div><div class="cell disabled" data-sb="7" data-c="1"></div><div class="cell disabled" data-sb="7" data-c="2"></div><div class="cell disabled" data-sb="7" data-c="3"></div><div class="cell disabled" data-sb="7" data-c="4"></div><div class="cell disabled" data-sb="7" data-c="5"></div><div class="cell disabled" data-sb="7" data-c="6"></div><div class="cell disabled" data-sb="7" data-c="7"></div><div class="cell disabled" data-sb="7" data-c="8"></div></div><div class="overlayMark"></div></div><div class="small" data-sb="8"><div class="grid"><div class="cell disabled" data-sb="8" data-c="0"></div><div class="cell disabled" data-sb="8" data-c="1"></div><div class="cell disabled" data-sb="8" data-c="2"></div><div class="cell disabled" data-sb="8" data-c="3"></div><div class="cell disabled" data-sb="8" data-c="4"></div><div class="cell disabled" data-sb="8" data-c="5"></div><div class="cell disabled" data-sb="8" data-c="6"></div><div class="cell disabled" data-sb="8" data-c="7"></div><div class="cell disabled" data-sb="8" data-c="8"></div></div><div class="overlayMark"></div></div></div>
       </div>
 
       <div class="howto">
@@ -1641,6 +1649,7 @@
     lockSettings(false);
     resetState();
   </script>
+<script defer="" src="./九井棋游戏_files/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;7939e04a4baf43c8b86a560f74aac60e&quot;,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-</body>
-</html>
+</body></html>
