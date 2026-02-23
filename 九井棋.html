@@ -762,13 +762,12 @@
 
     btnUndo.addEventListener('click', undo);
 
+    // 修改：重新开局时刷新网页
     btnReset.addEventListener('click', ()=>{
+      // 当点击“重新开局”按钮时，直接刷新页面以重置游戏状态
       hideModal();
-      cancelAI();
-      resetState();
-      if(gameActive && vsAI && aiFirst){
-        requestAIMove();
-      }
+      // 使用 location.reload() 刷新整个页面
+      location.reload();
     });
 
     function applySettingsFromUI(){
@@ -796,6 +795,8 @@
       cancelAI();
       gameActive = true;
       lockSettings(true);
+      // 修改：游戏开始后锁定开始对局按钮
+      btnStart.disabled = true;
       resetState();
       if(vsAI && aiFirst){
         requestAIMove();
@@ -1639,7 +1640,7 @@
     applySettingsFromUI();
     lockSettings(false);
     resetState();
-
   </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
