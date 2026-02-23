@@ -189,8 +189,9 @@
       transition: box-shadow .15s ease, transform .15s ease;
     }
 
-    .small.active{
-      box-shadow: inset 0 0 0 2px rgba(255, 213, 74, .85), 0 0 0 1px rgba(255, 213, 74, .25);
+.small.active{
+      /* 将外层的 box-shadow 也设为 inset，以免在移动端造成元素尺寸变化 */
+      box-shadow: inset 0 0 0 2px rgba(255, 213, 74, .85), inset 0 0 0 1px rgba(255, 213, 74, .25);
     }
 
     .grid{
