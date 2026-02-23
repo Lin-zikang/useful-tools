@@ -1,796 +1,1645 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>九井棋游戏</title>
   <link
     rel="icon"
     href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
     type="image/png"
   />
-  <title>九井棋游戏【双人版 + AI】</title>
   <style>
     :root{
-      --bg:#0f172a; /* slate-900 */
-      --panel:#0b1220ee;
-      --text:#e5e7eb; /* gray-200 */
-      --muted:#94a3b8; /* slate-400 */
-      --accent:#38bdf8; /* sky-400 */
-      --x:#60a5fa; /* blue-400 */
-      --o:#f472b6; /* pink-400 */
-      --win:#22c55e; /* green-500 */
-      --can:#fbbf24; /* amber-400 for playable */
-      --shadow: 0 10px 30px rgba(2,8,23,.35);
+      --bg: #0b0f14;
+      --panel: rgba(255,255,255,.06);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --line: rgba(255,255,255,.18);
+      --accent: #ffd54a;
+      --good: rgba(120, 255, 160, .18);
+      --bad: rgba(255, 120, 120, .18);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
+
+    *{ box-sizing: border-box; }
     body{
-      margin:0; background:radial-gradient(1200px 800px at 10% 0%, #0b122b, #0f172a 40%) fixed;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
-      color:var(--text);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .wrap{max-width:1180px; margin:0 auto; padding:16px; display:grid; gap:16px}
-
-    header{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
-    .title{font-weight:800; letter-spacing:.4px}
-    .title span{opacity:.75; font-weight:600}
-
-    .panel{background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:12px; position:relative}
-
-    /* ===== Pretty Controls ===== */
-    .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
-    .chip{display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#0c1428,#0a1020); border:1px solid #1f2937; padding:10px 12px; border-radius:14px; color:var(--text); box-shadow: var(--shadow)}
-    .chip label{opacity:.9}
-
-    select,.btn{appearance:none; font:inherit}
-
-    .select{position:relative}
-    .select select{background:#0f1a33; color:var(--text); border:1px solid #1f2937; border-radius:10px; padding:7px 36px 7px 10px; outline:none}
-    .select::after{content:""; position:absolute; right:10px; top:50%; width:10px; height:10px; border-right:2px solid #6b7280; border-bottom:2px solid #6b7280; transform:translateY(-70%) rotate(45deg); pointer-events:none}
-
-    .btn{cursor:pointer; position:relative; overflow:hidden; border:none; border-radius:12px; padding:10px 14px; color:white; font-weight:700; letter-spacing:.3px; transition:transform .08s ease, filter .2s ease, box-shadow .2s ease}
-    .btn:active{transform:scale(.98)}
-    .btn.primary{background:linear-gradient(135deg, #0ea5e9, #8b5cf6); box-shadow: var(--shadow)}
-    .btn.ghost{background:linear-gradient(180deg,#0e1326,#0a1020); color:var(--text); border:1px solid #1f2937}
-    .btn:hover{filter:brightness(1.05); box-shadow:0 12px 30px rgba(2,8,23,.45)}
-
-    .ripple-ink{position:absolute; border-radius:999px; transform:translate(-50%,-50%) scale(0); opacity:.35; background:currentColor; pointer-events:none; animation:ripple .6s ease-out}
-    @keyframes ripple{to{transform:translate(-50%,-50%) scale(12); opacity:0}}
-
-    .layout{display:grid; grid-template-columns:1fr minmax(300px, 360px); gap:16px}
-    @media (max-width: 960px){ .layout{grid-template-columns:1fr} }
-
-    .status{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
-    .badges{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-    .badge{border-radius:999px; padding:6px 10px; border:1px solid #1f2937; background:#0b1220; color:var(--text); font-size:.9rem}
-    .badge.x{border-color:var(--x)}
-    .badge.o{border-color:var(--o)}
-    .turn{font-weight:700}
-
-    .boardWrap{display:grid; gap:12px}
-    .board{aspect-ratio:1/1; width:min(94vw, 680px); max-width:100%; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
-    .mini{position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:8px; border-radius:14px; background:linear-gradient(180deg,#0b1024,#0b1220); border:2px solid #1f2937; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease}
-    .mini.active{border-color:var(--accent); box-shadow:0 0 0 3px #0ea5e955}
-    .mini.won-x{background:linear-gradient(180deg,#0b1220,#0b1a33); border-color:var(--x)}
-    .mini.won-o{background:linear-gradient(180deg,#0b1220,#2a0f2a); border-color:var(--o)}
-    .mini.full{opacity:.85}
-    .cell{aspect-ratio:1/1; display:grid; place-items:center; border-radius:10px; background:#0a1222; border:1px solid #1f2937; cursor:pointer; user-select:none; font-size:clamp(20px, 6vw, 40px); font-weight:800; letter-spacing:.5px; transition:transform .08s ease, background .2s; position:relative; overflow:hidden}
-    .cell:hover{transform:translateY(-1px)}
-    .cell:active{transform:scale(.98)}
-    .cell.disabled{cursor:not-allowed; opacity:.45}
-    .mark-x{color:var(--x)}
-    .mark-o{color:var(--o)}
-    .flash{animation:flash 420ms ease}
-    @keyframes flash{0%{box-shadow:0 0 0 0 rgba(56,189,248,.0);} 30%{box-shadow:0 0 0 8px rgba(56,189,248,.18);} 100%{box-shadow:0 0 0 0 rgba(56,189,248,.0);}}
-
-    .cell.playable{box-shadow: inset 0 0 0 2px rgba(251,191,36,.8), 0 0 0 2px rgba(251,191,36,.22);} 
-    .cell.playable::before{content:""; position:absolute; inset:2px; border-radius:8px; background:radial-gradient(circle at 50% 50%, rgba(251,191,36,.22), rgba(251,191,36,.04) 60%, transparent 70%)}
-
-    .mini .winnerBadge{position:absolute; inset:auto 8px 8px auto; font-size:.9rem; padding:4px 8px; border-radius:999px; border:1px solid #1f2937; background:#0b1220aa}
-
-    .rules{line-height:1.65}
-    .rules h3{margin:.3rem 0 .4rem; font-size:1.1rem}
-    .rules ol{margin:.4rem 0 .6rem 1.3rem}
-    .rules .tip{margin-top:.4rem; color:var(--muted)}
-
-    footer{opacity:.8; font-size:.9rem; text-align:center}
-
-    @media (max-width:600px){
-      .controls{gap:8px}
-      .board{gap:8px}
-      .mini{gap:4px; padding:6px}
-      .cell{border-radius:8px}
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial;
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(255,213,74,.18), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 20%, rgba(90,180,255,.16), transparent 60%),
+                  var(--bg);
+      min-height: 100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding: 24px 12px 40px;
     }
 
-    @media (prefers-reduced-motion: reduce){
-      *{transition:none !important}
-      .ripple-ink{display:none}
+    .wrap{
+      width:min(1000px, 100%);
+    }
+
+    h1{
+      margin: 6px 0 6px;
+      font-size: 22px;
+      letter-spacing: .5px;
+    }
+    .sub{
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .row{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px 14px;
+      align-items:center;
+    }
+
+    .label{
+      color: var(--muted);
+      font-size: 13px;
+      min-width: 90px;
+    }
+
+    .seg{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+
+    .chip{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      cursor:pointer;
+      user-select:none;
+      transition: .15s transform, .15s background, .15s border-color;
+      font-size: 13px;
+    }
+    .chip:hover{ transform: translateY(-1px); background: rgba(255,255,255,.07); }
+    .chip input{ accent-color: var(--accent); }
+
+    select{
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      outline:none;
+    }
+
+    .btns{ display:flex; gap: 10px; flex-wrap:wrap; }
+
+    button{
+      position:relative;
+      overflow:hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size: 14px;
+      letter-spacing: .2px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      transition: transform .15s ease, filter .15s ease, background .15s ease;
+    }
+    button:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+    button:active{ transform: translateY(0px); }
+    button:disabled{
+      opacity: .45;
+      cursor:not-allowed;
+      filter: grayscale(.2);
+    }
+
+    .ripple{
+      position:absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple 600ms linear;
+      background-color: rgba(255, 213, 74, 0.35);
+      pointer-events:none;
+    }
+    @keyframes ripple {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    .statusbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin: 10px 0 0;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255,255,255,.16);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .turn{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .pill{
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* Board */
+    .boardWrap{
+      margin-top: 14px;
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .small{
+      position:relative;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+      transition: box-shadow .15s ease, transform .15s ease;
+    }
+
+    .small.active{
+      box-shadow: inset 0 0 0 2px rgba(255, 213, 74, .85), 0 0 0 1px rgba(255, 213, 74, .25);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .cell{
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 22px;
+      font-weight: 700;
+      user-select:none;
+      cursor:pointer;
+      transition: transform .10s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .cell:hover{ transform: translateY(-1px); }
+
+    .cell.disabled{
+      cursor:not-allowed;
+      opacity: .55;
+    }
+
+    .cell.allowed{
+      border-color: rgba(255, 213, 74, .75);
+      box-shadow: 0 0 0 1px rgba(255, 213, 74, .25) inset;
+    }
+
+    .cell.x{ color: rgba(255,255,255,.92); }
+    .cell.o{ color: rgba(180, 210, 255, .95); }
+
+    .small.wonX{ background: linear-gradient(180deg, var(--good), rgba(255,255,255,.03)); }
+    .small.wonO{ background: linear-gradient(180deg, var(--bad), rgba(255,255,255,.03)); }
+    .small.draw{ opacity: .78; }
+
+    .overlayMark{
+      position:absolute;
+      inset: 8px;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 54px;
+      font-weight: 900;
+      opacity: .18;
+      pointer-events:none;
+    }
+
+    /* Modal */
+    .modalMask{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 20;
+    }
+    .modal{
+      width: min(520px, 100%);
+      background: rgba(20, 24, 30, .92);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .modal h2{ margin: 0 0 6px; font-size: 18px; }
+    .modal p{ margin: 0 0 12px; color: var(--muted); }
+
+    .howto{
+      margin-top: 12px;
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .howto h3{
+      margin: 10px 0 6px;
+      font-size: 14px;
+      color: rgba(255,255,255,.92);
+    }
+    .howto ol{ margin: 0; padding-left: 18px; }
+
+    .footer{
+      margin-top: 10px;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      text-align:right;
+    }
+
+    /* Mobile */
+    @media (max-width: 720px){
+      body{ padding: 16px 10px 26px; }
+      .panel{ padding: 12px; }
+      .board{ gap: 8px; }
+      .small{ padding: 7px; }
+      .grid{ gap: 5px; }
+      .cell{ font-size: 20px; border-radius: 11px; }
+      .overlayMark{ font-size: 46px; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div class="title">
-        <div style="font-size:clamp(20px,3.5vw,28px)">九井棋 <span>（Ultimate Tic-Tac-Toe / Tic-Tac-Ku）</span></div>
-        <div class="hint">双人或对AI对弈，按钮美化与涟漪、手机端优化</div>
-      </div>
-      <div class="controls panel">
-        <div class="chip select"><label>对弈方式：</label>
-          <select id="mode">
-            <option value="pvp">双人</option>
-            <option value="pve">对AI</option>
-          </select>
+    <h1>九井棋 （Ultimate Tic-Tac-Toe / Tic-Tac-Ku）</h1>
+    <div class="sub">双人或对AI对弈，按钮美化与涟漪、手机端优化</div>
+
+    <div class="panel">
+      <div class="controls">
+        <div class="row">
+          <div class="label">对弈方式：</div>
+          <div class="seg" id="modeSeg">
+            <label class="chip"><input type="radio" name="mode" value="pvp" checked /> 双人</label>
+            <label class="chip"><input type="radio" name="mode" value="pve" /> 对AI</label>
+          </div>
         </div>
-        <div class="chip select" id="difficultyChip" style="display:none;"><label>AI难度：</label>
-          <select id="difficulty">
+
+        <div class="row">
+          <div class="label">AI难度：</div>
+          <select id="difficulty" disabled>
             <option value="easy">简单（随机）</option>
             <option value="medium">中等（贪婪）</option>
-            <option value="hard">困难（搜索优化）</option>
-            <option value="pro">专家（迭代加深+置换表）</option>
+            <option value="hard" selected>困难（搜索优化）</option>
+            <option value="expert">专家（迭代加深+置换表）</option>
           </select>
         </div>
-        <div class="chip select"><label>胜负条件：</label>
-          <select id="ruleset">
-            <option value="line">大盘连成一线（经典）</option>
-            <option value="five">先赢任意五个小盘（Tic-Tac-Ku）</option>
+
+        <div class="row">
+          <div class="label">胜负条件：</div>
+          <select id="winMode">
+            <option value="classic" selected>大盘连成一线（经典）</option>
+            <option value="ku">先赢任意五个小盘（Tic-Tac-Ku）</option>
           </select>
         </div>
-        <div class="chip select"><label>先手方：</label>
-          <select id="first">
-            <option value="human">人类先手</option>
+
+        <div class="row">
+          <div class="label">先手方：</div>
+          <select id="firstPlayer" disabled>
+            <option value="human" selected>人类先手</option>
             <option value="ai">AI先手</option>
           </select>
-        </div>
-        <button class="btn primary" id="startBtn">开始对局</button>
-        <button class="btn ghost" id="undoBtn" title="悔棋（撤回最近一步）" style="display:none;">悔棋</button>
-        <button class="btn primary" id="restartBtn" style="display:none;">重新开局</button>
-      </div>
-    </header>
-
-    <div class="layout">
-      <section class="boardWrap">
-        <section class="panel status" id="statusBar">
-          <div class="badges">
-            <span class="badge x">X</span>
-            <span class="badge o">O</span>
+          <div style="flex:1"></div>
+          <div class="btns">
+            <button id="btnStart">开始对局</button>
+            <button id="btnUndo" disabled>悔棋</button>
+            <button id="btnReset">重新开局</button>
           </div>
-          <div class="turn" id="turnText">轮到：X</div>
-          <div class="hint" id="targetText">自由落点（首手可下任意处）</div>
-        </section>
-        <main class="board" id="board" aria-label="九井棋棋盘"></main>
-      </section>
+        </div>
+      </div>
 
-      <aside class="panel rules">
-        <h3>怎么玩（简要）</h3>
+      <div class="statusbar">
+        <div class="turn">
+          <span class="pill" id="playerX">X</span>
+          <span class="pill" id="playerO">O</span>
+          <span class="pill" id="turnText">轮到：X</span>
+        </div>
+        <div id="hint">自由落点（首手可下任意处）</div>
+      </div>
+
+      <div class="boardWrap">
+        <div class="board" id="board"></div>
+      </div>
+
+      <div class="howto">
+        <h3>### 怎么玩（简要）</h3>
         <ol>
-          <li>棋盘由 3×3 个<strong>小盘</strong>组成，每个小盘也是 3×3 的井字格，总 81 格。</li>
-          <li>落子：<strong>必须在对手上一手所在小盘的对应位置</strong>指向的那个小盘内落子。若该目标小盘已结束或无空位，则可在<strong>任意</strong>小盘落子。</li>
+          <li>棋盘由 3×3 个 <b>小盘</b> 组成，每个小盘也是 3×3 的井字格，总 81 格。</li>
+          <li>落子：必须在对手上一手所在小盘的对应位置 <b>指向的那个小盘</b> 内落子。若该目标小盘已结束或无空位，则可在 <b>任意</b> 小盘落子。</li>
           <li>小盘胜利：某方在一个小盘内先连成三（行/列/斜）即赢得该小盘。</li>
           <li>对局胜利：经典（大盘三连）或 Tic-Tac-Ku（任意五盘）。</li>
         </ol>
-        <div class="tip">提示：高亮小盘为<strong>可落子</strong>区域；黄色方框即为<strong>可下处</strong>。按“开始对局”后游戏启动，设置锁定。PVE模式下悔棋撤销到玩家上一步。</div>
-      </aside>
-    </div>
+        <div style="margin-top:8px">提示：高亮小盘为 <b>可落子</b> 区域；黄色方框即为 <b>可下处</b>。按“开始对局”后游戏启动，设置锁定。PVE模式下悔棋撤销到玩家上一步。</div>
+      </div>
 
-    <footer>© 九井棋演示（双人或AI版）。</footer>
+      <div class="footer">© 九井棋演示（双人或AI版）。</div>
+    </div>
   </div>
 
-<script>
-(function(){
-  const boardEl = document.getElementById('board');
-  const modeEl = document.getElementById('mode');
-  const difficultyChip = document.getElementById('difficultyChip');
-  const difficultyEl = document.getElementById('difficulty');
-  const firstEl = document.getElementById('first');
-  const rulesetEl = document.getElementById('ruleset');
-  const turnText = document.getElementById('turnText');
-  const targetText = document.getElementById('targetText');
-  const startBtn = document.getElementById('startBtn');
-  const undoBtn = document.getElementById('undoBtn');
-  const restartBtn = document.getElementById('restartBtn');
+  <div class="modalMask" id="modalMask">
+    <div class="modal">
+      <h2 id="modalTitle">对局结束</h2>
+      <p id="modalDesc"></p>
+      <div class="btns">
+        <button id="btnClose">关闭</button>
+        <button id="btnNew">再来一局</button>
+      </div>
+    </div>
+  </div>
 
-  function attachRipple(el){
-    el.addEventListener('click', (e)=>{
-      const r = el.getBoundingClientRect();
+  <script>
+    // ------------------------------
+    // UI / Game Logic
+    // ------------------------------
+
+    const SMALL_LINES = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+    const MACRO_LINES = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    const boardEl = document.getElementById('board');
+    const modeSeg = document.getElementById('modeSeg');
+    const difficultyEl = document.getElementById('difficulty');
+    const winModeEl = document.getElementById('winMode');
+    const firstPlayerEl = document.getElementById('firstPlayer');
+    const btnStart = document.getElementById('btnStart');
+    const btnUndo = document.getElementById('btnUndo');
+    const btnReset = document.getElementById('btnReset');
+
+    const turnText = document.getElementById('turnText');
+    const hintEl = document.getElementById('hint');
+
+    const modalMask = document.getElementById('modalMask');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const btnClose = document.getElementById('btnClose');
+    const btnNew = document.getElementById('btnNew');
+
+    let gameActive = false;
+    let vsAI = false;
+    let difficulty = 'hard';
+    let winMode = 'classic';
+    let aiFirst = false;
+
+    // 0 empty, 1 X, -1 O
+    let board = new Int8Array(81);
+    // 0 ongoing, 1 X won, -1 O won, 2 draw
+    let smallStatus = new Int8Array(9);
+    let nextBoard = -1; // -1 free, 0..8 forced
+    let currentPlayer = 1; // 1 X, -1 O
+
+    let xWonCount = 0;
+    let oWonCount = 0;
+    let endedCount = 0;
+
+    // history snapshots for undo
+    const history = [];
+
+    // AI worker
+    let aiWorker = null;
+    let aiThinking = false;
+    let aiRequestId = 0;
+
+    const TIME_LIMITS = {
+      easy: 120,
+      medium: 360,
+      hard: 1400,
+      expert: 2800
+    };
+
+    function sym(v){ return v === 1 ? 'X' : v === -1 ? 'O' : ''; }
+
+    function addRipple(btn, ev){
+      const rect = btn.getBoundingClientRect();
       const span = document.createElement('span');
-      span.className='ripple-ink';
-      const point = e.touches? e.touches[0] : e;
-      const x = point.clientX - r.left; const y = point.clientY - r.top;
-      span.style.left = x+'px'; span.style.top = y+'px';
-      el.appendChild(span);
+      const size = Math.max(rect.width, rect.height);
+      span.className = 'ripple';
+      span.style.width = span.style.height = size + 'px';
+      const x = ev.clientX - rect.left - size/2;
+      const y = ev.clientY - rect.top - size/2;
+      span.style.left = x + 'px';
+      span.style.top = y + 'px';
+      btn.appendChild(span);
       span.addEventListener('animationend', ()=> span.remove());
-    }, {passive:true});
-  }
-  [startBtn, restartBtn, undoBtn].forEach(attachRipple);
-
-  // ===== State =====
-  let S = createInitialState();
-  let history = [];
-  let gameStarted = false;
-  let aiPlayer = 0; // 1 if AI is X, -1 if AI is O, 0 if pvp
-  let humanPlayer = 1; // 1 if human is X, -1 if human is O
-
-  // ===== Constants & helpers =====
-  const LINES3 = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  const INF = 1e9|0;
-  const MATE = 1e8|0; // 终局值
-
-  // Build board UI
-  const miniEls = [];
-  const cellEls = [];
-  for(let m=0;m<9;m++){
-    const mini = document.createElement('div');
-    mini.className = 'mini';
-    mini.dataset.idx = m;
-    const winnerBadge = document.createElement('div');
-    winnerBadge.className = 'winnerBadge';
-    winnerBadge.style.display = 'none';
-    mini.appendChild(winnerBadge);
-
-    const cells=[];
-    for(let c=0;c<9;c++){
-      const cell = document.createElement('div');
-      cell.className='cell';
-      cell.dataset.m = m;
-      cell.dataset.c = c;
-      cell.addEventListener('click', onCellClick, {passive:true});
-      mini.appendChild(cell);
-      cells.push(cell);
-    }
-    boardEl.appendChild(mini);
-    miniEls.push(mini);
-    cellEls.push(cells);
-  }
-
-  function createInitialState(){
-    return {
-      cells: Array(81).fill(0), // 0 empty, 1 X, -1 O
-      mini: Array(9).fill(0),   // 0 ongoing, 1 X, -1 O, 2 draw/full
-      target: -1,               // next target mini [0..8] or -1 any
-      player: 1,                // 1 X, -1 O
-      winner: 0,                // 0 none, 1 X, -1 O, 2 draw
-      ruleset: 'line',
-      lastMove: null,
-      hash: 0n,                 // Zobrist hash（搜索用）
-    };
-  }
-
-  // 安全深拷贝（支持 BigInt）
-  function cloneState(src){
-    return {
-      cells: src.cells.slice(),
-      mini: src.mini.slice(),
-      target: src.target,
-      player: src.player,
-      winner: src.winner,
-      ruleset: src.ruleset,
-      lastMove: src.lastMove,
-      hash: src.hash
-    };
-  }
-
-  function coordToIndex(m,c){
-    const rowBig = Math.floor(m/3), colBig = m%3; const row = Math.floor(c/3), col = c%3;
-    return (rowBig*27) + (row*9) + (colBig*3) + col;
-  }
-  function indexToMiniAndCell(idx){
-    const gr = Math.floor(idx/9);
-    const gc = idx % 9;
-    const rowBig = Math.floor(gr/3), colBig = Math.floor(gc/3);
-    const row = gr % 3, col = gc % 3;
-    const m = rowBig*3 + colBig; const c = row*3 + col; return [m,c];
-  }
-  function miniStartIndex(m){ const rowBig = Math.floor(m/3), colBig = m%3; return rowBig*27 + colBig*3; }
-
-  function playableCells(state){
-    const res=[]; const target = state.target;
-    const addIfPlayable = (m,c)=>{
-      if(state.mini[m]!==0 && state.mini[m]!==2) return;
-      const idx = coordToIndex(m,c); if(state.cells[idx]===0) res.push(idx);
-    };
-    if(target===-1 || state.mini[target]!==0){
-      for(let m=0;m<9;m++) if(state.mini[m]===0 || state.mini[m]===2){ for(let c=0;c<9;c++) addIfPlayable(m,c); }
-    }else{ for(let c=0;c<9;c++) addIfPlayable(target,c); }
-    return res;
-  }
-
-  function checkMiniWinner(state, m){
-    const start = miniStartIndex(m);
-    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
-    for(const [a,b,c] of LINES3){ const s=g[a]+g[b]+g[c]; if(s===3) return 1; if(s===-3) return -1; }
-    if(g.every(v=>v!==0)) return 2; return 0;
-  }
-
-  function checkBigWinner(state){
-    if(state.ruleset==='five'){
-      const xCount = state.mini.filter(v=>v===1).length; const oCount = state.mini.filter(v=>v===-1).length;
-      if(xCount>=5) return 1; if(oCount>=5) return -1;
-    } else {
-      const b = state.mini.map(v=> v===1?1:(v===-1?-1:0));
-      for(const [a,b1,c] of LINES3){ const s=b[a]+b[b1]+b[c]; if(s===3) return 1; if(s===-3) return -1; }
-    }
-    if(state.mini.every(v=>v!==0)) return 2; return 0;
-  }
-
-  // 用 cloneState，避免 JSON + BigInt 报错
-  function move(state, idx){
-    const ns = cloneState(state);
-    if(ns.winner || ns.cells[idx]!==0) return ns;
-    const [m,c] = indexToMiniAndCell(idx);
-    if(!(ns.target===-1 || ns.mini[ns.target]!==0 || m===ns.target)) return ns; // 非法
-
-    ns.cells[idx] = ns.player; 
-    ns.lastMove = idx;
-
-    const winMini = checkMiniWinner(ns, m); 
-    if(winMini!==ns.mini[m]) ns.mini[m]=winMini;
-
-    ns.target = c; 
-    if(ns.mini[ns.target]!==0) ns.target = -1;
-
-    ns.winner = checkBigWinner(ns); 
-    ns.player *= -1;
-    // ns.hash 由外层统一 compute
-    return ns;
-  }
-
-  function setRuleset(rs){ S.ruleset = rs; S.winner = checkBigWinner(S); render(); }
-
-  // ========== 强化AI：Zobrist、置换表、迭代加深、启发式 ==========
-  function rand64(){ const hi = Math.floor(Math.random()*0xffffffff)>>>0; const lo = Math.floor(Math.random()*0xffffffff)>>>0; return (BigInt(hi)<<32n) ^ BigInt(lo); }
-  const Z = {
-    cell: Array.from({length:81}, ()=> [rand64(), rand64()]),
-    player: rand64(),
-    target: Array.from({length:10}, ()=> rand64()), // target -1..8 -> 索引 +1
-  };
-
-  function computeHash(state){
-    let h = 0n;
-    for(let i=0;i<81;i++){ const v = state.cells[i]; if(v===1) h^=Z.cell[i][0]; else if(v===-1) h^=Z.cell[i][1]; }
-    h ^= Z.target[state.target+1];
-    if(state.player===1) h ^= Z.player;
-    return h;
-  }
-
-  function doMoveLocal(s, idx){
-    const [m,c] = indexToMiniAndCell(idx);
-    const rec = {
-      idx, m, c,
-      prevPlayer: s.player,
-      prevTarget: s.target,
-      prevMini: s.mini[m],
-      prevWinner: s.winner,
-      prevLast: s.lastMove,
-      prevHash: s.hash,
-    };
-    if(s.player===1) s.hash ^= Z.player;
-
-    s.cells[idx] = s.player;
-    s.hash ^= (s.player===1? Z.cell[idx][0] : Z.cell[idx][1]);
-    s.lastMove = idx;
-
-    const winMini = checkMiniWinner(s, m);
-    if(winMini!==s.mini[m]) s.mini[m]=winMini;
-
-    s.hash ^= Z.target[s.target+1];
-    s.target = c; if(s.mini[s.target]!==0) s.target = -1;
-    s.hash ^= Z.target[s.target+1];
-
-    s.winner = checkBigWinner(s);
-
-    s.player *= -1;
-    if(s.player===1) s.hash ^= Z.player;
-
-    return rec;
-  }
-  function undoMoveLocal(s, rec){
-    if(s.player===1) s.hash ^= Z.player;
-    s.player *= -1;
-
-    s.hash ^= Z.target[s.target+1];
-    s.target = rec.prevTarget;
-    s.hash ^= Z.target[s.target+1];
-
-    const idx = rec.idx;
-    const v = (s.player);
-    s.hash ^= (v===1? Z.cell[idx][0] : Z.cell[idx][1]);
-    s.cells[idx] = 0;
-
-    s.mini[rec.m] = rec.prevMini;
-    s.winner = rec.prevWinner;
-    s.lastMove = rec.prevLast;
-
-    if(s.player===1) s.hash ^= Z.player;
-
-    s.hash = rec.prevHash;
-  }
-
-  const killerMoves = Array.from({length:64}, ()=> [null, null]);
-  const historyScore = new Int32Array(81);
-  function pushKiller(ply, mv){
-    const ks = killerMoves[ply];
-    if(ks[0]!==mv){ ks[1] = ks[0]; ks[0] = mv; }
-  }
-  function bumpHistory(mv, depth){ historyScore[mv] += depth*depth; }
-
-  function evaluateFor(state, p){
-    if(state.winner===2) return 0;
-    if(state.winner===p) return 100000;
-    if(state.winner===-p) return -100000;
-
-    let score = 0;
-
-    // 大盘：线势能
-    const big = state.mini.map(v => v===1?1:(v===-1?-1:0));
-    let pBig = 0;
-    for(const [a,b,c] of LINES3){
-      const s = big[a]+big[b]+big[c];
-      if(s===2*p) pBig += 500;
-      else if(s===p) pBig += 150;
-      else if(s===-2*p) pBig -= 500;
-      else if(s===-p) pBig -= 150;
-    }
-    // 已赢小盘
-    for(let m=0;m<9;m++){
-      if(state.mini[m]===p){ score += 380 + (m===4?80:(m%2===0?40:0)); }
-      else if(state.mini[m]===-p){ score -= 380 + (m===4?80:(m%2===0?40:0)); }
     }
 
-    // 未结束小盘内部势
-    for(let m=0;m<9;m++){
-      if(state.mini[m]!==0) continue;
-      const start = miniStartIndex(m);
-      const g = [
-        state.cells[start+0], state.cells[start+1], state.cells[start+2],
-        state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2],
-        state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2]
-      ];
-      let miniScore = 0;
-      for(const [a,b,c] of LINES3){
-        const sum = g[a]+g[b]+g[c];
-        if(sum===2*p) miniScore += 60;
-        else if(sum===p) miniScore += 18;
-        else if(sum===-2*p) miniScore -= 60;
-        else if(sum===-p) miniScore -= 18;
-      }
-      if(g[4]===p) miniScore += 12; else if(g[4]===-p) miniScore -= 12;
-      [0,2,6,8].forEach(i=>{
-        if(g[i]===p) miniScore += 5; else if(g[i]===-p) miniScore -= 5;
-      });
-      score += miniScore;
-    }
-
-    // 目标/机动性
-    if(state.target!==-1 && state.mini[state.target]===0){
-      const t = state.target;
-      score += - evaluateMiniAgainst(state, t, -p) * 0.6;
-    } else {
-      score += (playableCells(state).length - 20) * 1.2;
-    }
-
-    return score + pBig;
-  }
-  function evaluateMiniAgainst(state, m, q){
-    const start = miniStartIndex(m);
-    const g = [ state.cells[start+0], state.cells[start+1], state.cells[start+2], state.cells[start+9+0], state.cells[start+9+1], state.cells[start+9+2], state.cells[start+18+0], state.cells[start+18+1], state.cells[start+18+2] ];
-    let s=0;
-    for(const [a,b,c] of LINES3){
-      const sum = g[a]+g[b]+g[c];
-      if(sum===2*q) s += 30;
-      else if(sum===q) s += 8;
-      else if(sum===-2*q) s -= 30;
-      else if(sum===-q) s -= 8;
-    }
-    if(g[4]===q) s+=6; else if(g[4]===-q) s-=6;
-    return s;
-  }
-
-  function orderMoves(state, moves, pvMove, ply){
-    const list = moves.map(idx => {
-      const [m,c] = indexToMiniAndCell(idx);
-      let h = historyScore[idx] | 0;
-
-      if(c===4) h += 120;
-      else if(c===0||c===2||c===6||c===8) h += 60;
-
-      const rec = doMoveLocal(state, idx);
-      const winNow = (state.winner!==0 && state.winner!==2);
-      let local = 0;
-      if(winNow) local += 900000;
-      else{
-        if(rec.prevMini===0 && state.mini[rec.m]!==0 && state.mini[rec.m]!==2) local += 1500;
-
-        const oppTarget = state.target;
-        if(oppTarget!==-1 && state.mini[oppTarget]===0){
-          local += (evaluateMiniAgainst(state, oppTarget, state.player) * -1) | 0;
-        }
-      }
-      undoMoveLocal(state, rec);
-
-      const ks = killerMoves[ply];
-      if(ks[0]===idx) h += 5000;
-      else if(ks[1]===idx) h += 3000;
-
-      return {idx, key: h + local};
+    document.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', (ev)=> addRipple(btn, ev));
     });
 
-    if(pvMove!=null){
-      for(const it of list){ if(it.idx===pvMove) it.key += 800000; }
-    }
+    function setupBoardDOM(){
+      boardEl.innerHTML = '';
+      for(let sb=0; sb<9; sb++){
+        const small = document.createElement('div');
+        small.className = 'small';
+        small.dataset.sb = String(sb);
 
-    list.sort((a,b)=> b.key - a.key);
-    return list.map(x=>x.idx);
-  }
+        const grid = document.createElement('div');
+        grid.className = 'grid';
 
-  const TT = new Map(); // key: hash(BigInt string) -> {depth, score, flag, best}
-  const TT_EXACT=0, TT_LOWER=1, TT_UPPER=2;
+        for(let c=0;c<9;c++){
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.sb = String(sb);
+          cell.dataset.c = String(c);
+          cell.addEventListener('click', onCellClick);
+          grid.appendChild(cell);
+        }
 
-  function staticEval(state){ return evaluateFor(state, state.player); }
-  function terminalScore(state){
-    if(state.winner===2) return 0;
-    if(state.winner!==0) return -MATE;
-    return 0;
-  }
+        const overlay = document.createElement('div');
+        overlay.className = 'overlayMark';
+        overlay.textContent = '';
 
-  function negamax(state, depth, alpha, beta, ply, deadline, pvMove){
-    if(performance.now() > deadline) return {aborted:true};
-    if(state.winner!==0){
-      return {score: terminalScore(state), move: null, aborted:false};
-    }
-    if(depth===0){
-      return {score: staticEval(state)|0, move: null, aborted:false};
-    }
-
-    const key = state.hash.toString();
-    const t = TT.get(key);
-    if(t && t.depth>=depth){
-      if(t.flag===TT_EXACT) return {score: t.score, move: t.best, aborted:false};
-      if(t.flag===TT_LOWER && t.score>alpha) alpha = t.score;
-      else if(t.flag===TT_UPPER && t.score<beta) beta = t.score;
-      if(alpha>=beta) return {score: t.score, move: t.best, aborted:false};
-    }
-
-    const moves = playableCells(state);
-    if(moves.length===0){ return {score:0, move:null, aborted:false}; }
-
-    const ordered = orderMoves(state, moves, t?.best ?? pvMove, ply);
-
-    let bestMove = ordered[0];
-    let value = -INF;
-    const alphaOrig = alpha;
-
-    for(let i=0;i<ordered.length;i++){
-      const mv = ordered[i];
-      const rec = doMoveLocal(state, mv);
-
-      let nextDepth = depth - 1;
-      if(depth>=3 && i>=6){ nextDepth = depth - 2; }
-
-      const child = negamax(state, nextDepth, -beta, -alpha, ply+1, deadline, t?.best);
-      undoMoveLocal(state, rec);
-
-      if(child.aborted) return {aborted:true};
-
-      const score = -child.score;
-      if(score > value){ value = score; bestMove = mv; }
-      if(score > alpha) alpha = score;
-
-      if(alpha>=beta){
-        pushKiller(ply, mv);
-        bumpHistory(mv, depth);
-        break;
+        small.appendChild(grid);
+        small.appendChild(overlay);
+        boardEl.appendChild(small);
       }
     }
 
-    const flag = value<=alphaOrig ? TT_UPPER : (value>=beta ? TT_LOWER : TT_EXACT);
-    TT.set(key, {depth, score:value, flag, best:bestMove});
-    return {score:value, move:bestMove, aborted:false};
-  }
-
-  function aiSearchStrong(state, timeMs, maxDepth=14){
-    const W = {
-      cells: state.cells.slice(),
-      mini: state.mini.slice(),
-      target: state.target,
-      player: state.player,
-      winner: state.winner,
-      ruleset: state.ruleset,
-      lastMove: state.lastMove,
-      hash: 0n,
-    };
-    W.hash = computeHash(W);
-
-    const deadline = performance.now() + Math.max(100, timeMs|0);
-    let best = null, bestScore = -INF;
-    let pv = null;
-
-    for(let d=2; d<=maxDepth; d++){
-      const r = negamax(W, d, -INF, INF, 0, deadline, pv);
-      if(r.aborted) break;
-      if(r.move!=null){ best = r.move; bestScore = r.score; pv = r.move; }
-      if(bestScore> MATE/2) break;
-    }
-    if(best==null){
-      const mvs = playableCells(state);
-      if(mvs.length===0) return undefined;
-      best = orderMoves(W, mvs, null, 0)[0];
-    }
-    return best;
-  }
-
-  // ===== AI Logic =====
-  function aiMove() {
-    if (S.winner !== 0 || S.player !== aiPlayer) return;
-    const difficulty = difficultyEl.value;
-    let bestMove;
-
-    if (difficulty === 'easy') {
-      bestMove = aiEasy(S);
-    } else if (difficulty === 'medium') {
-      bestMove = aiMedium(S);
-    } else if (difficulty === 'hard') {
-      bestMove = aiSearchStrong(S, 600, 13); // 困难：~0.6s
-    } else { // pro
-      bestMove = aiSearchStrong(S, 1500, 14); // 专家：~1.5s
+    function lockSettings(lock){
+      // mode still can be toggled before start, locked after start
+      modeSeg.querySelectorAll('input').forEach(inp=> inp.disabled = lock);
+      difficultyEl.disabled = lock || !vsAI;
+      firstPlayerEl.disabled = lock || !vsAI;
+      winModeEl.disabled = lock;
     }
 
-    if (bestMove !== undefined) {
-      history.push(cloneState(S));         // ✅ 不用 JSON
-      S = move(S, bestMove);
-      S.hash = computeHash(S);             // ✅ 更新哈希
+    function cancelAI(){
+      // invalidate any pending AI response
+      aiRequestId++;
+      aiThinking = false;
+    }
+
+    function resetState(){
+      board = new Int8Array(81);
+      smallStatus = new Int8Array(9);
+      nextBoard = -1;
+      currentPlayer = 1;
+      xWonCount = 0;
+      oWonCount = 0;
+      endedCount = 0;
+      history.length = 0;
+      btnUndo.disabled = true;
+      updateStatus();
       render();
     }
-  }
 
-  function aiEasy(state) {
-    const moves = playableCells(state);
-    return moves[Math.floor(Math.random() * moves.length)];
-  }
+    function pushHistory(){
+      history.push({
+        board: board.slice(),
+        small: smallStatus.slice(),
+        next: nextBoard,
+        player: currentPlayer,
+        xWonCount,
+        oWonCount,
+        endedCount
+      });
+      btnUndo.disabled = history.length === 0;
+    }
 
-  function aiMedium(state) {
-    const moves = playableCells(state);
-    let bestScore = -Infinity;
-    let bestIdx;
-    for (const idx of moves) {
-      const testState = move(state, idx);
-      const score = evaluateFor(testState, aiPlayer);
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = idx;
+    function popHistory(){
+      const h = history.pop();
+      if(!h) return;
+      board = h.board;
+      smallStatus = h.small;
+      nextBoard = h.next;
+      currentPlayer = h.player;
+      xWonCount = h.xWonCount;
+      oWonCount = h.oWonCount;
+      endedCount = h.endedCount;
+      btnUndo.disabled = history.length === 0;
+    }
+
+    function computeSmallStatus(sb){
+      const base = sb*9;
+      for(const [a,b,c] of SMALL_LINES){
+        const v = board[base+a];
+        if(v !== 0 && v === board[base+b] && v === board[base+c]) return v; // 1 or -1
       }
+      for(let i=0;i<9;i++) if(board[base+i]===0) return 0;
+      return 2;
     }
-    return bestIdx;
-  }
 
-  // ===== Rendering / Controls =====
-  function render(){
-    const playable = new Set(playableCells(S));
-    for(let m=0;m<9;m++){
-      const mini = miniEls[m]; mini.classList.toggle('active', S.target===-1 ? (S.mini[m]===0 || S.mini[m]===2) : m===S.target);
-      mini.classList.toggle('won-x', S.mini[m]===1); mini.classList.toggle('won-o', S.mini[m]===-1); mini.classList.toggle('full', S.mini[m]===2);
-      const badge = mini.querySelector('.winnerBadge');
-      if(S.mini[m]===1){ badge.textContent='X 赢'; badge.style.display='block'; }
-      else if(S.mini[m]===-1){ badge.textContent='O 赢'; badge.style.display='block'; }
-      else if(S.mini[m]===2){ badge.textContent='和'; badge.style.display='block'; }
-      else badge.style.display='none';
-
-      for(let c=0;c<9;c++){
-        const cell = cellEls[m][c]; const idx = coordToIndex(m,c); const v = S.cells[idx];
-        cell.textContent = v===1?'X':(v===-1?'O':'');
-        cell.className = 'cell'+(v===1?' mark-x':v===-1?' mark-o':'');
-        const enabled = playable.has(idx) && S.winner===0 && gameStarted;
-        cell.classList.toggle('disabled', !enabled);
-        cell.classList.toggle('playable', enabled);
-        if(idx===S.lastMove) cell.classList.add('flash'); else cell.classList.remove('flash');
-      }
-    }
-    const thinking = (S.player === aiPlayer && S.winner===0 && gameStarted && modeEl.value==='pve');
-    turnText.textContent = S.winner? (S.winner===2? '平局' : `胜者：${S.winner===1?'X':'O'}`) : `轮到：${S.player===1?'X':'O'}`;
-    targetText.textContent = S.winner? (S.winner===2? '对局结束（平局）' : '对局结束') :
-      (thinking ? 'AI思考中…' : (S.target===-1 ? '可在任意未结束的小盘落子' : `请在第 ${S.target+1} 个小盘中落子`));
-
-    if (thinking) {
-      setTimeout(aiMove, 10);
-    }
-  }
-
-  function lockSettings() {
-    modeEl.disabled = true;
-    rulesetEl.disabled = true;
-    firstEl.disabled = true;
-    difficultyEl.disabled = true;
-    startBtn.style.display = 'none';
-    undoBtn.style.display = 'inline-block';
-    restartBtn.style.display = 'inline-block';
-  }
-
-  function unlockSettings() {
-    modeEl.disabled = false;
-    rulesetEl.disabled = false;
-    firstEl.disabled = false;
-    difficultyEl.disabled = false;
-    startBtn.style.display = 'inline-block';
-    undoBtn.style.display = 'none';
-    restartBtn.style.display = 'none';
-  }
-
-  function resetGame(){
-    S = createInitialState(); S.ruleset = rulesetEl.value; history.length = 0;
-    gameStarted = false;
-    unlockSettings();
-    const isPve = modeEl.value === 'pve';
-    difficultyChip.style.display = isPve ? 'flex' : 'none';
-    if (isPve) {
-      const isHumanFirst = firstEl.value === 'human';
-      if (isHumanFirst) {
-        humanPlayer = 1; // 人类 X
-        aiPlayer = -1;   // AI O
-        S.player = 1;
+    function checkBigWinner(){
+      if(winMode==='classic'){
+        for(const [a,b,c] of MACRO_LINES){
+          const v = smallStatus[a];
+          if((v===1||v===-1) && v===smallStatus[b] && v===smallStatus[c]) return v;
+        }
+        if(endedCount===9) return 2;
+        return 0;
       } else {
-        humanPlayer = -1; // 人类 O
-        aiPlayer = 1;     // AI X
-        S.player = 1;
+        if(xWonCount>=5) return 1;
+        if(oWonCount>=5) return -1;
+        if(endedCount===9) return 2;
+        return 0;
       }
-    } else {
-      aiPlayer = 0;
-      const isHumanFirst = firstEl.value === 'human';
-      S.player = isHumanFirst ? 1 : -1;
     }
-    S.hash = computeHash(S);
-    render();
-  }
 
-  function startGame() {
-    if (gameStarted) return;
-    gameStarted = true;
-    lockSettings();
-    if (modeEl.value === 'pve' && S.player === aiPlayer) {
-      render(); // 会触发 AI 思考
-      return;
+    function allowedBoards(){
+      if(nextBoard!==-1 && smallStatus[nextBoard]===0) return [nextBoard];
+      const arr=[];
+      for(let i=0;i<9;i++) if(smallStatus[i]===0) arr.push(i);
+      return arr;
     }
-    render();
-  }
 
-  function undo(){ 
-    if(history.length===0 || !gameStarted) return; 
-    const stepsToUndo = (modeEl.value === 'pve' && S.player === humanPlayer && history.length >= 2) ? 2 : 1;
-    for(let i=0; i<stepsToUndo; i++){
-      if(history.length===0) break;
-      S = history.pop();
+    function isMoveLegal(sb, c){
+      if(!gameActive) return false;
+      const idx = sb*9 + c;
+      if(board[idx]!==0) return false;
+      if(smallStatus[sb]!==0) return false;
+      const allowed = allowedBoards();
+      return allowed.includes(sb);
     }
-    S.hash = computeHash(S);
-    render(); 
-  }
 
-  function onCellClick(e){
-    if (!gameStarted || S.winner !== 0) return;
-    const idx = coordToIndex(+e.currentTarget.dataset.m, +e.currentTarget.dataset.c);
-    const legalSet = new Set(playableCells(S)); if(!legalSet.has(idx)) return;
-    if (modeEl.value === 'pve' && S.player === aiPlayer) return; // AI回合禁止点击
-    history.push(cloneState(S)); // ✅ 不用 JSON
-    S = move(S, idx);
-    S.hash = computeHash(S);     // ✅ 更新哈希
-    render();
-  }
+    function makeMove(sb, c){
+      const idx = sb*9 + c;
+      board[idx] = currentPlayer;
 
-  // Wire controls
-  modeEl.addEventListener('change', () => {
-    const isPve = modeEl.value === 'pve';
-    difficultyChip.style.display = isPve ? 'flex' : 'none';
-    resetGame();
-  });
-  firstEl.addEventListener('change', resetGame);
-  rulesetEl.addEventListener('change', ()=>{ setRuleset(rulesetEl.value); S.hash = computeHash(S); });
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', resetGame);
-  undoBtn.addEventListener('click', undo);
-  difficultyEl.addEventListener('change', resetGame);
+      const prevStatus = smallStatus[sb];
+      const newStatus = computeSmallStatus(sb);
+      if(prevStatus===0 && newStatus!==0){
+        smallStatus[sb] = newStatus;
+        endedCount++;
+        if(newStatus===1) xWonCount++;
+        else if(newStatus===-1) oWonCount++;
+      }
 
-  // Initial
-  resetGame(); render();
-})();
-</script>
+      // next board is decided by the cell position; if ended/unavailable => free
+      nextBoard = c;
+      if(nextBoard!==-1 && smallStatus[nextBoard]!==0) nextBoard = -1;
+
+      currentPlayer = -currentPlayer;
+    }
+
+    function updateStatus(){
+      turnText.textContent = '轮到：' + (currentPlayer===1 ? 'X' : 'O');
+
+      const allowed = allowedBoards();
+      if(!gameActive || history.length===0){
+        hintEl.textContent = '自由落点（首手可下任意处）';
+      } else if(allowed.length===1){
+        hintEl.textContent = `必须在高亮小盘落子（目标小盘：${allowed[0]+1}）`;
+      } else {
+        hintEl.textContent = '可在任意未结束的小盘落子';
+      }
+    }
+
+    function render(){
+      const allowed = allowedBoards();
+      const humanPlayer = vsAI ? (aiFirst ? -1 : 1) : null;
+      const isHumanTurn = !vsAI || currentPlayer === humanPlayer;
+
+      const smallEls = boardEl.querySelectorAll('.small');
+      smallEls.forEach((smallEl)=>{
+        const sb = Number(smallEl.dataset.sb);
+        smallEl.classList.toggle('active', gameActive && allowed.includes(sb));
+
+        smallEl.classList.remove('wonX','wonO','draw');
+        const overlay = smallEl.querySelector('.overlayMark');
+
+        if(smallStatus[sb]===1){
+          smallEl.classList.add('wonX');
+          overlay.textContent = 'X';
+        } else if(smallStatus[sb]===-1){
+          smallEl.classList.add('wonO');
+          overlay.textContent = 'O';
+        } else if(smallStatus[sb]===2){
+          smallEl.classList.add('draw');
+          overlay.textContent = '—';
+        } else {
+          overlay.textContent = '';
+        }
+
+        const cells = smallEl.querySelectorAll('.cell');
+        cells.forEach((cellEl)=>{
+          const c = Number(cellEl.dataset.c);
+          const idx = sb*9 + c;
+          const v = board[idx];
+
+          cellEl.textContent = sym(v);
+          cellEl.classList.toggle('x', v===1);
+          cellEl.classList.toggle('o', v===-1);
+
+          const legal = gameActive && isHumanTurn && !aiThinking && isMoveLegal(sb,c);
+          cellEl.classList.toggle('allowed', legal);
+          cellEl.classList.toggle('disabled', !legal);
+        });
+      });
+    }
+
+    function showModal(title, desc){
+      modalTitle.textContent = title;
+      modalDesc.textContent = desc;
+      modalMask.style.display = 'flex';
+    }
+
+    function hideModal(){
+      modalMask.style.display = 'none';
+    }
+
+    btnClose.addEventListener('click', hideModal);
+    btnNew.addEventListener('click', ()=>{
+      hideModal();
+      cancelAI();
+      resetState();
+      if(vsAI && aiFirst){
+        requestAIMove();
+      }
+    });
+
+    function endIfNeeded(){
+      const w = checkBigWinner();
+      if(w===0) return false;
+      gameActive = false;
+      cancelAI();
+      btnUndo.disabled = true;
+      const modeText = winMode==='classic' ? '经典（大盘三连）' : 'Tic-Tac-Ku（五盘）';
+      if(w===2) showModal('平局', `胜负条件：${modeText}`);
+      else showModal(`${w===1?'X':'O'} 获胜！`, `胜负条件：${modeText}`);
+      updateStatus();
+      render();
+      return true;
+    }
+
+    function onCellClick(ev){
+      const sb = Number(ev.currentTarget.dataset.sb);
+      const c = Number(ev.currentTarget.dataset.c);
+
+      if(!gameActive) return;
+      if(aiThinking) return;
+      if(!isMoveLegal(sb,c)) return;
+
+      const humanPlayer = vsAI ? (aiFirst ? -1 : 1) : null;
+      if(vsAI && currentPlayer !== humanPlayer) return;
+
+      pushHistory();
+      makeMove(sb,c);
+      updateStatus();
+      render();
+      if(endIfNeeded()) return;
+
+      if(vsAI){
+        requestAIMove();
+      }
+    }
+
+    function undo(){
+      if(history.length===0) return;
+      if(!gameActive) return;
+
+      // allow undo even if AI is thinking: cancel pending result
+      if(aiThinking) cancelAI();
+
+      if(vsAI){
+        // In PVE: undo back to player's previous step.
+        // If it's AI's turn now, undo 1 move (player just moved). If it's player's turn now, undo 2 moves (AI+player).
+        const humanPlayer = aiFirst ? -1 : 1;
+        if(currentPlayer === -humanPlayer){
+          popHistory();
+        } else {
+          popHistory();
+          if(history.length>0) popHistory();
+        }
+      } else {
+        popHistory();
+      }
+
+      updateStatus();
+      render();
+    }
+
+    btnUndo.addEventListener('click', undo);
+
+    btnReset.addEventListener('click', ()=>{
+      hideModal();
+      cancelAI();
+      resetState();
+      if(gameActive && vsAI && aiFirst){
+        requestAIMove();
+      }
+    });
+
+    function applySettingsFromUI(){
+      vsAI = document.querySelector('input[name="mode"]:checked').value === 'pve';
+      difficulty = difficultyEl.value;
+      winMode = winModeEl.value;
+      aiFirst = firstPlayerEl.value === 'ai';
+
+      difficultyEl.disabled = !vsAI || gameActive;
+      firstPlayerEl.disabled = !vsAI || gameActive;
+    }
+
+    modeSeg.addEventListener('change', ()=>{
+      applySettingsFromUI();
+      if(!gameActive){
+        lockSettings(false);
+      }
+    });
+    difficultyEl.addEventListener('change', applySettingsFromUI);
+    winModeEl.addEventListener('change', applySettingsFromUI);
+    firstPlayerEl.addEventListener('change', applySettingsFromUI);
+
+    btnStart.addEventListener('click', ()=>{
+      applySettingsFromUI();
+      cancelAI();
+      gameActive = true;
+      lockSettings(true);
+      resetState();
+      if(vsAI && aiFirst){
+        requestAIMove();
+      }
+      updateStatus();
+      render();
+    });
+
+    // ------------------------------
+    // AI Worker (non-blocking)
+    // ------------------------------
+
+    function ensureWorker(){
+      if(aiWorker) return;
+      const workerCode = `
+      // Ultimate Tic-Tac-Toe / Tic-Tac-Ku AI Worker
+      // Strengthened AI for all 4 difficulties.
+      // - Easy: tactical random (win/block + weighted randomness)
+      // - Medium: shallow alpha-beta + TT (time-limited)
+      // - Hard: iterative deepening alpha-beta + TT (time-limited)
+      // - Expert: deeper iterative deepening + TT + killer/history + aspiration (time-limited)
+
+      const SMALL_LINES = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      const MACRO_LINES = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+
+      // For faster small-board win checks: which lines contain a given cell (0..8)
+      const LINES_BY_CELL = Array.from({length:9}, ()=>[]);
+      for(let li=0; li<SMALL_LINES.length; li++){
+        const line = SMALL_LINES[li];
+        for(const c of line) LINES_BY_CELL[c].push(li);
+      }
+
+      const MACRO_LINES_BY_CELL = Array.from({length:9}, ()=>[]);
+      for(let li=0; li<MACRO_LINES.length; li++){
+        const line = MACRO_LINES[li];
+        for(const c of line) MACRO_LINES_BY_CELL[c].push(li);
+      }
+
+      const MACRO_POS_W = [3,2,3,2,4,2,3,2,3];
+      const CELL_POS_W  = [3,2,3,2,4,2,3,2,3];
+
+      const WIN_SCORE = 1_000_000_000;
+
+      // Heuristic weights (tuned for strength + speed)
+      const W_SMALL_WON = 6500;
+      const W_SMALL_TWO = 220;
+      const W_SMALL_ONE = 26;
+      const W_SMALL_CENTER = 16;
+      const W_SMALL_CORNER = 7;
+
+      const W_MACRO_TWO = 220_000;
+      const W_MACRO_ONE = 22_000;
+
+      const W_KU_COUNT = 65_000;
+      const W_KU_NEAR = 180_000;
+
+      // Zobrist hashing (64-bit BigInt)
+      let Z_CELL_X = null;
+      let Z_CELL_O = null;
+      let Z_SMALL = null; // [9][4]
+      let Z_NEXT = null;  // 10 (for -1..8)
+      let Z_TURN = null;
+
+      function rand64(){
+        const u32 = new Uint32Array(2);
+        crypto.getRandomValues(u32);
+        return (BigInt(u32[0])<<32n) ^ BigInt(u32[1]);
+      }
+
+      function initZobrist(){
+        if(Z_CELL_X) return;
+        Z_CELL_X = Array.from({length:81}, rand64);
+        Z_CELL_O = Array.from({length:81}, rand64);
+        Z_SMALL = Array.from({length:9}, ()=> Array.from({length:4}, rand64));
+        Z_NEXT = Array.from({length:10}, rand64);
+        Z_TURN = rand64();
+      }
+
+      function smallStatusToIndex(s){
+        // 0 ongoing, 1 X, -1 O, 2 draw
+        if(s===0) return 0;
+        if(s===1) return 1;
+        if(s===-1) return 2;
+        return 3;
+      }
+
+      function computeHash(board, small, nextBoard, player){
+        let h = 0n;
+        for(let i=0;i<81;i++){
+          const v = board[i];
+          if(v===1) h ^= Z_CELL_X[i];
+          else if(v===-1) h ^= Z_CELL_O[i];
+        }
+        for(let sb=0;sb<9;sb++){
+          h ^= Z_SMALL[sb][smallStatusToIndex(small[sb])];
+        }
+        h ^= Z_NEXT[nextBoard+1];
+        if(player===-1) h ^= Z_TURN;
+        return h;
+      }
+
+      function computeSmall(board, sb){
+        const base = sb*9;
+        for(const [a,b,c] of SMALL_LINES){
+          const v = board[base+a];
+          if(v!==0 && v===board[base+b] && v===board[base+c]) return v;
+        }
+        for(let i=0;i<9;i++) if(board[base+i]===0) return 0;
+        return 2;
+      }
+
+      function macroWinnerClassic(small){
+        for(const [a,b,c] of MACRO_LINES){
+          const v = small[a];
+          if((v===1||v===-1) && v===small[b] && v===small[c]) return v;
+        }
+        return 0;
+      }
+
+      function gameResultFromCounts(xWins, oWins, ended, small, winMode){
+        if(winMode==='classic'){
+          const w = macroWinnerClassic(small);
+          if(w!==0) return w;
+          if(ended===9) return 2;
+          return 0;
+        } else {
+          if(xWins>=5) return 1;
+          if(oWins>=5) return -1;
+          if(ended===9) return 2;
+          return 0;
+        }
+      }
+
+      function genMoves(board, small, nextBoard, outMoves, startOffset){
+        let n=0;
+        const pushMove = (sb, c)=>{ outMoves[startOffset + (n++)] = sb*9 + c; };
+
+        if(nextBoard!==-1 && small[nextBoard]===0){
+          const sb = nextBoard;
+          const base = sb*9;
+          for(let c=0;c<9;c++) if(board[base+c]===0) pushMove(sb,c);
+          return n;
+        }
+
+        for(let sb=0;sb<9;sb++){
+          if(small[sb]!==0) continue;
+          const base = sb*9;
+          for(let c=0;c<9;c++) if(board[base+c]===0) pushMove(sb,c);
+        }
+        return n;
+      }
+
+      function wouldWinSmall(board, sb, c, player){
+        const base = sb*9;
+        for(const li of LINES_BY_CELL[c]){
+          const [a,b,d] = SMALL_LINES[li];
+          const pa = (a===c)? player : board[base+a];
+          const pb = (b===c)? player : board[base+b];
+          const pc = (d===c)? player : board[base+d];
+          if(pa===player && pb===player && pc===player) return true;
+        }
+        return false;
+      }
+
+      function wouldBlockOppSmall(board, sb, c, player){
+        const opp = -player;
+        const base = sb*9;
+        for(const li of LINES_BY_CELL[c]){
+          const [a,b,d] = SMALL_LINES[li];
+          const pa = (a===c)? player : board[base+a];
+          const pb = (b===c)? player : board[base+b];
+          const pc = (d===c)? player : board[base+d];
+          // placing here blocks if the other two are opp
+          let oppCount=0;
+          if(pa===opp) oppCount++;
+          if(pb===opp) oppCount++;
+          if(pc===opp) oppCount++;
+          if(oppCount===2) return true;
+        }
+        return false;
+      }
+
+      function wouldWinBigClassic(small, sb, player){
+        for(const li of MACRO_LINES_BY_CELL[sb]){
+          const [a,b,c] = MACRO_LINES[li];
+          const va = (a===sb)? player : small[a];
+          const vb = (b===sb)? player : small[b];
+          const vc = (c===sb)? player : small[c];
+          if(va===player && vb===player && vc===player) return true;
+        }
+        return false;
+      }
+
+      function microEval(board, sb){
+        const base = sb*9;
+        let s = 0;
+
+        const center = board[base+4];
+        if(center===1) s += W_SMALL_CENTER;
+        else if(center===-1) s -= W_SMALL_CENTER;
+
+        const corners = [0,2,6,8];
+        for(const c of corners){
+          const v = board[base+c];
+          if(v===1) s += W_SMALL_CORNER;
+          else if(v===-1) s -= W_SMALL_CORNER;
+        }
+
+        for(const [a,b,c] of SMALL_LINES){
+          const va=board[base+a], vb=board[base+b], vc=board[base+c];
+          let x=0,o=0,e=0;
+          if(va===1) x++; else if(va===-1) o++; else e++;
+          if(vb===1) x++; else if(vb===-1) o++; else e++;
+          if(vc===1) x++; else if(vc===-1) o++; else e++;
+          if(x>0 && o>0) continue;
+          if(x===2 && e===1) s += W_SMALL_TWO;
+          else if(x===1 && e===2) s += W_SMALL_ONE;
+          else if(o===2 && e===1) s -= W_SMALL_TWO;
+          else if(o===1 && e===2) s -= W_SMALL_ONE;
+        }
+
+        return s;
+      }
+
+      function evalHeuristicX(state){
+        // Evaluation from X perspective (positive = good for X)
+        let score = 0;
+
+        if(state.winMode==='ku'){
+          score += (state.xWins - state.oWins) * W_KU_COUNT;
+          if(state.xWins===4) score += W_KU_NEAR;
+          if(state.oWins===4) score -= W_KU_NEAR;
+        }
+
+        // Small boards
+        for(let sb=0;sb<9;sb++){
+          const st = state.small[sb];
+          const w = MACRO_POS_W[sb];
+          if(st===1) score += W_SMALL_WON * w;
+          else if(st===-1) score -= W_SMALL_WON * w;
+          else if(st===0) score += microEval(state.board, sb) * w;
+        }
+
+        // Macro threats
+        const macroTwo = state.winMode==='classic' ? W_MACRO_TWO : Math.floor(W_MACRO_TWO*0.45);
+        const macroOne = state.winMode==='classic' ? W_MACRO_ONE : Math.floor(W_MACRO_ONE*0.55);
+        for(const [a,b,c] of MACRO_LINES){
+          const sa=state.small[a], sb=state.small[b], sc=state.small[c];
+          if(sa===2 || sb===2 || sc===2) continue;
+          let x=0,o=0,e=0;
+          const arr = [sa,sb,sc];
+          for(const v of arr){
+            if(v===1) x++; else if(v===-1) o++; else e++;
+          }
+          if(x>0 && o>0) continue;
+          if(x===2 && e===1) score += macroTwo;
+          else if(o===2 && e===1) score -= macroTwo;
+          else if(x===1 && e===2) score += macroOne;
+          else if(o===1 && e===2) score -= macroOne;
+        }
+
+        // forced-board hint
+        if(state.nextBoard!==-1 && state.small[state.nextBoard]===0){
+          score += microEval(state.board, state.nextBoard) * 1.6;
+        }
+
+        return score;
+      }
+
+      // ---------------- Search Engine ----------------
+      const TT_EXACT = 0;
+      const TT_UPPER = 1;
+      const TT_LOWER = 2;
+
+      function createTT(maxEntries){
+        return {
+          map: new Map(),
+          maxEntries,
+          clearIfNeeded(){ if(this.map.size > this.maxEntries) this.map.clear(); }
+        };
+      }
+
+      // Root-level tactical move picker (used in Easy & as fallback)
+      function tacticalPick(state){
+        const board = state.board;
+        const small = state.small;
+        const nextBoard = state.nextBoard;
+        const player = state.player;
+
+        const buf = new Int16Array(81);
+        const n = genMoves(board, small, nextBoard, buf, 0);
+
+        if(n<=0) return -1;
+
+        // Strong opening
+        if(state.moveCount===0){
+          return 4*9 + 4;
+        }
+
+        const winMoves = [];
+        const smallWinMoves = [];
+        const blockSmallMoves = [];
+
+        for(let i=0;i<n;i++){
+          const mv = buf[i];
+          const sb = Math.floor(mv/9);
+          const c  = mv%9;
+          const winSmall = wouldWinSmall(board, sb, c, player);
+          if(winSmall){
+            if(state.winMode==='classic'){
+              if(wouldWinBigClassic(small, sb, player)) winMoves.push(mv);
+              else smallWinMoves.push(mv);
+            } else {
+              const pWins = (player===1 ? state.xWins : state.oWins);
+              if(pWins>=4) winMoves.push(mv);
+              else smallWinMoves.push(mv);
+            }
+          } else if(wouldBlockOppSmall(board, sb, c, player)){
+            blockSmallMoves.push(mv);
+          }
+        }
+
+        if(winMoves.length>0) return winMoves[(Math.random()*winMoves.length)|0];
+        if(smallWinMoves.length>0) return smallWinMoves[(Math.random()*smallWinMoves.length)|0];
+        if(blockSmallMoves.length>0) return blockSmallMoves[(Math.random()*blockSmallMoves.length)|0];
+
+        // Weighted random near-best
+        let best = buf[0];
+        let bestScore = -1e18;
+        const scores = new Int32Array(n);
+        for(let i=0;i<n;i++){
+          const mv = buf[i];
+          const sb = (mv/9)|0;
+          const c = mv%9;
+          let score = MACRO_POS_W[sb]*120 + CELL_POS_W[c]*25;
+          const target = c;
+          if(target!==-1 && small[target]===0){
+            score += (microEval(board, target) * player) | 0;
+          }
+          scores[i]=score;
+          if(score>bestScore){ bestScore=score; best=mv; }
+        }
+        const cand=[];
+        for(let i=0;i<n;i++) if(scores[i] >= bestScore - 120) cand.push(buf[i]);
+        return cand[(Math.random()*cand.length)|0];
+      }
+
+      // --- State handling for deep search (in-place make/undo) ---
+      function makeMove(state, mv){
+        const sb = (mv/9)|0;
+        const c = mv % 9;
+        const player = state.player;
+        const prevNext = state.nextBoard;
+        const prevSmall = state.small[sb];
+        const prevXWins = state.xWins;
+        const prevOWins = state.oWins;
+        const prevEnded = state.ended;
+
+        state.board[mv] = player;
+        state.hash ^= (player===1 ? Z_CELL_X[mv] : Z_CELL_O[mv]);
+
+        let newSmall = prevSmall;
+        if(prevSmall===0){
+          newSmall = computeSmall(state.board, sb);
+          if(newSmall!==0){
+            state.small[sb] = newSmall;
+            state.hash ^= Z_SMALL[sb][smallStatusToIndex(prevSmall)] ^ Z_SMALL[sb][smallStatusToIndex(newSmall)];
+            state.ended++;
+            if(newSmall===1) state.xWins++;
+            else if(newSmall===-1) state.oWins++;
+          }
+        }
+
+        let nb = c;
+        if(nb!==-1 && state.small[nb]!==0) nb = -1;
+        state.hash ^= Z_NEXT[prevNext+1] ^ Z_NEXT[nb+1];
+        state.nextBoard = nb;
+
+        state.player = -player;
+        state.hash ^= Z_TURN;
+
+        state.ply++;
+
+        return { sb, c, prevNext, prevSmall, newSmall, prevXWins, prevOWins, prevEnded };
+      }
+
+      function undoMove(state, mv, info){
+        const prevPlayer = -state.player;
+        state.ply--;
+
+        state.player = prevPlayer;
+        state.hash ^= Z_TURN;
+
+        state.hash ^= Z_NEXT[state.nextBoard+1] ^ Z_NEXT[info.prevNext+1];
+        state.nextBoard = info.prevNext;
+
+        if(info.prevSmall===0 && info.newSmall!==0){
+          const sb = info.sb;
+          state.hash ^= Z_SMALL[sb][smallStatusToIndex(state.small[sb])] ^ Z_SMALL[sb][smallStatusToIndex(0)];
+          state.small[sb] = 0;
+          state.xWins = info.prevXWins;
+          state.oWins = info.prevOWins;
+          state.ended = info.prevEnded;
+        }
+
+        state.board[mv] = 0;
+        state.hash ^= (prevPlayer===1 ? Z_CELL_X[mv] : Z_CELL_O[mv]);
+      }
+
+      function terminalValue(state){
+        const r = gameResultFromCounts(state.xWins, state.oWins, state.ended, state.small, state.winMode);
+        if(r===2) return 0;
+        if(r===0) return null;
+        // value from side-to-move perspective
+        if(r===state.player) return WIN_SCORE - state.ply;
+        return -WIN_SCORE + state.ply;
+      }
+
+      function negamax(state, depth, alpha, beta, tt, killer1, killer2, history, endTime, nodeCounter){
+        nodeCounter.n++;
+        if((nodeCounter.n & 2047)===0 && performance.now()>endTime){
+          state.abort = true;
+          return 0;
+        }
+        if(state.abort) return 0;
+
+        const tv = terminalValue(state);
+        if(tv!==null) return tv;
+
+        if(depth<=0){
+          const eX = evalHeuristicX(state);
+          return state.player * eX;
+        }
+
+        const entry = tt.map.get(state.hash);
+        if(entry && entry.depth >= depth){
+          if(entry.flag===TT_EXACT) return entry.value;
+          if(entry.flag===TT_UPPER && entry.value <= alpha) return entry.value;
+          if(entry.flag===TT_LOWER && entry.value >= beta) return entry.value;
+        }
+
+        tt.clearIfNeeded();
+
+        const movesBuf = state.movesBuf;
+        const scoresBuf = state.scoresBuf;
+        const offset = state.ply * 81;
+        const nMoves = genMoves(state.board, state.small, state.nextBoard, movesBuf, offset);
+        if(nMoves===0) return 0;
+
+        const me = state.player;
+        const ttMove = entry ? entry.bestMove : -1;
+
+        for(let i=0;i<nMoves;i++){
+          const mv = movesBuf[offset+i];
+          const sb = (mv/9)|0;
+          const c = mv%9;
+          let score = 0;
+
+          if(mv===ttMove) score += 5_000_000;
+          if(mv===killer1[state.ply]) score += 2_000_000;
+          else if(mv===killer2[state.ply]) score += 1_500_000;
+
+          if(wouldWinSmall(state.board, sb, c, me)){
+            score += 1_200_000;
+            if(state.winMode==='classic'){
+              if(wouldWinBigClassic(state.small, sb, me)) score += 9_000_000;
+            } else {
+              const pWins = (me===1?state.xWins:state.oWins);
+              if(pWins>=4) score += 9_000_000;
+            }
+          } else if(wouldBlockOppSmall(state.board, sb, c, me)){
+            score += 800_000;
+          }
+
+          const target = c;
+          if(target!==-1 && state.small[target]===0){
+            const send = microEval(state.board, target) * me;
+            score += (send * 18) | 0;
+          }
+
+          score += MACRO_POS_W[sb]*120 + CELL_POS_W[c]*25;
+          score += history[mv] || 0;
+
+          scoresBuf[offset+i] = score;
+        }
+
+        // insertion sort by score desc
+        for(let i=1;i<nMoves;i++){
+          const mv = movesBuf[offset+i];
+          const sc = scoresBuf[offset+i];
+          let j=i-1;
+          while(j>=0 && scoresBuf[offset+j] < sc){
+            movesBuf[offset+j+1] = movesBuf[offset+j];
+            scoresBuf[offset+j+1] = scoresBuf[offset+j];
+            j--;
+          }
+          movesBuf[offset+j+1] = mv;
+          scoresBuf[offset+j+1] = sc;
+        }
+
+        const a0 = alpha;
+        let bestMove = movesBuf[offset];
+        let bestVal = -Infinity;
+
+        for(let i=0;i<nMoves;i++){
+          if((nodeCounter.n & 2047)===0 && performance.now()>endTime){
+            state.abort = true;
+            break;
+          }
+          const mv = movesBuf[offset+i];
+          const info = makeMove(state, mv);
+
+          const ext = (info.prevSmall===0 && info.newSmall!==0 && info.newSmall!==2) ? 1 : 0;
+          const val = -negamax(state, depth-1+ext, -beta, -alpha, tt, killer1, killer2, history, endTime, nodeCounter);
+
+          undoMove(state, mv, info);
+          if(state.abort) break;
+
+          if(val > bestVal){ bestVal = val; bestMove = mv; }
+          if(val > alpha) alpha = val;
+          if(alpha >= beta){
+            if(killer1[state.ply]!==mv){
+              killer2[state.ply] = killer1[state.ply];
+              killer1[state.ply] = mv;
+            }
+            history[mv] = (history[mv] || 0) + depth*depth*6;
+            break;
+          }
+        }
+
+        let flag = TT_EXACT;
+        if(bestVal <= a0) flag = TT_UPPER;
+        else if(bestVal >= beta) flag = TT_LOWER;
+
+        tt.map.set(state.hash, { depth, value: bestVal, flag, bestMove });
+        return bestVal;
+      }
+
+      function searchBestMove(state, difficulty, timeLimitMs){
+        const endTime = performance.now() + timeLimitMs;
+
+        // quick tactical baseline (always)
+        const tactical = tacticalPick(state);
+        if(difficulty==='easy') return tactical;
+
+        initZobrist();
+
+        state.abort = false;
+        state.hash = computeHash(state.board, state.small, state.nextBoard, state.player);
+        state.movesBuf = new Int16Array(81*32);
+        state.scoresBuf = new Int32Array(81*32);
+
+        const killer1 = Array.from({length: 64}, ()=>-1);
+        const killer2 = Array.from({length: 64}, ()=>-1);
+        const history = new Int32Array(81);
+
+        const tt = createTT(difficulty==='expert' ? 260_000 : 120_000);
+
+        // Strong opening
+        if(state.moveCount===0){
+          return 4*9 + 4;
+        }
+
+        // medium: shallow time-limited search
+        if(difficulty==='medium'){
+          let bestMove = tactical;
+          let bestVal = -Infinity;
+
+          const rootMoves = new Int16Array(81);
+          const nRoot = genMoves(state.board, state.small, state.nextBoard, rootMoves, 0);
+          if(nRoot===1) return rootMoves[0];
+
+          // quick ordering
+          const rootScores = new Int32Array(nRoot);
+          for(let i=0;i<nRoot;i++){
+            const mv = rootMoves[i];
+            const sb = (mv/9)|0;
+            const c = mv%9;
+            let sc = MACRO_POS_W[sb]*120 + CELL_POS_W[c]*25;
+            if(wouldWinSmall(state.board, sb, c, state.player)) sc += 1_000_000;
+            if(wouldBlockOppSmall(state.board, sb, c, state.player)) sc += 600_000;
+            rootScores[i] = sc;
+          }
+          for(let i=1;i<nRoot;i++){
+            const mv = rootMoves[i];
+            const sc = rootScores[i];
+            let j=i-1;
+            while(j>=0 && rootScores[j] < sc){
+              rootMoves[j+1]=rootMoves[j];
+              rootScores[j+1]=rootScores[j];
+              j--;
+            }
+            rootMoves[j+1]=mv;
+            rootScores[j+1]=sc;
+          }
+
+          const nodeCounter = {n:0};
+          const depth = 4;
+          for(let i=0;i<nRoot;i++){
+            if(performance.now()>endTime){ state.abort=true; break; }
+            const mv = rootMoves[i];
+            const info = makeMove(state, mv);
+            const val = -negamax(state, depth-1, -Infinity, Infinity, tt, killer1, killer2, history, endTime, nodeCounter);
+            undoMove(state, mv, info);
+            if(state.abort) break;
+            if(val > bestVal){ bestVal = val; bestMove = mv; }
+          }
+
+          // add small randomness among near-best so it's not always deterministic
+          if(!state.abort){
+            const near = [];
+            for(let i=0;i<nRoot;i++){
+              const mv = rootMoves[i];
+              const info = makeMove(state, mv);
+              const val = -negamax(state, 2, -Infinity, Infinity, tt, killer1, killer2, history, endTime, nodeCounter);
+              undoMove(state, mv, info);
+              if(Math.abs(val - bestVal) < 12_000) near.push(mv);
+              if(performance.now()>endTime) break;
+            }
+            if(near.length>0) bestMove = near[(Math.random()*near.length)|0];
+          }
+
+          return bestMove;
+        }
+
+        // hard/expert: iterative deepening
+        let bestMove = tactical;
+        let prevVal = 0;
+
+        const rootMoves = new Int16Array(81);
+        const nRoot = genMoves(state.board, state.small, state.nextBoard, rootMoves, 0);
+        if(nRoot===1) return rootMoves[0];
+
+        // root quick ordering
+        const rootScores = new Int32Array(nRoot);
+        for(let i=0;i<nRoot;i++){
+          const mv = rootMoves[i];
+          const sb = (mv/9)|0;
+          const c = mv%9;
+          let sc = MACRO_POS_W[sb]*120 + CELL_POS_W[c]*25;
+          if(wouldWinSmall(state.board, sb, c, state.player)){
+            sc += 1_000_000;
+            if(state.winMode==='classic' && wouldWinBigClassic(state.small, sb, state.player)) sc += 8_000_000;
+          }
+          if(wouldBlockOppSmall(state.board, sb, c, state.player)) sc += 700_000;
+          rootScores[i] = sc;
+        }
+        for(let i=1;i<nRoot;i++){
+          const mv = rootMoves[i];
+          const sc = rootScores[i];
+          let j=i-1;
+          while(j>=0 && rootScores[j] < sc){
+            rootMoves[j+1]=rootMoves[j];
+            rootScores[j+1]=rootScores[j];
+            j--;
+          }
+          rootMoves[j+1]=mv;
+          rootScores[j+1]=sc;
+        }
+
+        const nodeCounter = {n:0};
+        const maxDepth = (difficulty==='expert') ? 10 : 8;
+
+        for(let depth=1; depth<=maxDepth; depth++){
+          if(performance.now()>endTime) break;
+
+          let window = (depth<=2) ? 120_000 : 45_000;
+          let alpha = prevVal - window;
+          let beta  = prevVal + window;
+
+          let localBestMove = bestMove;
+          let localBestVal = -Infinity;
+
+          for(let pass=0; pass<2; pass++){
+            localBestVal = -Infinity;
+            localBestMove = bestMove;
+
+            for(let i=0;i<nRoot;i++){
+              if(performance.now()>endTime){ state.abort=true; break; }
+              const mv = rootMoves[i];
+              const info = makeMove(state, mv);
+              const val = -negamax(state, depth-1, -beta, -alpha, tt, killer1, killer2, history, endTime, nodeCounter);
+              undoMove(state, mv, info);
+              if(state.abort) break;
+
+              if(val > localBestVal){
+                localBestVal = val;
+                localBestMove = mv;
+              }
+              if(val > alpha) alpha = val;
+              if(alpha >= beta) break;
+            }
+
+            if(state.abort) break;
+
+            if(localBestVal <= prevVal - window){
+              alpha = -Infinity; beta = Infinity;
+              continue;
+            }
+            if(localBestVal >= prevVal + window){
+              alpha = -Infinity; beta = Infinity;
+              continue;
+            }
+            break;
+          }
+
+          if(state.abort) break;
+
+          bestMove = localBestMove;
+          prevVal = localBestVal;
+
+          // reorder root: best first
+          const idx = rootMoves.indexOf(bestMove);
+          if(idx>0){
+            const tmp = rootMoves[0]; rootMoves[0]=rootMoves[idx]; rootMoves[idx]=tmp;
+            const tmpS = rootScores[0]; rootScores[0]=rootScores[idx]; rootScores[idx]=tmpS;
+          }
+        }
+
+        return bestMove;
+      }
+
+      self.onmessage = (e)=>{
+        const msg = e.data;
+        if(msg.type!=='compute') return;
+
+        initZobrist();
+
+        const state = {
+          board: Int8Array.from(msg.state.board),
+          small: Int8Array.from(msg.state.small),
+          nextBoard: msg.state.nextBoard,
+          player: msg.state.player,
+          winMode: msg.state.winMode,
+          ply: 0,
+          moveCount: msg.state.moveCount,
+          xWins: msg.state.xWonCount,
+          oWins: msg.state.oWonCount,
+          ended: msg.state.endedCount,
+          abort: false,
+          hash: 0n,
+          movesBuf: null,
+          scoresBuf: null
+        };
+
+        const mv = searchBestMove(state, msg.difficulty, msg.timeLimitMs);
+        self.postMessage({ type:'result', requestId: msg.requestId, move: mv });
+      };
+      `;
+
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      aiWorker = new Worker(url);
+      aiWorker.onmessage = onWorkerMessage;
+    }
+
+    function requestAIMove(){
+      if(!vsAI || !gameActive) return;
+
+      const aiPlayer = aiFirst ? 1 : -1;
+      if(currentPlayer !== aiPlayer) return;
+
+      ensureWorker();
+      aiThinking = true;
+      btnUndo.disabled = true;
+      updateStatus();
+      render();
+
+      const requestId = ++aiRequestId;
+      const payload = {
+        type: 'compute',
+        requestId,
+        difficulty,
+        timeLimitMs: TIME_LIMITS[difficulty] || 1200,
+        state: {
+          board: Array.from(board),
+          small: Array.from(smallStatus),
+          nextBoard,
+          player: currentPlayer,
+          winMode,
+          moveCount: history.length,
+          xWonCount,
+          oWonCount,
+          endedCount
+        }
+      };
+      aiWorker.postMessage(payload);
+    }
+
+    function onWorkerMessage(e){
+      const msg = e.data;
+      if(msg.type !== 'result') return;
+      if(msg.requestId !== aiRequestId) return; // stale
+
+      aiThinking = false;
+
+      if(!gameActive) return;
+
+      const mv = msg.move;
+      const sb = Math.floor(mv/9);
+      const c = mv%9;
+
+      // if worker returned illegal move (rare), fallback: pick first legal
+      if(mv<0 || sb<0 || sb>8 || smallStatus[sb]!==0 || board[mv]!==0 || !allowedBoards().includes(sb)){
+        let found = false;
+        const allowed = allowedBoards();
+        for(const b of allowed){
+          const base = b*9;
+          for(let k=0;k<9;k++){
+            if(board[base+k]===0){
+              found = true;
+              pushHistory();
+              makeMove(b,k);
+              break;
+            }
+          }
+          if(found) break;
+        }
+      } else {
+        pushHistory();
+        makeMove(sb,c);
+      }
+
+      updateStatus();
+      render();
+      if(endIfNeeded()) return;
+
+      btnUndo.disabled = history.length===0;
+    }
+
+    // Init
+    setupBoardDOM();
+    applySettingsFromUI();
+    lockSettings(false);
+    resetState();
+
+  </script>
 </body>
 </html>
