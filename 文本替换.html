@@ -2,142 +2,441 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>文本替换工具</title>
   <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
   <style>
-    /* 页面基础样式 */
-    body {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      background-color: #f0f0f0;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    :root{
+      --bg1:#f4f7ff;
+      --bg2:#f7fbff;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --danger:#dc2626;
+      --okbg:#eef2ff;
+      --okborder:#2563eb;
+      --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+      --radius: 14px;
     }
 
-    /* 输入区域 */
+    *{ box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 800px at 20% 0%, var(--bg1), transparent 60%),
+                  radial-gradient(1200px 800px at 90% 20%, var(--bg2), transparent 55%),
+                  #f3f4f6;
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--card);
+      padding: 26px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(229,231,235,0.9);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0;
+      letter-spacing: .5px;
+    }
+
+    .subtitle{
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* 布局：桌面左右两栏，手机单栏 */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .panel{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .panel h2{
+      font-size: 14px;
+      margin: 0 0 10px 0;
+      color: #111827;
+    }
+
     label {
       display: block;
       margin-top: 10px;
-      margin-bottom: 5px;
-      font-weight: bold;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #111827;
     }
+
     textarea, input {
       width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
+      padding: 10px 11px;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    textarea:focus, input:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    textarea{
+      min-height: 190px;
+      resize: vertical;
     }
 
-    /* 替换按钮 */
+    .rules{
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rule-row{
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px dashed rgba(229,231,235,1);
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .rule-row .field label{
+      margin-top: 0;
+    }
+
+    .row-actions{
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+    }
+
+    .btns{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
     button {
       width: 100%;
-      padding: 10px;
-      font-size: 16px;
+      padding: 11px 12px;
+      font-size: 15px;
       color: #fff;
-      background: #4285f4;
+      background: var(--primary);
       border: none;
-      border-radius: 5px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: background 0.3s;
-      margin-top: 10px;
+      transition: transform .05s ease, background .2s ease, box-shadow .2s ease;
+      box-shadow: 0 8px 18px rgba(37,99,235,.16);
     }
-    button:hover {
-      background: #3367d6;
+    button:hover { background: var(--primary2); }
+    button:active { transform: translateY(1px); }
+
+    .btn-secondary{
+      background: #111827;
+      box-shadow: 0 8px 18px rgba(17,24,39,.12);
+    }
+    .btn-secondary:hover{ background: #0b1220; }
+
+    .btn-danger{
+      width: auto;
+      padding: 9px 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      box-shadow: none;
+    }
+    .btn-danger:hover{
+      background: #fecaca;
     }
 
-    /* 输出容器（默认隐藏） */
+    .helper{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
     .output-container {
-      margin-top: 20px;
-      background: #e8f0fe;
-      border-left: 4px solid #4285f4;
-      border-radius: 4px;
-      padding: 15px;
+      margin-top: 16px;
+      background: var(--okbg);
+      border-left: 4px solid var(--okborder);
+      border-radius: 12px;
+      padding: 14px;
       min-height: 50px;
       word-wrap: break-word;
       white-space: pre-wrap;
-      display: none; /* 默认隐藏，替换后再显示 */
+      display: none;
     }
 
-    /* 替换次数提示（单独放最下方） */
     .replace-count {
-      font-weight: bold;
-      color: #d93025;
-      text-align: center;
+      font-weight: 700;
+      color: var(--danger);
+      text-align: left;
       margin-top: 10px;
-      display: none; /* 默认隐藏 */
+      display: none;
+      line-height: 1.6;
+    }
+
+    .counts-list{
+      margin: 8px 0 0 0;
+      padding-left: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .counts-list li{
+      font-weight: 600;
+    }
+    .counts-list span{
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    @media (max-width: 820px){
+      body{ padding: 14px; }
+      .container{ padding: 18px; }
+      .grid{ grid-template-columns: 1fr; }
+      textarea{ min-height: 170px; }
+    }
+
+    @media (max-width: 520px){
+      h1{ font-size: 20px; }
+      .rule-row{
+        grid-template-columns: 1fr;
+      }
+      .row-actions{
+        justify-content: flex-start;
+      }
+      .btns{
+        grid-template-columns: 1fr;
+      }
+      .btn-danger{
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>文本替换工具</h1>
+    <header>
+      <div>
+        <h1>文本替换工具</h1>
+        <p class="subtitle">支持一次替换多组内容；手机 / 电脑均可用。</p>
+      </div>
+    </header>
 
-    <label for="inputText">请输入原始文本：</label>
-    <textarea id="inputText" placeholder="在这里输入要修改的文本"></textarea>
+    <div class="grid">
+      <!-- 左侧：原始文本 -->
+      <section class="panel">
+        <h2>原始文本</h2>
+        <label for="inputText">请输入原始文本：</label>
+        <textarea id="inputText" placeholder="在这里输入要修改的文本"></textarea>
+      </section>
 
-    <label for="searchText">要替换的内容：</label>
-    <input type="text" id="searchText" placeholder="输入要替换的字符或单词" />
+      <!-- 右侧：替换规则 -->
+      <section class="panel">
+        <h2>替换规则（可多组）</h2>
 
-    <label for="replaceText">替换为：</label>
-    <input type="text" id="replaceText" placeholder="输入替换后的字符或单词" />
+        <div class="rules" id="rulesContainer"></div>
 
-    <button onclick="replaceText()">执行替换</button>
+        <div class="btns">
+          <button class="btn-secondary" type="button" onclick="addRule()">添加一组</button>
+          <button type="button" onclick="replaceText()">执行替换</button>
+        </div>
+
+        <div class="helper">提示：所有规则会“同时生效”（基于原文一次性替换，不会连锁替换）；空的“要替换内容”会被忽略。</div>
+      </section>
+    </div>
 
     <!-- 输出区域 -->
     <div class="output-container" id="outputContainer">
-      <div id="resultText"></div>
-    </div>
+      <div class="output-header">
+        <div class="output-title">替换后文本</div>
+</div>
+      <textarea id="resultText" readonly placeholder="替换结果会显示在这里…"></textarea>
+</div>
 
     <!-- 替换次数（单独放最下方） -->
     <div id="replaceCount" class="replace-count"></div>
   </div>
 
   <script>
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function countOccurrences(text, sub) {
+      if (!sub) return 0;
+      let count = 0;
+      let pos = 0;
+      while (true) {
+        const idx = text.indexOf(sub, pos);
+        if (idx === -1) break;
+        count++;
+        pos = idx + sub.length; // 非重叠计数
+      }
+      return count;
+    }
+
+    function replaceAllPlain(text, search, replacement) {
+      // 纯文本替换（不会把搜索内容当作正则）
+      if (!search) return text;
+      return text.split(search).join(replacement);
+    }
+
+    function createRuleRow(searchVal = "", replaceVal = "") {
+      const row = document.createElement("div");
+      row.className = "rule-row";
+
+      row.innerHTML = `
+        <div class="field">
+          <label>要替换的内容：</label>
+          <input type="text" class="searchText" placeholder="输入要替换的字符或单词" value="${escapeHtml(searchVal)}" />
+        </div>
+        <div class="field">
+          <label>替换为：</label>
+          <input type="text" class="replaceText" placeholder="输入替换后的字符或单词" value="${escapeHtml(replaceVal)}" />
+        </div>
+        <div class="row-actions">
+          <button class="btn-danger" type="button" onclick="removeRule(this)">删除</button>
+        </div>
+      `;
+      return row;
+    }
+
+    function addRule(searchVal = "", replaceVal = "") {
+      const container = document.getElementById("rulesContainer");
+      container.appendChild(createRuleRow(searchVal, replaceVal));
+      refreshDeleteButtons();
+    }
+
+    function removeRule(btn) {
+      const row = btn.closest(".rule-row");
+      if (!row) return;
+      row.remove();
+      refreshDeleteButtons();
+    }
+
+    function refreshDeleteButtons() {
+      const rows = document.querySelectorAll(".rule-row");
+      // 至少保留一行
+      rows.forEach(r => {
+        const delBtn = r.querySelector(".btn-danger");
+        if (delBtn) delBtn.disabled = (rows.length <= 1);
+        if (delBtn) delBtn.style.opacity = (rows.length <= 1) ? "0.5" : "1";
+        if (delBtn) delBtn.style.cursor = (rows.length <= 1) ? "not-allowed" : "pointer";
+      });
+    }
+
     function replaceText() {
       const original = document.getElementById('inputText').value;
-      const search = document.getElementById('searchText').value;
-      const replacement = document.getElementById('replaceText').value;
       const resultText = document.getElementById('resultText');
       const replaceCountDiv = document.getElementById('replaceCount');
       const outputContainer = document.getElementById('outputContainer');
+      const rows = document.querySelectorAll(".rule-row");
+      const rules = [];
 
-      if (!search) {
-        alert("请输入要替换的内容！");
+      rows.forEach(row => {
+        const search = row.querySelector(".searchText")?.value ?? "";
+        const replacement = row.querySelector(".replaceText")?.value ?? "";
+        if (search) rules.push({ search, replacement });
+      });
+
+      if (rules.length === 0) {
+        alert("请至少填写一组“要替换的内容”！");
         return;
       }
 
-      // 计算替换次数
-      const regex = new RegExp(search, "g");
-      const matchCount = (original.match(regex) || []).length;
-      const replaced = original.replace(regex, replacement);
+      // 统计（基于原文统计，避免连锁替换造成的误差）
+      let totalCount = 0;
+      const perRuleCounts = rules.map(r => {
+        const c = countOccurrences(original, r.search);
+        totalCount += c;
+        return { ...r, count: c };
+      });
+
+      // 同时替换：一次性在原文上完成替换（不会产生 a->b 后又被 b->c 连锁替换）
+      const map = Object.create(null);
+      rules.forEach(r => { map[r.search] = r.replacement; });
+
+      const uniqKeys = Array.from(new Set(rules.map(r => r.search)))
+        .sort((a, b) => b.length - a.length); // 先长后短，减少“部分命中”干扰
+
+      let text = original;
+
+      if (uniqKeys.length > 0) {
+        const pattern = uniqKeys.map(escapeRegExp).join("|");
+        const re = new RegExp(pattern, "g");
+        text = original.replace(re, (m) => map[m]);
+      }
 
       // 显示结果
-      if (matchCount > 0) {
-        resultText.innerText = replaced;
-        outputContainer.style.display = "block";
-        replaceCountDiv.innerText = `替换了 ${matchCount} 处`;
+      outputContainer.style.display = "block";
+
+      if (totalCount > 0) {
+        resultText.value = text;
+
+        // 计数展示
+        let html = `共替换了 <span>${totalCount}</span> 处`;
+        html += `<ul class="counts-list">`;
+        perRuleCounts.forEach((r, idx) => {
+          const s = r.search.length > 26 ? (r.search.slice(0, 26) + "…") : r.search;
+          html += `<li>第 ${idx + 1} 组： “${escapeHtml(s)}” → “${escapeHtml(r.replacement)}” ，替换 <span>${r.count}</span> 处</li>`;
+        });
+        html += `</ul>`;
+
+        replaceCountDiv.innerHTML = html;
         replaceCountDiv.style.display = "block";
       } else {
-        resultText.innerText = "未找到匹配项";
-        outputContainer.style.display = "block";
-        replaceCountDiv.style.display = "none"; // 隐藏替换次数
+        resultText.value = "未找到匹配项";
+        replaceCountDiv.style.display = "none";
       }
     }
+
+    function escapeRegExp(str) {
+      return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    // 初始化：默认一行规则
+    addRule();
   </script>
 </body>
 </html>
