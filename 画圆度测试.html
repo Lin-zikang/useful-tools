@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+    <title>画圆度测试工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #121212, #1a1a1a);
+            color: #e0e0e0;
+            overflow-x: hidden;
+            animation: bgGradient 10s ease infinite;
+        }
+        @keyframes bgGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        h1 {
+            font-size: 2em;
+            color: #00bfff;
+            text-shadow: 0 0 15px rgba(0, 191, 255, 0.7);
+            animation: glow 1.5s ease-in-out infinite alternate;
+            margin: 20px 0;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5em; margin: 10px 0; }
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); }
+            to { text-shadow: 0 0 25px rgba(0, 191, 255, 1); }
+        }
+        p { text-align: center; max-width: 90%; margin: 10px 0; font-size: 1em; }
+        @media (max-width: 600px) { p { font-size: 0.9em; } }
+        #drawCanvas {
+            border: 2px solid #333;
+            background: #1e1e1e;
+            cursor: crosshair;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            touch-action: none; /* 优化触屏 */
+        }
+        #drawCanvas:hover, #drawCanvas:active {
+            box-shadow: 0 0 40px rgba(0, 191, 255, 0.5);
+            transform: scale(1.02);
+        }
+        @media (max-width: 600px) {
+            #drawCanvas { width: 300px !important; height: 300px !important; }
+        }
+        #feedback {
+            font-size: 1.2em;
+            margin: 15px 0;
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(30, 30, 30, 0.9);
+            transition: all 0.4s ease;
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+        }
+        @media (max-width: 600px) { #feedback { font-size: 1em; padding: 10px; } }
+        #clearBtn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+            margin: 20px 0;
+        }
+        #clearBtn:hover {
+            background: linear-gradient(45deg, #0056b3, #004085);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 123, 255, 0.5);
+        }
+        @media (max-width: 600px) { #clearBtn { padding: 10px 20px; font-size: 0.9em; } }
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            animation: fadeIn 0.3s ease;
+            overflow: auto;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #2c2c2c, #1e1e1e);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            color: #e0e0e0;
+            box-shadow: 0 0 40px rgba(0, 191, 255, 0.3);
+            animation: slideIn 0.5s ease;
+        }
+        @media (max-width: 600px) { .modal-content { margin: 20% auto; padding: 20px; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close {
+            color: #ccc;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover { color: #fff; }
+        .score-high { background: rgba(46, 204, 113, 0.3); border: 2px solid #2ecc71; color: #2ecc71; }
+        .score-low { background: rgba(231, 76, 60, 0.3); border: 2px solid #e74c3c; color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>🎨 画圆度测试工具</h1>
+    <p>网格画布上绘圆，享粒子爆炸与辉光特效！</p>
+    <canvas id="drawCanvas" width="500" height="500"></canvas>
+    <div id="feedback">🚀 准备启动... 画个完美圆吧！</div>
+    <button id="clearBtn">🔄 清除 & 重启</button>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">圆弧大师！</h2>
+            <p id="modalScore">评分: 0%</p>
+            <p id="modalTip">多练手稳，粒子雨等你解锁！</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const feedback = document.getElementById('feedback');
+        const clearBtn = document.getElementById('clearBtn');
+        const modal = document.getElementById('modal');
+        const modalScore = document.getElementById('modalScore');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalTip = document.getElementById('modalTip');
+        const closeBtn = document.querySelector('.close');
+
+        let isDrawing = false;
+        let points = [];
+        let particles = []; // 粒子系统
+
+        // 调整画布大小（响应式）
+        function resizeCanvas() {
+            if (window.innerWidth < 600) {
+                canvas.width = 300;
+                canvas.height = 300;
+            } else {
+                canvas.width = 500;
+                canvas.height = 500;
+            }
+            drawGrid();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 绘制网格
+        function drawGrid() {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            const gridSize = 10;
+            for (let x = 0; x <= canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        // 粒子类
+        class Particle {
+            constructor(x, y, vx, vy, color, life) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.life = life;
+                this.alpha = 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // 重力
+                this.alpha -= 0.01;
+                this.life--;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        // 动画粒子
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            redrawPath(); // 重绘路径
+            particles.forEach((p, i) => {
+                p.update();
+                p.draw();
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+            if (particles.length > 0) requestAnimationFrame(animateParticles);
+        }
+
+        // 创建粒子爆炸
+        function createParticles(centerX, centerY, score) {
+            const numParticles = score >= 80 ? 200 : 50;
+            const colors = score >= 80 ? ['0,191,255', '46,204,113', '255,255,0'] : ['100,100,100', '150,150,150'];
+            for (let i = 0; i < numParticles; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - 3; // 向上喷射
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particles.push(new Particle(centerX, centerY, vx, vy, color, 100 + Math.random() * 50));
+            }
+            animateParticles();
+            if ('vibrate' in navigator) navigator.vibrate([50, 30, 50]); // 振动反馈
+            // 声音提示（可选，浏览器支持）
+            const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'); // 简单蜂鸣
+            audio.play();
+        }
+
+        // 鼠标/触屏事件
+        // ------------------- 核心修复区开始 -------------------
+
+        // 鼠标事件监听
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // 触摸事件监听 (已修复)
+        // { passive: false } 明确告知浏览器此监听器会调用 e.preventDefault()，提升响应性能
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing); // 处理意外中断的情况
+
+        // 新增的触摸开始处理函数
+        function handleTouchStart(e) {
+            e.preventDefault(); // 阻止页面滚动等默认行为
+            const touch = e.touches[0]; // 获取第一个触点
+            if (touch) {
+                startDrawing(touch); // 复用startDrawing函数，Touch对象包含clientX/clientY属性
+            }
+        }
+
+        // 新增的触摸移动处理函数
+        function handleTouchMove(e) {
+            e.preventDefault(); // 阻止页面滚动
+            const touch = e.touches[0];
+            if (isDrawing && touch) {
+                draw(touch); // 复用draw函数
+            }
+        }
+        
+        // 原有的 handleTouch 和相关模拟事件的逻辑已被移除，因为其兼容性不佳
+        
+        // ------------------- 核心修复区结束 -------------------
+
+
+        function startDrawing(e) {
+            isDrawing = true;
+            points = [];
+            particles = []; // 清粒子
+            const rect = canvas.getBoundingClientRect();
+            // e.clientX/clientY 既能处理鼠标事件，也能处理传入的Touch对象
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            points.push({ x, y });
+            feedback.textContent = '✨ 辉光启动... 绘出你的圆！';
+            feedback.classList.remove('score-high', 'score-low');
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            points.push({ x, y });
+            redrawPath();
+            if (points.length > 10) updateRoundnessScore(points);
+        }
+
+        function redrawPath() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            if (points.length > 1) {
+                // 增强辉光 + 平滑曲线
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length - 2; i++) {
+                    const xc = (points[i].x + points[i + 1].x) / 2;
+                    const yc = (points[i].y + points[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+                }
+                if (points.length > 2) {
+                    ctx.quadraticCurveTo(points[points.length - 2].x, points[points.length - 2].y, points[points.length - 1].x, points[points.length - 1].y);
+                }
+                const gradient = ctx.createLinearGradient(points[0].x, points[0].y, points[points.length - 1].x, points[points.length - 1].y);
+                gradient.addColorStop(0, 'rgba(0, 191, 255, 1)');
+                gradient.addColorStop(1, 'rgba(135, 206, 250, 0.9)');
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = 'rgba(0, 191, 255, 1)';
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function stopDrawing() {
+            if (isDrawing && points.length > 10) {
+                isDrawing = false;
+                finalizeScore(points);
+            }
+             // 确保在绘图结束后，isDrawing标志位被重置
+            else {
+                isDrawing = false;
+            }
+        }
+
+        function updateRoundnessScore(points) {
+            if (points.length < 20) return;
+            const n = points.length;
+            let sumX = 0, sumY = 0;
+            points.forEach(p => { sumX += p.x; sumY += p.y; });
+            const centerX = sumX / n;
+            const centerY = sumY / n;
+            const distances = points.map(p => Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2));
+            const meanDist = distances.reduce((a, b) => a + b, 0) / n;
+            const variance = distances.reduce((sum, d) => sum + (d - meanDist) ** 2, 0) / n;
+            const stdDev = Math.sqrt(variance);
+            const maxStdDev = canvas.width / 10; // 自适应最大偏差
+            let score = Math.max(0, 100 - (stdDev / maxStdDev) * 100);
+            score = Math.min(100, score);
+            feedback.textContent = `🔥 实时圆度: ${Math.round(score)}% (偏差: ${stdDev.toFixed(1)}px)`;
+            feedback.classList.remove('score-high', 'score-low');
+            if (score >= 70) feedback.classList.add('score-high');
+            else if (score < 40) feedback.classList.add('score-low');
+            return { score, centerX, centerY };
+        }
+
+        function finalizeScore(points) {
+            const result = updateRoundnessScore(points);
+            if (!result) return; // 如果点太少，不进行后续操作
+            const { score, centerX, centerY } = result;
+            createParticles(centerX, centerY, score); // 粒子爆炸！
+            modalScore.textContent = `圆度评分: ${Math.round(score)}% 🎉`;
+            modalTitle.textContent = score >= 80 ? '粒子雨解锁！🌟' : score >= 50 ? '稳了，继续冲！💥' : '爆炸碎片...再来！😅';
+            modalTip.textContent = score >= 80 ? '大师级！分享你的粒子秀~' : '秘诀：慢速均匀，固定腕部。';
+            modal.style.display = 'block';
+        }
+
+        closeBtn.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+        clearBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            points = [];
+            particles = [];
+            isDrawing = false;
+            feedback.textContent = '🧹 已重置，粒子待命！';
+            feedback.classList.remove('score-high', 'score-low');
+            modal.style.display = 'none';
+        });
+
+        drawGrid(); // 初始化
+    </script>
+</body>
+</html>

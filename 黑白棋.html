@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>黑白棋</title>
+<link
+  rel="icon"
+  href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+  type="image/png"
+/>
+<style>
+    :root {
+        --cell-size: min(10vw, 50px);
+        --board-padding: min(2vw, 10px);
+        --shadow: 0 4px 20px rgba(0,0,0,0.2);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%);
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    .game-container {
+        text-align: center;
+        background: white;
+        padding: clamp(12px, 4vw, 24px);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        max-width: 430px;
+        width: 100%;
+    }
+
+    h1 {
+        margin: 0 0 10px;
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        color: #333;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* ===== 顶部模式按钮区域 ===== */
+    .top-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 6px;
+        align-items: stretch;
+    }
+
+    .mode-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+        transition: opacity 0.25s ease;
+    }
+
+    .mode-group-label {
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: linear-gradient(135deg, #f7f7f7, #eaeaea);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition);
+        font-weight: 500;
+        color: #444;
+    }
+
+    .toggle-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 0 0, rgba(255,255,255,0.9), transparent 55%);
+        opacity: 0;
+        transition: opacity 0.35s ease;
+        pointer-events: none;
+    }
+
+    .toggle-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+
+    .toggle-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+    }
+
+    .toggle-btn.active {
+        background: linear-gradient(135deg, #4CAF50, #2e9dff);
+        color: #fff;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.5), 0 6px 18px rgba(0,150,200,0.55);
+        transform: translateY(-1px) scale(1.02);
+    }
+
+    .toggle-btn.active::before {
+        opacity: 1;
+    }
+
+    .mode-group.disabled {
+        opacity: 0.3;
+    }
+
+    .mode-group.disabled .toggle-btn {
+        pointer-events: none;
+    }
+
+    .scores {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin: 4px 0;
+        font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    }
+
+    .score {
+        padding: 4px 8px;
+        border-radius: 5px;
+        background: rgba(0,0,0,0.05);
+        transition: var(--transition);
+    }
+
+    .black-score {
+        color: #000;
+        font-weight: bold;
+    }
+
+    .white-score {
+        color: #fff;
+        background: #000;
+        font-weight: bold;
+    }
+
+    .score.highlight {
+        box-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 26px rgba(255,215,0,0.8);
+        transform: scale(1.05);
+        animation: scoreGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes scoreGlow {
+        0% { filter: brightness(1); }
+        100% { filter: brightness(1.25); }
+    }
+
+    .status {
+        font-size: clamp(1rem, 3vw, 1.1rem);
+        margin: 6px 0;
+        color: #333;
+        font-weight: bold;
+        min-height: 1.2em;
+    }
+
+    .player {
+        color: #333;
+    }
+
+    .current {
+        color: #1e90ff;
+        text-shadow: 0 0 5px rgba(30,144,255,0.5);
+    }
+
+    .winner {
+        color: #ff4500;
+        font-size: clamp(1.1rem, 3.8vw, 1.3rem);
+        animation: celebrate 0.5s ease-in-out infinite alternate;
+    }
+
+    .winner-diff {
+        display: inline-block;
+        margin-left: 6px;
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    @keyframes celebrate {
+        0% { transform: scale(1); text-shadow: 0 0 5px rgba(255,69,0,0.5); }
+        100% { transform: scale(1.05); text-shadow: 0 0 15px rgba(255,69,0,0.8); }
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 0.2vmin;
+        background: linear-gradient(45deg, #228B22, #006400);
+        padding: var(--board-padding);
+        border-radius: 10px;
+        margin: 8px auto;
+        width: min(86vw, 400px);
+        aspect-ratio: 1;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.3), var(--shadow);
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .board::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 3px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 3px
+            );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .board.game-over .cell {
+        cursor: not-allowed;
+    }
+
+    .board.game-over {
+        filter: brightness(0.98);
+        box-shadow:
+          0 0 0 2px rgba(0,0,0,0.35),
+          0 10px 30px rgba(0,0,0,0.5),
+          inset 0 0 25px rgba(0,0,0,0.4);
+    }
+
+    .board.thinking {
+        box-shadow:
+            0 0 0 2px rgba(30,144,255,0.6),
+            0 0 25px rgba(30,144,255,0.8),
+            inset 0 0 20px rgba(0,0,0,0.3);
+        animation: boardGlow 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes boardGlow {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-2px); }
+    }
+
+    .cell {
+        width: 100%; height: 100%;
+        background: linear-gradient(145deg, #A0522D, #8B4513);
+        border-radius: 8px;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; position: relative; transition: var(--transition);
+        z-index: 2; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .cell:hover:not(.game-over):not(.valid) {
+        transform: scale(1.02) rotate(1deg);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .cell.valid {
+        background: linear-gradient(145deg, rgba(0,255,0,0.2), rgba(0,150,0,0.1));
+        border: 2px solid rgba(0,255,0,0.6);
+        box-shadow: 0 0 20px rgba(0,255,0,0.4), inset 0 0 10px rgba(0,255,0,0.1);
+        animation: glow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+        0% { box-shadow: 0 0 10px rgba(0,255,0,0.3), inset 0 0 5px rgba(0,255,0,0.05); }
+        100% { box-shadow: 0 0 30px rgba(0,255,0,0.6), inset 0 0 15px rgba(0,255,0,0.15); }
+    }
+
+    .piece {
+        width: 85%; height: 85%; border-radius: 50%;
+        position: absolute; transition: var(--transition);
+        box-shadow: var(--shadow), inset 0 2px 4px rgba(255,255,255,0.3);
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+
+    .piece.black {
+        background: linear-gradient(145deg, #000, #333);
+        box-shadow: var(--shadow), 0 0 10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+    }
+
+    .piece.white {
+        background: linear-gradient(145deg, #fff, #f0f0f0);
+        box-shadow: var(--shadow), 0 0 10px rgba(255,255,255,0.5), inset 0 -2px 4px rgba(0,0,0,0.1);
+    }
+
+    .piece.flip { animation: flip 0.6s ease-in-out; }
+
+    @keyframes flip {
+        0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+        50% { transform: rotateY(90deg) scale(0.8); opacity: 0.5; }
+        100% { transform: rotateY(180deg) scale(1); opacity: 1; }
+    }
+
+    .piece.appear { animation: appear 0.4s ease-out; }
+
+    @keyframes appear {
+        0% { transform: scale(0) rotate(180deg); opacity: 0; }
+        50% { transform: scale(1.2) rotate(0deg); opacity: 0.7; }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .bottom-bar {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .btn-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
+        background: linear-gradient(145deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 0;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    button:hover {
+        background: linear-gradient(145deg, #45a049, #3d8b40);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(76,175,80,0.4);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        filter: grayscale(0.2);
+    }
+
+    .foot { margin-top: 6px; opacity: 0.8; font-size: 12px; }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    @media (max-width: 480px) {
+        .game-container {
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .btn-group {
+            gap: 4px;
+        }
+        .toggle-btn {
+            padding: 5px 6px;
+            font-size: 12px;
+        }
+        .btn-row button {
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="game-container">
+    <h1>黑白棋 (Reversi)</h1>
+
+    <!-- 模式与AI方选择：两排按钮，手机一屏可见 -->
+    <div class="top-controls">
+        <div class="mode-group" id="modeGroupWrapper">
+            <div class="mode-group-label">对手模式</div>
+            <div class="btn-group" id="modeGroup">
+                <button type="button" class="toggle-btn active" data-mode="ai">对 AI</button>
+                <button type="button" class="toggle-btn" data-mode="pvp">双人</button>
+            </div>
+        </div>
+        <div class="mode-group" id="aiSideGroupWrapper">
+            <div class="mode-group-label">AI 执棋</div>
+            <div class="btn-group" id="aiSideGroup">
+                <button type="button" class="toggle-btn" data-side="1">黑（先手）</button>
+                <button type="button" class="toggle-btn active" data-side="-1">白（后手）</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="scores" id="scores">
+        <span class="score black-score">黑: 2</span>
+        <span class="score white-score">白: 2</span>
+    </div>
+
+    <div class="status">
+        <span class="player current" id="currentPlayer">黑方</span> 的回合
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="bottom-bar">
+        <div class="btn-row">
+            <button id="undoBtn" title="悔棋">悔棋</button>
+            <button id="resetBtn" title="重新开始">重新开始</button>
+        </div>
+    </div>
+
+    <div class="foot">提示：对 AI 时，悔棋会回到你上一次落子前（不能连续悔棋）；AI 每手约 3 秒，思考中禁止操作。</div>
+</div>
+
+<script>
+/** ====== 基础与状态 ====== */
+const BOARD_SIZE = 8;
+const AI_THINK_TIME_MS = 3000;
+
+let board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+let currentPlayer = 1; // 1: black, -1: white
+let gameOver = false;
+let isProcessingMove = false;
+let aiThinking = false;
+let undoLocked = false;
+let history = [];
+
+let mode = 'ai';
+let aiPlays = -1;
+let modeLocked = false;
+
+const undoBtn = document.getElementById('undoBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+const modeGroupWrapper = document.getElementById('modeGroupWrapper');
+const aiSideGroupWrapper = document.getElementById('aiSideGroupWrapper');
+const modeButtons = document.querySelectorAll('#modeGroup .toggle-btn');
+const aiSideButtons = document.querySelectorAll('#aiSideGroup .toggle-btn');
+
+const directions = [
+  [-1,-1], [-1,0], [-1,1],
+  [ 0,-1],         [ 0,1],
+  [ 1,-1], [ 1,0], [ 1,1]
+];
+
+/** ====== 工具函数 ====== */
+function deepCopyBoard(b) { return b.map(row => row.slice()); }
+
+function countPieces(b = board) {
+  let blackCount = 0, whiteCount = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 1) blackCount++;
+      else if (b[r][c] === -1) whiteCount++;
+    }
+  }
+  return { blackCount, whiteCount };
+}
+
+function inBounds(r, c) {
+  return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+}
+
+function getFlips(row, col, player, b = board) {
+  if (b[row][col] !== 0) return [];
+  let all = [];
+  for (let [dr, dc] of directions) {
+    let r = row + dr, c = col + dc;
+    let temp = [];
+    while (inBounds(r, c) && b[r][c] === -player) {
+      temp.push([r, c]);
+      r += dr; c += dc;
+    }
+    if (inBounds(r, c) && b[r][c] === player && temp.length > 0) {
+      all = all.concat(temp);
+    }
+  }
+  return all;
+}
+
+function isValidMove(row, col, player, b = board) {
+  if (gameOver || b[row][col] !== 0) return false;
+  return getFlips(row, col, player, b).length > 0;
+}
+
+function hasValidMoves(player, b = board) {
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 0 && isValidMove(r, c, player, b)) return true;
+    }
+  }
+  return false;
+}
+
+function listValidMoves(player, b = board) {
+  const list = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 0) {
+        const flips = getFlips(r, c, player, b);
+        if (flips.length) list.push({ row: r, col: c, flips });
+      }
+    }
+  }
+  return list;
+}
+
+function pushHistory() {
+  history.push({
+    board: deepCopyBoard(board),
+    currentPlayer,
+    gameOver
+  });
+}
+
+function restoreState(state) {
+  board = deepCopyBoard(state.board);
+  currentPlayer = state.currentPlayer;
+  gameOver = state.gameOver;
+  isProcessingMove = false;
+  aiThinking = false;
+  renderBoard();
+  highlightValidMoves();
+  updateStatus();
+}
+
+function refreshModeUIState() {
+  if (modeLocked) {
+    modeGroupWrapper.classList.add('disabled');
+    aiSideGroupWrapper.classList.add('disabled');
+  } else {
+    modeGroupWrapper.classList.remove('disabled');
+    if (mode === 'ai') {
+      aiSideGroupWrapper.classList.remove('disabled');
+    } else {
+      aiSideGroupWrapper.classList.add('disabled');
+    }
+  }
+}
+
+function setUIBusy(busy) {
+  const toggleBtns = document.querySelectorAll('.toggle-btn');
+  toggleBtns.forEach(btn => { btn.disabled = busy; });
+
+  undoBtn.disabled = busy || (mode === 'ai' && undoLocked);
+  resetBtn.disabled = busy;
+
+  const boardEl = document.getElementById('board');
+  if (aiThinking) boardEl.classList.add('thinking');
+  else boardEl.classList.remove('thinking');
+}
+
+/** ====== 渲染与状态 ====== */
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+      if (!gameOver) {
+        cell.onclick = () => makeMove(row, col);
+      }
+
+      const piece = document.createElement('div');
+      piece.className = 'piece';
+      if (board[row][col] === 1) piece.classList.add('black');
+      else if (board[row][col] === -1) piece.classList.add('white');
+      cell.appendChild(piece);
+
+      boardEl.appendChild(cell);
+    }
+  }
+  if (gameOver) boardEl.classList.add('game-over');
+  else boardEl.classList.remove('game-over');
+}
+
+function highlightValidMoves() {
+  if (gameOver) return;
+  document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('valid'));
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (board[r][c] === 0 && isValidMove(r, c, currentPlayer, board)) {
+        const cellEl = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+        if (cellEl) cellEl.classList.add('valid');
+      }
+    }
+  }
+}
+
+function updateStatus(extraText = '') {
+  const status = document.querySelector('.status');
+  if (gameOver) return;
+  const playerText = currentPlayer === 1 ? '黑方' : '白方';
+  let prefix = `<span class="player current">${playerText}</span> 的回合`;
+  if (aiThinking) prefix = `🤖 AI 思考中…`;
+  status.innerHTML = extraText ? `${prefix} · ${extraText}` : `${prefix}`;
+
+  const { blackCount, whiteCount } = countPieces();
+  const scoresEl = document.getElementById('scores');
+  scoresEl.innerHTML =
+    `<span class="score black-score">黑: ${blackCount}</span>` +
+    `<span class="score white-score">白: ${whiteCount}</span>`;
+
+  setUIBusy(isProcessingMove || aiThinking);
+}
+
+/** ====== 核心：落子 ====== */
+function makeMove(row, col, opts = { force: false }) {
+  if (gameOver) return;
+  if (!opts.force && (isProcessingMove || aiThinking)) return;
+  if (!isValidMove(row, col, currentPlayer, board)) return;
+
+  if (!modeLocked) {
+    modeLocked = true;
+    refreshModeUIState();
+  }
+
+  pushHistory();
+  isProcessingMove = true;
+
+  board[row][col] = currentPlayer;
+  const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .piece`);
+  if (piece) {
+    piece.classList.add(currentPlayer === 1 ? 'black' : 'white', 'appear');
+  }
+
+  for (let [dr, dc] of directions) {
+    const toFlip = [];
+    let r = row + dr, c = col + dc;
+    while (inBounds(r, c) && board[r][c] === -currentPlayer) {
+      toFlip.push([r, c]);
+      r += dr; c += dc;
+    }
+    if (inBounds(r, c) && board[r][c] === currentPlayer && toFlip.length > 0) {
+      for (let [fr, fc] of toFlip) {
+        board[fr][fc] = currentPlayer;
+        const flipPiece = document.querySelector(
+          `[data-row="${fr}"][data-col="${fc}"] .piece`
+        );
+        if (!flipPiece) continue;
+        const oldColor = flipPiece.classList.contains('black') ? 'black' : 'white';
+        const newColor = currentPlayer === 1 ? 'black' : 'white';
+        flipPiece.classList.add('flip');
+        setTimeout(() => {
+          flipPiece.classList.remove(oldColor);
+          flipPiece.classList.add(newColor);
+        }, 300);
+        setTimeout(() => flipPiece.classList.remove('flip'), 600);
+      }
+    }
+  }
+
+  setTimeout(() => {
+    if (mode === 'ai' && currentPlayer !== aiPlays) {
+      undoLocked = false;
+    }
+    currentPlayer = -currentPlayer;
+    nextTurn();
+  }, 600);
+}
+
+function nextTurn() {
+  if (gameOver) {
+    isProcessingMove = false;
+    aiThinking = false;
+    setUIBusy(false);
+    updateStatus();
+    return;
+  }
+
+  if (!hasValidMoves(currentPlayer, board)) {
+    currentPlayer = -currentPlayer;
+    if (!hasValidMoves(currentPlayer, board)) {
+      isProcessingMove = false;
+      endGame();
+      return;
+    }
+  }
+
+  renderBoard();
+  highlightValidMoves();
+  isProcessingMove = false;
+
+  if (mode === 'ai' && currentPlayer === aiPlays && !gameOver) {
+    aiMove();
+    return;
+  }
+
+  updateStatus();
+}
+
+function endGame() {
+  gameOver = true;
+
+  const { blackCount, whiteCount } = countPieces();
+  const status = document.querySelector('.status');
+  const boardEl = document.getElementById('board');
+
+  aiThinking = false;
+  isProcessingMove = false;
+  setUIBusy(false);
+  undoBtn.disabled = true;
+
+  document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('valid'));
+
+  const scoresEl = document.getElementById('scores');
+  let blackClass = 'score black-score';
+  let whiteClass = 'score white-score';
+
+  let resultHtml = '';
+
+  if (blackCount === whiteCount) {
+    resultHtml = `<span class="winner">平局</span> 黑: ${blackCount} 白: ${whiteCount}`;
+  } else {
+    const winner = blackCount > whiteCount ? '黑方' : '白方';
+    const diff = Math.abs(blackCount - whiteCount);
+    if (blackCount > whiteCount) blackClass += ' highlight';
+    else whiteClass += ' highlight';
+
+    resultHtml =
+      `<span class="winner">${winner} 获胜！</span> ` +
+      `黑: ${blackCount} 白: ${whiteCount}` +
+      `<span class="winner-diff">领先 ${diff} 子</span>`;
+  }
+
+  scoresEl.innerHTML =
+    `<span class="${blackClass}">黑: ${blackCount}</span>` +
+    `<span class="${whiteClass}">白: ${whiteCount}</span>`;
+
+  status.innerHTML = resultHtml;
+  renderBoard();
+
+  boardEl.style.animation = 'shake 0.5s ease-in-out';
+  setTimeout(() => boardEl.style.animation = '', 500);
+}
+
+/** ====== 初始化与重置 ====== */
+function initBoard() {
+  board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+  board[3][3] = -1; board[3][4] = 1;
+  board[4][3] = 1;  board[4][4] = -1;
+  currentPlayer = 1;
+  gameOver = false;
+  isProcessingMove = false;
+  aiThinking = false;
+  undoLocked = false;
+  history = [];
+  modeLocked = false;
+  refreshModeUIState();
+  renderBoard();
+  highlightValidMoves();
+  updateStatus();
+
+  if (mode === 'ai' && currentPlayer === aiPlays) {
+    aiMove();
+  }
+}
+
+function resetGame() { initBoard(); }
+
+/** ====== 悔棋逻辑 ====== */
+function undoOnce() {
+  if (history.length === 0) return false;
+  const state = history.pop();
+  restoreState(state);
+  return true;
+}
+
+function undoMove() {
+  if (gameOver || isProcessingMove || aiThinking) return;
+
+  if (mode === 'pvp') {
+    if (undoOnce()) {
+      updateStatus('已悔棋一步');
+      highlightValidMoves();
+    }
+    return;
+  }
+
+  if (undoLocked) return;
+
+  let undone = false;
+  if (currentPlayer === aiPlays) {
+    undone = undoOnce();
+  } else {
+    undone = undoOnce();
+    if (undone) undone = undoOnce();
+  }
+
+  if (undone) {
+    undoLocked = true;
+    updateStatus('已回到你上一次落子前');
+    highlightValidMoves();
+  }
+}
+
+/** ====== AI 核心 ====== */
+function boardKey(b, player) {
+  return player + ':' + b.flat().join('');
+}
+
+const PST = [
+  [120,-20, 20,  5,  5, 20,-20,120],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [120,-20, 20,  5,  5, 20,-20,120],
+];
+const CORNERS = [[0,0],[0,7],[7,0],[7,7]];
+
+function evaluate(b, player) {
+  let my = 0, opp = 0, pstScore = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const v = b[r][c];
+      if (v === player) my++;
+      else if (v === -player) opp++;
+      if (v !== 0) pstScore += PST[r][c] * (v === player ? 1 : -1);
+    }
+  }
+  const discDiff = 100 * (my - opp) / Math.max(1, my + opp);
+
+  let myCorner = 0, oppCorner = 0;
+  for (const [r,c] of CORNERS) {
+    if (b[r][c] === player) myCorner++;
+    else if (b[r][c] === -player) oppCorner++;
+  }
+  const cornerScore = 150 * (myCorner - oppCorner);
+
+  const myMoves = listValidMoves(player, b).length;
+  const oppMoves = listValidMoves(-player, b).length;
+  const mobility = (myMoves + oppMoves) ?
+    100 * (myMoves - oppMoves) / (myMoves + oppMoves) : 0;
+
+  const empties = 64 - (my + opp);
+  const wPST = empties > 12 ? 1.0 : 0.5;
+  const wMob = empties > 12 ? 1.0 : 0.4;
+  const wDisc = empties > 12 ? 0.4 : 1.2;
+
+  return wPST * pstScore + wMob * mobility + 0.8 * cornerScore + wDisc * discDiff;
+}
+
+function applyMoveOn(b, move, player) {
+  const nb = deepCopyBoard(b);
+  nb[move.row][move.col] = player;
+  for (const [fr, fc] of move.flips) nb[fr][fc] = player;
+  return nb;
+}
+
+function orderMoves(b, moves, player) {
+  return moves.sort((a, b2) => {
+    const aCorner = (a.row === 0 || a.row === 7) && (a.col === 0 || a.col === 7) ? 1 : 0;
+    const bCorner = (b2.row === 0 || b2.row === 7) && (b2.col === 0 || b2.col === 7) ? 1 : 0;
+    if (aCorner !== bCorner) return bCorner - aCorner;
+    if (a.flips.length !== b2.flips.length) return b2.flips.length - a.flips.length;
+    const aP = PST[a.row][a.col], bP = PST[b2.row][b2.col];
+    return bP - aP;
+  });
+}
+
+function negamax(b, player, depth, alpha, beta, deadline, tt) {
+  if (Date.now() >= deadline) {
+    return { value: evaluate(b, player), move: null, timeout: true };
+  }
+
+  const key = boardKey(b, player);
+  const entry = tt.get(key);
+  if (entry && entry.depth >= depth) {
+    if (entry.flag === 'EXACT') return { value: entry.value, move: entry.best, timeout: false };
+    else if (entry.flag === 'LOWER' && entry.value > alpha) alpha = entry.value;
+    else if (entry.flag === 'UPPER' && entry.value < beta)  beta  = entry.value;
+    if (alpha >= beta) return { value: entry.value, move: entry.best, timeout: false };
+  }
+
+  const myMoves = listValidMoves(player, b);
+  if (myMoves.length === 0) {
+    const oppMoves = listValidMoves(-player, b);
+    if (oppMoves.length === 0) {
+      const { blackCount, whiteCount } = countPieces(b);
+      const score = (player === 1 ? (blackCount - whiteCount) : (whiteCount - blackCount))
+                    * 10000;
+      return { value: score, move: null, timeout: false };
+    }
+    return negamax(b, -player, depth, alpha, beta, deadline, tt);
+  }
+
+  if (depth === 0) {
+    return { value: evaluate(b, player), move: null, timeout: false };
+  }
+
+  let best = null;
+  let bestVal = -Infinity;
+  let timedOut = false;
+  const ordered = orderMoves(b, myMoves, player);
+
+  for (const mv of ordered) {
+    const nb = applyMoveOn(b, mv, player);
+    const res = negamax(nb, -player, depth - 1, -beta, -alpha, deadline, tt);
+    if (res.timeout) { timedOut = true; break; }
+    const val = -res.value;
+
+    if (val > bestVal) {
+      bestVal = val; best = mv;
+    }
+    if (val > alpha) alpha = val;
+    if (alpha >= beta) break;
+  }
+
+  if (!timedOut) {
+    let flag = 'EXACT';
+    if (bestVal <= alpha) flag = 'UPPER';
+    else if (bestVal >= beta) flag = 'LOWER';
+    tt.set(key, { depth, value: bestVal, best, flag });
+  }
+
+  return { value: bestVal, move: best, timeout: timedOut };
+}
+
+function findBestMoveIterative(b, player, msBudget) {
+  const start = Date.now();
+  const deadline = start + msBudget;
+  const tt = new Map();
+  let best = null;
+  let depth = 1;
+  while (true) {
+    const res = negamax(b, player, depth, -Infinity, Infinity, deadline, tt);
+    if (res.timeout) break;
+    if (res.move) best = res.move;
+    depth += 1;
+
+    if (Math.abs(res.value) >= 9000) break;
+    if (Date.now() >= deadline) break;
+  }
+  if (!best) {
+    const moves = listValidMoves(player, b);
+    if (moves.length) best = orderMoves(b, moves, player)[0];
+  }
+  return best;
+}
+
+function aiMove() {
+  aiThinking = true;
+  setUIBusy(true);
+  updateStatus();
+
+  const thinkStart = Date.now();
+
+  setTimeout(() => {
+    const searchBudget = AI_THINK_TIME_MS - 60;
+    const move = findBestMoveIterative(board, currentPlayer, searchBudget);
+
+    const elapsedTotal = Date.now() - thinkStart;
+    const remaining = Math.max(0, AI_THINK_TIME_MS - elapsedTotal);
+
+    if (!move) {
+      setTimeout(() => {
+        aiThinking = false;
+        currentPlayer = -currentPlayer;
+        nextTurn();
+      }, remaining);
+      return;
+    }
+
+    setTimeout(() => {
+      aiThinking = false;
+      makeMove(move.row, move.col, { force: true });
+    }, remaining);
+  }, 60);
+}
+
+/** ====== 事件绑定 ====== */
+undoBtn.addEventListener('click', undoMove);
+resetBtn.addEventListener('click', resetGame);
+
+modeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isProcessingMove || aiThinking || modeLocked) return;
+    const m = btn.dataset.mode;
+    mode = m;
+
+    modeButtons.forEach(b => b.classList.toggle('active', b === btn));
+
+    refreshModeUIState();
+    resetGame();
+  });
+});
+
+aiSideButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isProcessingMove || aiThinking || modeLocked || mode !== 'ai') return;
+    const side = parseInt(btn.dataset.side, 10);
+    aiPlays = side;
+
+    aiSideButtons.forEach(b => b.classList.toggle('active', b === btn));
+    refreshModeUIState();
+    resetGame();
+  });
+});
+
+initBoard();
+</script>
+</body>
+</html>

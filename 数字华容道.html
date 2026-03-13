@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>数字华容道</title>
+<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+:root{
+  --bg1:#1b1a17;
+  --bg2:#111014;
+  --paper:#f7f1d5;
+  --paper2:#efe3b0;
+  --ink:#1b1a17;
+  --accent:#ffb000;
+  --accent2:#ff3b7a;
+  --good:#00d084;
+  --warn:#ffcc00;
+  --bad:#ff4d4d;
+  --grid:#2b2a2f;
+  --tile:#f7f1d5;
+  --tile2:#f2e7b9;
+  --tileShadow: rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+/* 修复：支持竖直滚动，最小高度适配视口 */
+html,body{min-height:100vh; margin:0; padding:0;}
+body{
+  margin:0;
+  color:var(--paper);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,176,0,.12), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(255,59,122,.10), transparent 45%),
+    linear-gradient(145deg, var(--bg1), var(--bg2));
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:18px;
+  overflow-y:auto; /* 新增：强制开启竖直滚动支持 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.shell{
+  width:min(820px, 96vw);
+  border:3px solid rgba(247,241,213,.25);
+  border-radius:18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.08));
+  box-shadow: 0 16px 40px rgba(0,0,0,.55);
+  overflow:hidden;
+  position:relative;
+}
+.shell:before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0 / 100% 3px;
+  opacity:.22;
+  pointer-events:none;
+}
+.header{
+  padding:16px 18px;
+  display:flex;
+  gap:12px;
+  align-items:flex-end;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(247,241,213,.18);
+  flex-wrap:wrap; /* 新增：小屏幕标题自动换行 */
+}
+h1{
+  margin:0;
+  font-family:"Press Start 2P", system-ui, sans-serif;
+  font-size:18px;
+  letter-spacing:1px;
+  line-height:1.25;
+}
+.sub{
+  margin-top:8px;
+  font-size:12px;
+  opacity:.85;
+}
+.badges{
+  display:flex; gap:8px; flex-wrap:wrap;
+  align-items:center; justify-content:flex-end;
+}
+.badge{
+  font-size:11px;
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(247,241,213,.22);
+  background: rgba(0,0,0,.18);
+}
+.main{
+  display:grid;
+  grid-template-columns: 1fr 320px;
+  gap:16px;
+  padding:16px;
+}
+@media (max-width: 760px){
+  .main{grid-template-columns:1fr; }
+}
+.panel{
+  border:1px solid rgba(247,241,213,.18);
+  border-radius:14px;
+  background: rgba(0,0,0,.18);
+  padding:14px;
+}
+/* 重构：棋盘完全自适应，保证横向100%显示完整 */
+#game{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr); /* 4列等宽，自适应容器宽度 */
+  gap:10px;
+  width:100%; /* 撑满父容器，不溢出 */
+  max-width:400px; /* 大屏幕限制最大宽度，保持美观 */
+  aspect-ratio:1/1; /* 整体正方形，保证格子比例 */
+  margin:0 auto; /* 水平居中 */
+  padding:16px;
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255,255,255,.06), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.12));
+  border:1px solid rgba(247,241,213,.14);
+}
+/* 小屏幕适配调整 */
+@media (max-width: 420px){
+  #game{ gap:8px; padding:12px; }
+}
+/* 重构：格子自适应正方形，字体适配屏幕 */
+.tile{
+  border-radius:14px;
+  background: linear-gradient(180deg, var(--tile), var(--tile2));
+  border:2px solid rgba(27,26,23,.45);
+  box-shadow:
+    0 8px 0 rgba(0,0,0,.25),
+    0 18px 24px var(--tileShadow);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  user-select:none;
+  transform: translateY(0);
+  transition: transform .10s ease, filter .12s ease;
+  color: var(--ink);
+  font-family:"Press Start 2P", system-ui, sans-serif;
+  font-size:clamp(14px, 4.5vw, 20px); /* 字体自适应，小屏幕不溢出 */
+  aspect-ratio:1/1; /* 强制正方形，适配所有屏幕 */
+  width:100%; /* 撑满grid格子 */
+}
+.tile:hover{ transform: translateY(-2px); filter: brightness(1.03); }
+.tile:active{ transform: translateY(2px); }
+.empty{
+  background: transparent !important;
+  border:2px dashed rgba(247,241,213,.20);
+  box-shadow:none;
+  cursor:default;
+}
+.controls{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+button{
+  width:100%;
+  padding:12px 12px;
+  border-radius:12px;
+  border:1px solid rgba(247,241,213,.20);
+  background: linear-gradient(180deg, rgba(255,176,0,.26), rgba(255,176,0,.12));
+  color: var(--paper);
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.3px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.35);
+}
+button:hover:enabled{ filter: brightness(1.06); }
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+button.secondary{
+  background: linear-gradient(180deg, rgba(255,59,122,.22), rgba(255,59,122,.12));
+}
+button.ghost{
+  background: rgba(0,0,0,.15);
+}
+.row{
+  display:flex;
+  gap:10px;
+}
+.row > *{ flex:1; }
+.hr{
+  height:1px; background: rgba(247,241,213,.15);
+  margin:8px 0 2px;
+}
+#status{
+  font-size:12px;
+  line-height:1.45;
+  min-height:2.4em;
+  opacity:.92;
+}
+.progressWrap{
+  margin-top:8px;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid rgba(247,241,213,.16);
+  background: rgba(0,0,0,.16);
+  display:none;
+}
+.progressTop{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; opacity:.9; gap:10px;
+}
+.progressBar{
+  margin-top:8px;
+  height:12px;
+  border-radius:999px;
+  border:1px solid rgba(247,241,213,.18);
+  overflow:hidden;
+  background: rgba(0,0,0,.25);
+}
+.progressFill{
+  height:100%;
+  width:0%;
+  background: linear-gradient(90deg, rgba(255,176,0,.95), rgba(255,59,122,.85));
+  transition: width .18s ease;
+}
+.small{
+  font-size:11px; opacity:.85;
+}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 10px;
+  border-radius:12px;
+  border:1px solid rgba(247,241,213,.18);
+  background: rgba(0,0,0,.16);
+  font-size:12px;
+}
+.pill input{ transform: translateY(1px); }
+.previewPanel{
+  display:none;
+  padding-top:6px;
+}
+.previewHint{
+  font-size:11px; opacity:.85; margin-top:6px;
+}
+.kbd{
+  font-family: ui-monospace, monospace;
+  padding:2px 6px;
+  border-radius:6px;
+  border:1px solid rgba(247,241,213,.22);
+  background: rgba(0,0,0,.25);
+  font-size:11px;
+}
+.footer{
+  padding:12px 16px 16px;
+  border-top:1px solid rgba(247,241,213,.14);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  font-size:11px;
+  opacity:.85;
+}
+a{ color: var(--accent); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <div>
+        <h1>数字华容道 · 复古机台</h1>
+        <div class="sub">AI 破解将<strong>后台</strong>运行；破解完成后自动进入预览模式。预览开始后将锁定操作。</div>
+      </div>
+      <div class="badges">
+        <div class="badge" id="modeBadge">模式：游玩</div>
+        <div class="badge" id="cpuBadge">AI：待命</div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="panel">
+        <div id="game" aria-label="Puzzle board"></div>
+        <div class="small" style="margin-top:10px; opacity:.85;">
+          小技巧：预览中可用键盘 <span class="kbd">←</span> 退一步、<span class="kbd">→</span> 前进一步、<span class="kbd">Space</span> 自动播放/暂停。
+        </div>
+      </div>
+      <div class="panel controls">
+        <div>
+          <div class="row">
+            <button id="shuffleBtn">重新洗牌</button>
+            <button id="solveBtn" class="secondary">AI 破解</button>
+          </div>
+          <div class="hr"></div>
+          <div id="status"></div>
+          <div class="progressWrap" id="progressWrap">
+            <div class="progressTop">
+              <div id="progressText">破解进度</div>
+              <div id="progressPct">0%</div>
+            </div>
+            <div class="progressBar">
+              <div class="progressFill" id="progressFill"></div>
+            </div>
+            <div class="small" id="progressMeta" style="margin-top:8px;"></div>
+          </div>
+        </div>
+        <div class="previewPanel" id="previewPanel">
+          <div class="hr"></div>
+          <button id="startPreviewBtn">开始破解预览</button>
+          <div class="pill" style="margin-top:10px;">
+            <input type="checkbox" id="autoPlayChk" />
+            <label for="autoPlayChk">自动播放</label>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button id="backBtn" class="ghost">退一步</button>
+            <button id="forwardBtn" class="ghost">前进一步</button>
+          </div>
+          <div class="previewHint" id="previewHint"></div>
+        </div>
+        <div class="hr"></div>
+        <div class="small">
+          本地自动存档：误关/刷新后会回到上次所在页面；但若上次破解未完成，将提示“需要重新破解”并保留局面。
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <div>© Retro Puzzle Console</div>
+      <div>保存键：<span class="kbd">localStorage</span></div>
+    </div>
+  </div>
+<script>
+/* =========================
+   基础：棋盘逻辑
+========================= */
+const SIZE = 4, N = SIZE * SIZE;
+const LS_KEY = "npuzzle_retro_v1";
+let state = [];                // 当前棋盘
+let mode = "play";             // play | solving | ready | preview
+let solutionMoves = null;      // 破解后的 move 列表（每步移动的数字）
+let solutionStartState = null; // 生成solutionMoves时的初始棋盘状态
+let previewIndex = 0;          // 当前预览进度（0 = 起点）
+let autoPlay = false;
+let autoTimer = null;
+let interruptedSolve = false;
+const $ = (id) => document.getElementById(id);
+const game = $("game");
+const shuffleBtn = $("shuffleBtn");
+const solveBtn = $("solveBtn");
+const statusDiv = $("status");
+const modeBadge = $("modeBadge");
+const cpuBadge = $("cpuBadge");
+const progressWrap = $("progressWrap");
+const progressFill = $("progressFill");
+const progressPct = $("progressPct");
+const progressText = $("progressText");
+const progressMeta = $("progressMeta");
+const previewPanel = $("previewPanel");
+const startPreviewBtn = $("startPreviewBtn");
+const autoPlayChk = $("autoPlayChk");
+const backBtn = $("backBtn");
+const forwardBtn = $("forwardBtn");
+const previewHint = $("previewHint");
+function isGoal(arr) {
+  return arr.every((v,i) => (i < N-1 ? v === i+1 : v === 0));
+}
+function manhattan(arr){
+  return arr.reduce((sum, v, i) => {
+    if (v === 0) return sum;
+    const tx = (v-1) % SIZE, ty = Math.floor((v-1)/SIZE);
+    const cx = i % SIZE, cy = Math.floor(i/SIZE);
+    return sum + Math.abs(tx-cx) + Math.abs(ty-cy);
+  }, 0);
+}
+function isSolvable(arr) {
+  let inv = 0;
+  for (let i = 0; i < N; i++) {
+    if (arr[i] === 0) continue;
+    for (let j = i + 1; j < N; j++) {
+      if (arr[j] !== 0 && arr[i] > arr[j]) inv++;
+    }
+  }
+  const rowFromTop = Math.floor(arr.indexOf(0) / SIZE) + 1;
+  return (SIZE % 2 === 1) ? (inv % 2 === 0) : ((inv + rowFromTop) % 2 === 0);
+}
+// 重新洗牌：全状态重置，随时可用
+function shuffle(){
+  // 强制终止所有运行中的进程
+  stopAutoPlay();
+  stopWorker();
+  // 完全清空所有破解、预览相关数据
+  solutionMoves = null;
+  solutionStartState = null;
+  previewIndex = 0;
+  previewStartState = null;
+  previewStatesCache = null;
+  autoPlay = false;
+  interruptedSolve = false;
+  // 生成新的可解随机棋盘
+  do {
+    state = Array.from({length: N}, (_, i) => i);
+    for (let i = N-1; i > 0; i--) {
+      const j = (Math.random() * (i+1)) | 0;
+      [state[i], state[j]] = [state[j], state[i]];
+    }
+  } while (!isSolvable(state) || isGoal(state));
+  // 重置UI到初始游玩状态
+  setMode("play");
+  setStatus("");
+  setProgressVisible(false);
+  previewPanel.style.display = "none";
+  // 存档并渲染
+  save();
+  render();
+}
+function render(){
+  game.innerHTML = "";
+  state.forEach((v, i) => {
+    const div = document.createElement("div");
+    div.className = "tile" + (v === 0 ? " empty" : "");
+    div.textContent = v === 0 ? "" : v;
+    if (v !== 0) {
+      div.addEventListener("click", () => {
+        // 仅游玩模式允许手动操作
+        if (mode !== "play") return;
+        tryMove(i);
+      });
+    }
+    game.appendChild(div);
+  });
+}
+function tryMove(idx){
+  const x = idx % SIZE, y = Math.floor(idx / SIZE);
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  for (const [dx,dy] of dirs) {
+    const nx = x + dx, ny = y + dy;
+    if (nx>=0 && nx<SIZE && ny>=0 && ny<SIZE) {
+      const ni = ny*SIZE + nx;
+      if (state[ni] === 0) {
+        [state[idx], state[ni]] = [state[ni], state[idx]];
+        save();
+        render();
+        // 仅手动移动完成时弹出提示
+        if (isGoal(state)) {
+          setTimeout(() => alert("恭喜！拼图已完成 🎉"), 60);
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+/* =========================
+   存档 / 恢复
+========================= */
+function save(){
+  const payload = {
+    v: 1,
+    state,
+    mode,
+    solutionMoves,
+    solutionStartState,
+    previewIndex,
+    autoPlay,
+    interruptedSolve
+  };
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload)); }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || data.v !== 1) return false;
+    // 恢复基础数据
+    state = Array.isArray(data.state) && data.state.length === N ? data.state : [];
+    mode = data.mode || "play";
+    solutionMoves = data.solutionMoves || null;
+    solutionStartState = Array.isArray(data.solutionStartState) && data.solutionStartState.length === N ? data.solutionStartState : null;
+    previewIndex = Number.isFinite(data.previewIndex) ? data.previewIndex : 0;
+    autoPlay = !!data.autoPlay;
+    interruptedSolve = !!data.interruptedSolve;
+    // 校验破解数据配对，无效数据自动清空
+    if (solutionMoves && !solutionStartState) {
+      solutionMoves = null;
+      previewIndex = 0;
+      autoPlay = false;
+      mode = "play";
+    }
+    // 破解中断处理
+    if (mode === "solving") {
+      interruptedSolve = true;
+      mode = "play";
+      solutionMoves = null;
+      solutionStartState = null;
+      previewIndex = 0;
+      autoPlay = false;
+    }
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+/* =========================
+   UI 状态
+========================= */
+function setMode(next){
+  mode = next;
+  const label = ({
+    play: "模式：游玩",
+    solving: "模式：AI 破解中",
+    ready: "模式：已破解（待预览）",
+    preview: "模式：破解预览（锁定）"
+  })[mode] || "模式：游玩";
+  modeBadge.textContent = label;
+  // 按钮锁定策略：洗牌按钮永久可用，仅限制其他按钮
+  solveBtn.disabled = (mode === "solving" || mode === "preview");
+  // ready模式允许重新破解
+  if (mode === "ready") solveBtn.disabled = false;
+  // 预览面板显示控制
+  previewPanel.style.display = (mode === "ready" || mode === "preview") ? "block" : "none";
+  // 预览按钮控制
+  const canStep = (mode === "preview");
+  backBtn.disabled = !canStep;
+  forwardBtn.disabled = !canStep;
+  autoPlayChk.disabled = !canStep;
+  // AI状态显示
+  cpuBadge.textContent = (mode === "solving") ? "AI：低占用（后台）" : "AI：待命";
+  save();
+}
+function setStatus(text){
+  statusDiv.textContent = text;
+  save();
+}
+function setProgressVisible(visible){
+  progressWrap.style.display = visible ? "block" : "none";
+}
+function setProgress(percent, metaText){
+  const p = Math.max(0, Math.min(100, percent|0));
+  progressFill.style.width = p + "%";
+  progressPct.textContent = p + "%";
+  progressMeta.textContent = metaText || "";
+}
+/* =========================
+   AI 破解：Web Worker
+========================= */
+let worker = null;
+function makeWorker(){
+  const workerCode = `
+  const SIZE=4, N=16;
+  function isGoal(a){
+    for(let i=0;i<N-1;i++) if(a[i]!==i+1) return false;
+    return a[N-1]===0;
+  }
+  function manhattan(a){
+    let s=0;
+    for(let i=0;i<N;i++){
+      const v=a[i];
+      if(v===0) continue;
+      const tx=(v-1)%SIZE, ty=((v-1)/SIZE)|0;
+      const cx=i%SIZE, cy=(i/SIZE)|0;
+      s += Math.abs(tx-cx)+Math.abs(ty-cy);
+    }
+    return s;
+  }
+  function linearConflict(a){
+    let lc=0;
+    for(let r=0;r<SIZE;r++){
+      const row = a.slice(r*SIZE, r*SIZE+SIZE);
+      for(let i=0;i<SIZE;i++){
+        const v1=row[i];
+        if(v1===0) continue;
+        const goalR=((v1-1)/SIZE)|0;
+        if(goalR!==r) continue;
+        const goalC1=(v1-1)%SIZE;
+        for(let j=i+1;j<SIZE;j++){
+          const v2=row[j];
+          if(v2===0) continue;
+          const goalR2=((v2-1)/SIZE)|0;
+          if(goalR2!==r) continue;
+          const goalC2=(v2-1)%SIZE;
+          if(goalC1>goalC2) lc += 2;
+        }
+      }
+    }
+    for(let c=0;c<SIZE;c++){
+      const col = [a[c],a[c+SIZE],a[c+2*SIZE],a[c+3*SIZE]];
+      for(let i=0;i<SIZE;i++){
+        const v1=col[i];
+        if(v1===0) continue;
+        const goalC=(v1-1)%SIZE;
+        if(goalC!==c) continue;
+        const goalR1=((v1-1)/SIZE)|0;
+        for(let j=i+1;j<SIZE;j++){
+          const v2=col[j];
+          if(v2===0) continue;
+          const goalC2=(v2-1)%SIZE;
+          if(goalC2!==c) continue;
+          const goalR2=((v2-1)/SIZE)|0;
+          if(goalR1>goalR2) lc += 2;
+        }
+      }
+    }
+    return lc;
+  }
+  function h(a){ return manhattan(a) + linearConflict(a); }
+  function neighbors(a, z){
+    const res=[];
+    const zx=z%SIZE, zy=(z/SIZE)|0;
+    const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(const [dx,dy] of dirs){
+      const nx=zx+dx, ny=zy+dy;
+      if(nx<0||nx>=SIZE||ny<0||ny>=SIZE) continue;
+      const ni=ny*SIZE+nx;
+      const b=a.slice();
+      const moved=b[ni];
+      b[z]=moved; b[ni]=0;
+      res.push({next:b, moved, z2:ni});
+    }
+    return res;
+  }
+  function idaSolve(start){
+    const startZ = start.indexOf(0);
+    let bound = h(start);
+    const pathMoves=[];
+    const pathStates=[start.slice()];
+    const pathZ=[startZ];
+    let nodes=0, iter=0;
+    const seen = new Set();
+    function key(a){ return a.join(','); }
+    function dfs(g, bound){
+      const a = pathStates[pathStates.length-1];
+      const f = g + h(a);
+      if(f>bound) return f;
+      if(isGoal(a)) return true;
+      let min = Infinity;
+      const z = pathZ[pathZ.length-1];
+      const neigh = neighbors(a, z).sort((p,q)=>h(p.next)-h(q.next));
+      for(const nb of neigh){
+        if(pathMoves.length>0 && nb.moved === pathMoves[pathMoves.length-1]) {
+          if(pathStates.length>=2){
+            const prev = pathStates[pathStates.length-2];
+            let same=true;
+            for(let i=0;i<N;i++){ if(prev[i]!==nb.next[i]){same=false;break;} }
+            if(same) continue;
+          }
+        }
+        const k = key(nb.next);
+        if(seen.has(k)) continue;
+        seen.add(k);
+        pathStates.push(nb.next);
+        pathZ.push(nb.z2);
+        pathMoves.push(nb.moved);
+        nodes++;
+        if((nodes & 8191) === 0) {
+          postMessage({type:"progress", bound, iter, nodes});
+        }
+        const t = dfs(g+1, bound);
+        if(t === true) return true;
+        if(t < min) min = t;
+        pathMoves.pop();
+        pathZ.pop();
+        pathStates.pop();
+        seen.delete(k);
+      }
+      return min;
+    }
+    seen.add(key(start));
+    while(true){
+      iter++;
+      postMessage({type:"progress", bound, iter, nodes});
+      const t = dfs(0, bound);
+      if(t === true){
+        return {moves:pathMoves.slice(), nodes, iter, bound};
+      }
+      if(t === Infinity){
+        throw new Error("无解");
+      }
+      bound = t;
+    }
+  }
+  onmessage = (e)=>{
+    const msg=e.data||{};
+    if(msg.type==="solve"){
+      try{
+        const start=msg.start;
+        const t0=Date.now();
+        const res=idaSolve(start);
+        const ms=Date.now()-t0;
+        postMessage({type:"done", ...res, ms});
+      }catch(err){
+        postMessage({type:"error", message: String(err && err.message ? err.message : err)});
+      }
+    }
+  };
+  `;
+  const blob = new Blob([workerCode], {type:"application/javascript"});
+  return new Worker(URL.createObjectURL(blob));
+}
+function stopWorker(){
+  if(worker){
+    worker.terminate();
+    worker = null;
+  }
+}
+function computePercentFromProgress(p){
+  const iter = p.iter || 1;
+  const bound = p.bound || 0;
+  let base = 1 - Math.exp(-iter/3);
+  let bump = 1 - Math.exp(-bound/18);
+  let pct = Math.floor((0.55*base + 0.45*bump) * 99);
+  if(!Number.isFinite(pct)) pct = 1;
+  return Math.max(1, Math.min(99, pct));
+}
+async function startSolve(){
+  if (mode === "preview") return;
+  if (isGoal(state)) { alert("已经完成，无需破解！"); return; }
+  stopAutoPlay();
+  stopWorker();
+  setMode("solving");
+  setStatus("AI 正在后台破解…（你仍可浏览页面，但拼图操作被锁定）");
+  setProgressVisible(true);
+  progressText.textContent = "破解进度（估算）";
+  setProgress(1, "准备中…");
+  interruptedSolve = false;
+  save();
+  worker = makeWorker();
+  worker.onmessage = (e)=>{
+    const m=e.data||{};
+    if(m.type==="progress"){
+      const pct = computePercentFromProgress(m);
+      setProgress(pct, `迭代：${m.iter}  ·  搜索节点：${m.nodes.toLocaleString()}  ·  当前阈值(bound)：${m.bound}`);
+    }else if(m.type==="done"){
+      setProgress(100, `完成！迭代：${m.iter} · 节点：${m.nodes.toLocaleString()} · 用时：${m.ms}ms`);
+      // 保存破解结果与初始状态
+      solutionMoves = m.moves;
+      solutionStartState = state.slice();
+      previewIndex = 0;
+      // 标记为就绪，自动进入预览
+      setMode("ready");
+      setStatus("破解已完成 ✅ 自动进入预览模式...");
+      save();
+      stopWorker();
+      // 自动进入预览，短延迟保证用户看到完成提示
+      setTimeout(() => {
+        startPreview();
+      }, 300);
+    }else if(m.type==="error"){
+      setMode("play");
+      setStatus("破解失败：" + m.message);
+      setProgressVisible(false);
+      stopWorker();
+      save();
+      alert("破解失败：" + m.message);
+    }
+  };
+  worker.postMessage({type:"solve", start: state.slice()});
+}
+/* =========================
+   预览：逐步播放、回看
+========================= */
+let previewStartState = null;
+let previewStatesCache = null;
+function applyMove(arr, moved){
+  const z = arr.indexOf(0);
+  const i = arr.indexOf(moved);
+  if (z === -1 || i === -1) return arr;
+  const zx = z % SIZE, zy = (z / SIZE) | 0;
+  const ix = i % SIZE, iy = (i / SIZE) | 0;
+  const man = Math.abs(zx-ix) + Math.abs(zy-iy);
+  if(man !== 1) return arr;
+  const b = arr.slice();
+  b[z] = moved;
+  b[i] = 0;
+  return b;
+}
+function ensurePreviewCache(){
+  if(!solutionMoves || !Array.isArray(solutionMoves) || !solutionStartState) return false;
+  if(!previewStartState) previewStartState = solutionStartState.slice();
+  if(!previewStatesCache){
+    previewStatesCache = [previewStartState.slice()];
+  }
+  return true;
+}
+function buildStateUpTo(k){
+  if(!ensurePreviewCache()) return;
+  while(previewStatesCache.length <= k){
+    const idx = previewStatesCache.length - 1;
+    const prev = previewStatesCache[idx];
+    const moved = solutionMoves[idx];
+    const next = applyMove(prev, moved);
+    previewStatesCache.push(next);
+  }
+}
+function goToPreviewIndex(k){
+  if(!solutionMoves) return;
+  const max = solutionMoves.length;
+  k = Math.max(0, Math.min(max, k));
+  buildStateUpTo(k);
+  previewIndex = k;
+  state = previewStatesCache[k].slice();
+  render();
+  const done = (previewIndex === max);
+  previewHint.textContent = done
+    ? "已到终点（完成）。仍可退一步回看。"
+    : `第 ${previewIndex} / ${max} 步（每一步均已记录，可回看）`;
+  save();
+}
+function startPreview(){
+  if(mode !== "ready" && mode !== "preview") return;
+  if(!solutionMoves || !solutionStartState) return;
+  // 进入预览模式，锁定操作
+  setMode("preview");
+  setStatus("预览进行中：操作已锁定（点击重新洗牌可重置）。");
+  // 固定预览起点为破解初始状态
+  previewStartState = solutionStartState.slice();
+  previewStatesCache = [previewStartState.slice()];
+  goToPreviewIndex(previewIndex || 0);
+  autoPlayChk.checked = !!autoPlay;
+  backBtn.disabled = false;
+  forwardBtn.disabled = false;
+  autoPlayChk.disabled = false;
+  if(autoPlay) startAutoPlay();
+}
+function stepForward(){
+  if(mode !== "preview") return;
+  goToPreviewIndex(previewIndex + 1);
+  if(previewIndex === solutionMoves.length){
+    stopAutoPlay();
+    autoPlayChk.checked = false;
+    autoPlay = false;
+    save();
+  }
+}
+function stepBack(){
+  if(mode !== "preview") return;
+  stopAutoPlay();
+  autoPlayChk.checked = false;
+  autoPlay = false;
+  save();
+  goToPreviewIndex(previewIndex - 1);
+}
+function startAutoPlay(){
+  stopAutoPlay();
+  if(mode !== "preview") return;
+  autoPlay = true;
+  save();
+  autoTimer = setInterval(()=>{
+    if(previewIndex >= solutionMoves.length){
+      stopAutoPlay();
+      autoPlayChk.checked = false;
+      autoPlay = false;
+      save();
+      return;
+    }
+    stepForward();
+  }, 180);
+}
+function stopAutoPlay(){
+  if(autoTimer){
+    clearInterval(autoTimer);
+    autoTimer = null;
+  }
+}
+/* =========================
+   事件绑定
+========================= */
+shuffleBtn.addEventListener("click", shuffle);
+solveBtn.addEventListener("click", ()=>startSolve());
+startPreviewBtn.addEventListener("click", startPreview);
+autoPlayChk.addEventListener("change", ()=>{
+  if(mode !== "preview") return;
+  autoPlay = autoPlayChk.checked;
+  save();
+  if(autoPlay) startAutoPlay();
+  else stopAutoPlay();
+});
+backBtn.addEventListener("click", stepBack);
+forwardBtn.addEventListener("click", stepForward);
+window.addEventListener("beforeunload", ()=>{
+  if(mode === "solving"){
+    interruptedSolve = true;
+    mode = "solving";
+    save();
+  }else{
+    save();
+  }
+});
+// 键盘快捷键
+window.addEventListener("keydown", (e)=>{
+  const target = e.target;
+  if (target.tagName === "INPUT" || target.tagName === "BUTTON" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+    return;
+  }
+  if(mode !== "preview") return;
+  if(e.key === "ArrowLeft"){ e.preventDefault(); stepBack(); }
+  else if(e.key === "ArrowRight"){ e.preventDefault(); stepForward(); }
+  else if(e.key === " "){ e.preventDefault();
+    autoPlayChk.checked = !autoPlayChk.checked;
+    autoPlayChk.dispatchEvent(new Event("change"));
+  }
+});
+/* =========================
+   启动：恢复或洗牌
+========================= */
+(function init(){
+  const ok = load();
+  if(!ok || !Array.isArray(state) || state.length !== N){
+    shuffle();
+    return;
+  }
+  render();
+  if(interruptedSolve){
+    setStatus("检测到上次破解未完成：需要重新破解（局面已保留）。");
+    setProgressVisible(false);
+    previewPanel.style.display = "none";
+    interruptedSolve = false;
+    save();
+  }
+  // 恢复UI状态
+  if(mode === "play"){
+    setMode("play");
+    setProgressVisible(false);
+    previewPanel.style.display = "none";
+  }else if(mode === "ready"){
+    setMode("ready");
+    setProgressVisible(false);
+    previewPanel.style.display = "block";
+    setStatus(statusDiv.textContent || "破解已完成 ✅ 点击「开始破解预览」查看。");
+  }else if(mode === "preview"){
+    if(!solutionMoves || !solutionStartState){
+      setMode("play");
+      setStatus("预览数据缺失，需要重新破解。");
+      return;
+    }
+    setMode("preview");
+    setProgressVisible(false);
+    previewPanel.style.display = "block";
+    previewStartState = solutionStartState.slice();
+    previewStatesCache = [previewStartState.slice()];
+    previewIndex = Math.max(0, Math.min(solutionMoves.length, previewIndex|0));
+    goToPreviewIndex(previewIndex);
+    autoPlayChk.checked = !!autoPlay;
+    if(autoPlay) startAutoPlay();
+    else stopAutoPlay();
+    setStatus(statusDiv.textContent || "已恢复到上次预览位置。");
+  }else{
+    setMode("play");
+    setProgressVisible(false);
+    previewPanel.style.display = "none";
+  }
+})();
+</script>
+</body>
+</html>
