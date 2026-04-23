@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>汇率转换器</title>
+    <style>
+        :root {
+            --bg-1: #0f172a;
+            --bg-2: #1e293b;
+            --panel: rgba(15, 23, 42, 0.72);
+            --panel-strong: rgba(15, 23, 42, 0.86);
+            --text: #f8fafc;
+            --muted: #cbd5e1;
+            --line: rgba(148, 163, 184, 0.22);
+            --primary: #22c55e;
+            --primary-strong: #16a34a;
+            --accent: #38bdf8;
+            --shadow: 0 24px 70px rgba(15, 23, 42, 0.35);
+            --radius: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+        }
+
+        body {
+            font-family: "Inter", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.20), transparent 32%),
+                radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 25%),
+                linear-gradient(135deg, #020617 0%, #0f172a 42%, #111827 100%);
+            color: var(--text);
+            min-height: 100dvh;
+            padding: 24px;
+        }
+
+        .page {
+            min-height: calc(100dvh - 48px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app {
+            width: min(1120px, 100%);
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 32px;
+            backdrop-filter: blur(14px);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 28px 28px 12px;
+        }
+
+        .title-wrap {
+            max-width: 700px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(56, 189, 248, 0.12);
+            color: #bae6fd;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            font-size: 0.88rem;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .count-card {
+            min-width: 180px;
+            padding: 18px 20px;
+            border-radius: 20px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            text-align: right;
+        }
+
+        .count-label {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .count-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .content {
+            padding: 12px 28px 28px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+
+        .panel h2 {
+            margin: 0 0 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field:last-child {
+            margin-bottom: 0;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .hint {
+            font-size: 0.82rem;
+            color: #93c5fd;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            appearance: none;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+
+        select {
+            min-height: 54px;
+        }
+
+        input::placeholder {
+            color: rgba(226, 232, 240, 0.6);
+        }
+
+        input:focus,
+        select:focus {
+            border-color: rgba(56, 189, 248, 0.75);
+            background: rgba(255,255,255,0.09);
+            transform: translateY(-1px);
+        }
+
+        /* 确保下拉选项中的货币文字为黑色，背景为白色，提升可读性 */
+        select option {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        /* 保持select选中项文字为白色（深色主题背景下的可读性） */
+        select {
+            color: var(--text);
+        }
+
+        .swap-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .swap-btn {
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(34, 197, 94, 0.2));
+            color: var(--text);
+            font-size: 1.4rem;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.12);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.26);
+        }
+
+        .swap-btn:hover {
+            transform: rotate(180deg) scale(1.03);
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            border-radius: 16px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .primary {
+            flex: 1 1 220px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+            color: white;
+            box-shadow: 0 14px 30px rgba(34, 197, 94, 0.26);
+        }
+
+        .secondary {
+            flex: 0 0 auto;
+            min-width: 140px;
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.10);
+        }
+
+        .result-card {
+            margin-top: 18px;
+            background: var(--panel-strong);
+            border: 1px solid var(--line);
+            border-radius: 26px;
+            padding: 22px;
+        }
+
+        .result-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .result-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.86rem;
+            background: rgba(34, 197, 94, 0.10);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.16);
+        }
+
+        .result-main {
+            margin-top: 16px;
+            font-size: clamp(1.4rem, 3vw, 2.4rem);
+            font-weight: 800;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .result-main small {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .metric {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+        }
+
+        .metric-label {
+            font-size: 0.86rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .placeholder {
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        .footer-note {
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .status {
+            margin-top: 14px;
+            min-height: 24px;
+            color: #bfdbfe;
+            font-size: 0.92rem;
+        }
+
+        .error {
+            color: #fecaca;
+        }
+
+        .success {
+            color: #bbf7d0;
+        }
+
+        @media (max-width: 900px) {
+            .topbar {
+                flex-direction: column;
+            }
+
+            .count-card {
+                width: 100%;
+                text-align: left;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .swap-wrap {
+                order: 3;
+            }
+
+            .swap-btn {
+                width: 100%;
+                height: 54px;
+                font-size: 1.2rem;
+            }
+
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 14px;
+            }
+
+            .page {
+                min-height: calc(100dvh - 28px);
+            }
+
+            .app {
+                border-radius: 24px;
+            }
+
+            .topbar {
+                padding: 20px 18px 10px;
+            }
+
+            .content {
+                padding: 10px 18px 20px;
+            }
+
+            .panel,
+            .result-card {
+                padding: 18px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .primary,
+            .secondary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <main class="app">
+            <div class="topbar">
+                <div class="title-wrap">
+                    <div class="badge">实时汇率 · 自动备用接口 · 多终端适配</div>
+                    <h1>汇率转换器</h1>
+                    <p class="subtitle">支持 100+ 币种，优先使用覆盖面更大的新接口，并在主接口异常时自动切换到备用接口。页面同时适配手机和电脑。</p>
+                </div>
+                <div class="count-card">
+                    <div class="count-label">当前可选币种</div>
+                    <div class="count-value" id="currencyCount">--</div>
+                </div>
+            </div>
+
+            <div class="content">
+                <section class="grid">
+                    <div class="panel">
+                        <h2>待转换货币</h2>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="amount">金额</label>
+                                <span class="hint">支持小数</span>
+                            </div>
+                            <input type="number" id="amount" placeholder="输入金额，例如 100" min="0" step="any" inputmode="decimal">
+                        </div>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="fromSearch">搜索币种</label>
+                            </div>
+                            <input type="text" id="fromSearch" placeholder="输入代码或名称，例如 USD / 美元">
+                        </div>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="fromCurrency">选择币种</label>
+                            </div>
+                            <select id="fromCurrency" aria-label="待转换货币"></select>
+                        </div>
+                    </div>
+
+                    <div class="swap-wrap">
+                        <button class="swap-btn" id="swapBtn" type="button" title="交换币种">⇄</button>
+                    </div>
+
+                    <div class="panel">
+                        <h2>目标转换货币</h2>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="toSearch">搜索币种</label>
+                            </div>
+                            <input type="text" id="toSearch" placeholder="输入代码或名称，例如 CNY / 人民币">
+                        </div>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label for="toCurrency">选择币种</label>
+                            </div>
+                            <select id="toCurrency" aria-label="目标转换货币"></select>
+                        </div>
+
+                        <div class="field">
+                            <div class="label-row">
+                                <label>说明</label>
+                            </div>
+                            <div class="placeholder">如果主接口暂时不可用，系统会自动启用备用汇率源，无需手动切换。</div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="actions">
+                    <button class="primary" id="convertBtn" type="button">开始转换</button>
+                    <button class="secondary" id="refreshBtn" type="button">刷新汇率</button>
+                </div>
+
+                <div class="status" id="statusText"></div>
+
+                <section class="result-card" id="resultCard">
+                    <div class="placeholder">请输入金额并点击“开始转换”。如果你直接修改币种后想更新结果，也可以点击“刷新汇率”。</div>
+                </section>
+
+                <div class="footer-note">
+                    提示：本页面优先走新接口获取更大范围的币种数据；若接口网络波动，会自动切换备用地址继续请求。
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const LOCAL_CURRENCIES = [{"code":"AED","name":"阿联酋迪拉姆"},{"code":"AFN","name":"Afghani"},{"code":"ALL","name":"Lek"},{"code":"AMD","name":"Armenian Dram"},{"code":"ANG","name":"Netherlands Antillean Guilder"},{"code":"AOA","name":"Kwanza"},{"code":"ARS","name":"阿根廷比索"},{"code":"AUD","name":"澳大利亚元"},{"code":"AWG","name":"Aruban Florin"},{"code":"AZN","name":"Azerbaijan Manat"},{"code":"BAM","name":"Convertible Mark"},{"code":"BBD","name":"Barbados Dollar"},{"code":"BDT","name":"孟加拉塔卡"},{"code":"BGN","name":"保加利亚列弗"},{"code":"BHD","name":"巴林第纳尔"},{"code":"BIF","name":"Burundi Franc"},{"code":"BMD","name":"Bermudian Dollar"},{"code":"BND","name":"Brunei Dollar"},{"code":"BOB","name":"Boliviano"},{"code":"BRL","name":"巴西雷亚尔"},{"code":"BSD","name":"Bahamian Dollar"},{"code":"BTN","name":"Ngultrum"},{"code":"BWP","name":"Pula"},{"code":"BYN","name":"Belarusian Ruble"},{"code":"BZD","name":"Belize Dollar"},{"code":"CAD","name":"加拿大元"},{"code":"CDF","name":"Congolese Franc"},{"code":"CHF","name":"瑞士法郎"},{"code":"CLP","name":"智利比索"},{"code":"CNY","name":"人民币"},{"code":"COP","name":"哥伦比亚比索"},{"code":"CRC","name":"Costa Rican Colon"},{"code":"CUC","name":"Peso Convertible"},{"code":"CUP","name":"Cuban Peso"},{"code":"CVE","name":"Cabo Verde Escudo"},{"code":"CZK","name":"捷克克朗"},{"code":"DJF","name":"Djibouti Franc"},{"code":"DKK","name":"丹麦克朗"},{"code":"DOP","name":"Dominican Peso"},{"code":"DZD","name":"Algerian Dinar"},{"code":"EGP","name":"埃及镑"},{"code":"ERN","name":"Nakfa"},{"code":"ETB","name":"Ethiopian Birr"},{"code":"EUR","name":"欧元"},{"code":"FJD","name":"Fiji Dollar"},{"code":"FKP","name":"Falkland Islands Pound"},{"code":"GBP","name":"英镑"},{"code":"GEL","name":"Lari"},{"code":"GHS","name":"Ghana Cedi"},{"code":"GIP","name":"Gibraltar Pound"},{"code":"GMD","name":"Dalasi"},{"code":"GNF","name":"Guinean Franc"},{"code":"GTQ","name":"Quetzal"},{"code":"GYD","name":"Guyana Dollar"},{"code":"HKD","name":"港元"},{"code":"HNL","name":"Lempira"},{"code":"HRK","name":"Kuna"},{"code":"HTG","name":"Gourde"},{"code":"HUF","name":"匈牙利福林"},{"code":"IDR","name":"印尼盾"},{"code":"ILS","name":"以色列新谢克尔"},{"code":"INR","name":"印度卢比"},{"code":"IQD","name":"Iraqi Dinar"},{"code":"IRR","name":"Iranian Rial"},{"code":"ISK","name":"冰岛克朗"},{"code":"JMD","name":"Jamaican Dollar"},{"code":"JOD","name":"Jordanian Dinar"},{"code":"JPY","name":"日元"},{"code":"KES","name":"Kenyan Shilling"},{"code":"KGS","name":"Som"},{"code":"KHR","name":"Riel"},{"code":"KMF","name":"Comorian Franc"},{"code":"KPW","name":"North Korean Won"},{"code":"KRW","name":"韩元"},{"code":"KWD","name":"科威特第纳尔"},{"code":"KYD","name":"Cayman Islands Dollar"},{"code":"KZT","name":"Tenge"},{"code":"LAK","name":"Lao Kip"},{"code":"LBP","name":"Lebanese Pound"},{"code":"LKR","name":"斯里兰卡卢比"},{"code":"LRD","name":"Liberian Dollar"},{"code":"LSL","name":"Loti"},{"code":"LYD","name":"Libyan Dinar"},{"code":"MAD","name":"Moroccan Dirham"},{"code":"MDL","name":"Moldovan Leu"},{"code":"MGA","name":"Malagasy Ariary"},{"code":"MKD","name":"Denar"},{"code":"MMK","name":"Kyat"},{"code":"MNT","name":"Tugrik"},{"code":"MOP","name":"澳门元"},{"code":"MRU","name":"Ouguiya"},{"code":"MUR","name":"Mauritius Rupee"},{"code":"MVR","name":"Rufiyaa"},{"code":"MWK","name":"Malawi Kwacha"},{"code":"MXN","name":"墨西哥比索"},{"code":"MYR","name":"马来西亚林吉特"},{"code":"MZN","name":"Mozambique Metical"},{"code":"NAD","name":"Namibia Dollar"},{"code":"NGN","name":"尼日利亚奈拉"},{"code":"NIO","name":"Cordoba Oro"},{"code":"NOK","name":"挪威克朗"},{"code":"NPR","name":"尼泊尔卢比"},{"code":"NZD","name":"新西兰元"},{"code":"OMR","name":"阿曼里亚尔"},{"code":"PAB","name":"Balboa"},{"code":"PEN","name":"秘鲁索尔"},{"code":"PGK","name":"Kina"},{"code":"PHP","name":"菲律宾比索"},{"code":"PKR","name":"巴基斯坦卢比"},{"code":"PLN","name":"波兰兹罗提"},{"code":"PYG","name":"Guarani"},{"code":"QAR","name":"卡塔尔里亚尔"},{"code":"RON","name":"罗马尼亚列伊"},{"code":"RSD","name":"Serbian Dinar"},{"code":"RUB","name":"俄罗斯卢布"},{"code":"RWF","name":"Rwanda Franc"},{"code":"SAR","name":"沙特里亚尔"},{"code":"SBD","name":"Solomon Islands Dollar"},{"code":"SCR","name":"Seychelles Rupee"},{"code":"SDG","name":"Sudanese Pound"},{"code":"SEK","name":"瑞典克朗"},{"code":"SGD","name":"新加坡元"},{"code":"SHP","name":"Saint Helena Pound"},{"code":"SLE","name":"Leone"},{"code":"SLL","name":"Leone"},{"code":"SOS","name":"Somali Shilling"},{"code":"SRD","name":"Surinam Dollar"},{"code":"SSP","name":"South Sudanese Pound"},{"code":"STN","name":"Dobra"},{"code":"SVC","name":"El Salvador Colon"},{"code":"SYP","name":"Syrian Pound"},{"code":"SZL","name":"Lilangeni"},{"code":"THB","name":"泰铢"},{"code":"TJS","name":"Somoni"},{"code":"TMT","name":"Turkmenistan New Manat"},{"code":"TND","name":"Tunisian Dinar"},{"code":"TOP","name":"Pa’anga"},{"code":"TRY","name":"土耳其里拉"},{"code":"TTD","name":"Trinidad and Tobago Dollar"},{"code":"TWD","name":"新台币"},{"code":"TZS","name":"Tanzanian Shilling"},{"code":"UAH","name":"乌克兰格里夫纳"},{"code":"UGX","name":"Uganda Shilling"},{"code":"USD","name":"美元"},{"code":"UYU","name":"Peso Uruguayo"},{"code":"UYW","name":"Unidad Previsional"},{"code":"UZS","name":"Uzbekistan Sum"},{"code":"VED","name":"Bolívar Soberano"},{"code":"VES","name":"Bolívar Soberano"},{"code":"VND","name":"越南盾"},{"code":"VUV","name":"Vatu"},{"code":"WST","name":"Tala"},{"code":"XAF","name":"CFA Franc BEAC"},{"code":"XAG","name":"白银"},{"code":"XAU","name":"黄金"},{"code":"XCD","name":"East Caribbean Dollar"},{"code":"XDR","name":"SDR (Special Drawing Right)"},{"code":"XOF","name":"CFA Franc BCEAO"},{"code":"XPD","name":"钯金"},{"code":"XPF","name":"CFP Franc"},{"code":"XPT","name":"铂金"},{"code":"YER","name":"Yemeni Rial"},{"code":"ZAR","name":"南非兰特"},{"code":"ZMW","name":"Zambian Kwacha"},{"code":"ZWL","name":"Zimbabwe Dollar"},{"code":"BTC","name":"比特币"},{"code":"ETH","name":"以太坊"},{"code":"USDT","name":"泰达币"}];
+        const PREFERRED_ORDER = ["CNY", "USD", "EUR", "GBP", "JPY", "HKD", "SGD", "AUD", "CAD", "CHF", "KRW", "INR", "TWD", "MOP", "THB", "MYR", "AED", "NZD", "RUB", "ZAR", "BRL", "MXN", "TRY"];
+        const DEFAULT_FROM = "USD";
+        const DEFAULT_TO = "CNY";
+        const RATE_CACHE_TTL = 2 * 60 * 1000;
+
+        const currencyCountEl = document.getElementById("currencyCount");
+        const resultCard = document.getElementById("resultCard");
+        const statusText = document.getElementById("statusText");
+        const amountInput = document.getElementById("amount");
+        const fromCurrencySelect = document.getElementById("fromCurrency");
+        const toCurrencySelect = document.getElementById("toCurrency");
+        const fromSearchInput = document.getElementById("fromSearch");
+        const toSearchInput = document.getElementById("toSearch");
+
+        const state = {
+            currencies: [],
+            rateCache: {},
+            lastSourceName: "",
+            lastSourceTime: ""
+        };
+
+        const SOURCE_BUILDERS = [
+            {
+                name: "Exchange API - jsDelivr",
+                type: "exchange-api",
+                buildCurrenciesUrl: () => "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.min.json",
+                buildRatesUrl: (base) => `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base.toLowerCase()}.min.json`
+            },
+            {
+                name: "Exchange API - Cloudflare Pages",
+                type: "exchange-api",
+                buildCurrenciesUrl: () => "https://latest.currency-api.pages.dev/v1/currencies.min.json",
+                buildRatesUrl: (base) => `https://latest.currency-api.pages.dev/v1/currencies/${base.toLowerCase()}.min.json`
+            },
+            {
+                name: "Open ER API（备用）",
+                type: "open-er-api",
+                buildRatesUrl: (base) => `https://open.er-api.com/v6/latest/${base.toUpperCase()}`
+            }
+        ];
+
+        function setStatus(message = "", kind = "") {
+            statusText.className = "status" + (kind ? ` ${kind}` : "");
+            statusText.textContent = message;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        function normalizeCurrencyList(rawMap) {
+            const list = Object.entries(rawMap || {})
+                .filter(([code]) => /^[a-z0-9]{3,10}$/i.test(code))
+                .map(([code, name]) => {
+                    const upperCode = code.toUpperCase();
+                    const local = LOCAL_CURRENCIES.find(item => item.code === upperCode);
+                    return {
+                        code: upperCode,
+                        name: local?.name || String(name || upperCode)
+                    };
+                });
+
+            return sortCurrencies(list);
+        }
+
+        function sortCurrencies(list) {
+            const preferredIndex = new Map(PREFERRED_ORDER.map((code, index) => [code, index]));
+            const dedup = new Map();
+
+            list.forEach(item => {
+                if (!item?.code) return;
+                dedup.set(item.code, {
+                    code: item.code.toUpperCase(),
+                    name: item.name || item.code.toUpperCase()
+                });
+            });
+
+            return Array.from(dedup.values()).sort((a, b) => {
+                const aPref = preferredIndex.has(a.code) ? preferredIndex.get(a.code) : Number.MAX_SAFE_INTEGER;
+                const bPref = preferredIndex.has(b.code) ? preferredIndex.get(b.code) : Number.MAX_SAFE_INTEGER;
+                if (aPref !== bPref) return aPref - bPref;
+                return a.code.localeCompare(b.code, "zh-Hans-CN");
+            });
+        }
+
+        async function fetchJsonWithTimeout(url, timeout = 8000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    signal: controller.signal,
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`请求失败：${response.status}`);
+                }
+
+                return await response.json();
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function loadCurrencies() {
+            let merged = [...LOCAL_CURRENCIES];
+
+            for (const source of SOURCE_BUILDERS.filter(item => item.buildCurrenciesUrl)) {
+                try {
+                    const data = await fetchJsonWithTimeout(source.buildCurrenciesUrl(), 8000);
+                    if (data && typeof data === "object" && !Array.isArray(data)) {
+                        merged = sortCurrencies([...LOCAL_CURRENCIES, ...normalizeCurrencyList(data)]);
+                        break;
+                    }
+                } catch (error) {
+                    console.warn(`载入币种列表失败：${source.name}`, error);
+                }
+            }
+
+            state.currencies = merged;
+            currencyCountEl.textContent = String(merged.length);
+            renderCurrencyOptions(fromCurrencySelect, fromSearchInput.value, fromCurrencySelect.value || DEFAULT_FROM);
+            renderCurrencyOptions(toCurrencySelect, toSearchInput.value, toCurrencySelect.value || DEFAULT_TO);
+
+            if (!fromCurrencySelect.value) fromCurrencySelect.value = DEFAULT_FROM;
+            if (!toCurrencySelect.value) toCurrencySelect.value = DEFAULT_TO;
+        }
+
+        function renderCurrencyOptions(selectElement, keyword = "", selectedValue = "") {
+            const query = keyword.trim().toLowerCase();
+            const filtered = state.currencies.filter(item => {
+                if (!query) return true;
+                return item.code.toLowerCase().includes(query) || item.name.toLowerCase().includes(query);
+            });
+
+            const optionsHtml = filtered.map(item => {
+                const selected = item.code === selectedValue ? "selected" : "";
+                return `<option value="${item.code}" ${selected}>${escapeHtml(item.name)} (${escapeHtml(item.code)})</option>`;
+            }).join("");
+
+            selectElement.innerHTML = optionsHtml || '<option value="">未找到匹配币种</option>';
+
+            if (selectedValue && filtered.some(item => item.code === selectedValue)) {
+                selectElement.value = selectedValue;
+            }
+        }
+
+        function formatNumber(value, digits = 6) {
+            return new Intl.NumberFormat("zh-CN", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: digits
+            }).format(value);
+        }
+
+        function formatDisplayTime(raw) {
+            if (!raw) return "未知";
+            const parsed = new Date(raw);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed.toLocaleString("zh-CN", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+            }
+            return String(raw);
+        }
+
+        function getLocalCurrencyMap() {
+            return LOCAL_CURRENCIES.reduce((acc, item) => {
+                acc[item.code] = item.name;
+                return acc;
+            }, {});
+        }
+
+        async function getRates(baseCurrency, forceRefresh = false) {
+            const upperBase = String(baseCurrency || "").toUpperCase();
+            const cached = state.rateCache[upperBase];
+
+            if (!forceRefresh && cached && (Date.now() - cached.savedAt < RATE_CACHE_TTL)) {
+                return cached.data;
+            }
+
+            const errors = [];
+
+            for (const source of SOURCE_BUILDERS) {
+                try {
+                    const payload = await fetchJsonWithTimeout(source.buildRatesUrl(upperBase), 8500);
+
+                    if (source.type === "exchange-api") {
+                        const key = upperBase.toLowerCase();
+                        const rates = payload?.[key];
+
+                        if (!rates || typeof rates !== "object") {
+                            throw new Error("返回格式不符合预期");
+                        }
+
+                        const normalizedRates = Object.entries(rates).reduce((acc, [code, value]) => {
+                            acc[String(code).toUpperCase()] = Number(value);
+                            return acc;
+                        }, {});
+
+                        const data = {
+                            base: upperBase,
+                            rates: normalizedRates,
+                            updateTime: payload?.date || "",
+                            sourceName: source.name
+                        };
+
+                        state.rateCache[upperBase] = {
+                            savedAt: Date.now(),
+                            data
+                        };
+                        return data;
+                    }
+
+                    if (source.type === "open-er-api") {
+                        if (payload?.result !== "success" || !payload?.rates) {
+                            throw new Error("备用接口返回异常");
+                        }
+
+                        const normalizedRates = Object.entries(payload.rates).reduce((acc, [code, value]) => {
+                            acc[String(code).toUpperCase()] = Number(value);
+                            return acc;
+                        }, {});
+
+                        const data = {
+                            base: upperBase,
+                            rates: normalizedRates,
+                            updateTime: payload?.time_last_update_utc || "",
+                            sourceName: source.name
+                        };
+
+                        state.rateCache[upperBase] = {
+                            savedAt: Date.now(),
+                            data
+                        };
+                        return data;
+                    }
+                } catch (error) {
+                    errors.push(`${source.name}：${error.message}`);
+                }
+            }
+
+            throw new Error(errors.join("；"));
+        }
+
+        function renderSameCurrencyResult(amount, currency) {
+            const nameMap = getLocalCurrencyMap();
+            const label = nameMap[currency] || currency;
+            resultCard.innerHTML = `
+                <div class="result-top">
+                    <div class="result-tag">同币种转换</div>
+                </div>
+                <div class="result-main">
+                    ${formatNumber(amount, 6)} ${escapeHtml(currency)} = ${formatNumber(amount, 6)} ${escapeHtml(currency)}
+                    <small>${escapeHtml(label)} 与自身转换时汇率固定为 1</small>
+                </div>
+                <div class="result-grid">
+                    <div class="metric">
+                        <div class="metric-label">当前汇率</div>
+                        <div class="metric-value">1</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">数据状态</div>
+                        <div class="metric-value">无需请求</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">说明</div>
+                        <div class="metric-value">金额保持不变</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function convertCurrency(forceRefresh = false) {
+            const amount = Number(amountInput.value);
+            const fromCurrency = fromCurrencySelect.value;
+            const toCurrency = toCurrencySelect.value;
+
+            if (!Number.isFinite(amount) || amount <= 0) {
+                setStatus("请输入大于 0 的有效金额。", "error");
+                resultCard.innerHTML = '<div class="placeholder">请输入有效金额后再进行转换。</div>';
+                return;
+            }
+
+            if (!fromCurrency || !toCurrency) {
+                setStatus("请选择待转换货币和目标货币。", "error");
+                return;
+            }
+
+            if (fromCurrency === toCurrency) {
+                setStatus("已自动按同币种处理。", "success");
+                renderSameCurrencyResult(amount, fromCurrency);
+                return;
+            }
+
+            setStatus("正在获取实时汇率，请稍候…");
+            resultCard.innerHTML = '<div class="placeholder">正在获取最新汇率数据…</div>';
+
+            try {
+                const data = await getRates(fromCurrency, forceRefresh);
+                const rate = data.rates[toCurrency];
+
+                if (!Number.isFinite(rate)) {
+                    throw new Error("当前接口暂不支持该币种对");
+                }
+
+                const converted = amount * rate;
+                const inverseRate = rate === 0 ? 0 : 1 / rate;
+
+                state.lastSourceName = data.sourceName;
+                state.lastSourceTime = data.updateTime;
+
+                resultCard.innerHTML = `
+                    <div class="result-top">
+                        <div class="result-tag">转换成功</div>
+                        <div class="result-tag">数据源：${escapeHtml(data.sourceName)}</div>
+                    </div>
+                    <div class="result-main">
+                        ${formatNumber(amount, 6)} ${escapeHtml(fromCurrency)} = ${formatNumber(converted, 6)} ${escapeHtml(toCurrency)}
+                        <small>更新时间：${escapeHtml(formatDisplayTime(data.updateTime))}</small>
+                    </div>
+                    <div class="result-grid">
+                        <div class="metric">
+                            <div class="metric-label">正向汇率</div>
+                            <div class="metric-value">1 ${escapeHtml(fromCurrency)} = ${formatNumber(rate, 8)} ${escapeHtml(toCurrency)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">反向汇率</div>
+                            <div class="metric-value">1 ${escapeHtml(toCurrency)} = ${formatNumber(inverseRate, 8)} ${escapeHtml(fromCurrency)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">请求状态</div>
+                            <div class="metric-value">已自动选择可用接口</div>
+                        </div>
+                    </div>
+                `;
+
+                setStatus(`转换完成，当前使用：${data.sourceName}`, "success");
+            } catch (error) {
+                console.error(error);
+                setStatus("实时汇率获取失败，请检查网络后重试。", "error");
+                resultCard.innerHTML = `
+                    <div class="placeholder error">
+                        实时汇率获取失败。<br>
+                        可能原因：接口网络波动、浏览器网络限制或目标币种暂未开放。<br>
+                        详细信息：${escapeHtml(error.message || "未知错误")}
+                    </div>
+                `;
+            }
+        }
+
+        function swapCurrencies() {
+            const currentFrom = fromCurrencySelect.value;
+            const currentTo = toCurrencySelect.value;
+            fromCurrencySelect.value = currentTo;
+            toCurrencySelect.value = currentFrom;
+        }
+
+        function bindEvents() {
+            document.getElementById("convertBtn").addEventListener("click", () => convertCurrency(false));
+            document.getElementById("refreshBtn").addEventListener("click", () => convertCurrency(true));
+            document.getElementById("swapBtn").addEventListener("click", () => {
+                swapCurrencies();
+                if (amountInput.value) {
+                    convertCurrency(false);
+                }
+            });
+
+            fromSearchInput.addEventListener("input", () => {
+                renderCurrencyOptions(fromCurrencySelect, fromSearchInput.value, fromCurrencySelect.value || DEFAULT_FROM);
+            });
+
+            toSearchInput.addEventListener("input", () => {
+                renderCurrencyOptions(toCurrencySelect, toSearchInput.value, toCurrencySelect.value || DEFAULT_TO);
+            });
+
+            [amountInput, fromCurrencySelect, toCurrencySelect].forEach(el => {
+                el.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter") {
+                        convertCurrency(false);
+                    }
+                });
+            });
+        }
+
+        async function init() {
+            setStatus("正在初始化币种列表…");
+            bindEvents();
+            await loadCurrencies();
+            amountInput.value = "100";
+            fromCurrencySelect.value = DEFAULT_FROM;
+            toCurrencySelect.value = DEFAULT_TO;
+            setStatus(`初始化完成，已载入 ${state.currencies.length} 个可选币种。`, "success");
+        }
+
+        init().catch(error => {
+            console.error(error);
+            state.currencies = sortCurrencies([...LOCAL_CURRENCIES]);
+            currencyCountEl.textContent = String(state.currencies.length);
+            renderCurrencyOptions(fromCurrencySelect, "", DEFAULT_FROM);
+            renderCurrencyOptions(toCurrencySelect, "", DEFAULT_TO);
+            setStatus("初始化时网络不可用，已切换到本地币种列表。", "error");
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <title>单位转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(270deg, #ff9a9e, #fad0c4, #fad0c4, #ff9a9e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .convert-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .convert-btn:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+        .result.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>单位转换器</h1>
+        <div class="form-group">
+            <label for="type">转换类型:</label>
+            <select id="type">
+                <option value="length">长度</option>
+                <option value="mass">质量</option>
+                <option value="temperature">温度</option>
+                <option value="volume">体积</option>
+                <option value="speed">速度</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="inputValue">输入值:</label>
+            <input type="number" id="inputValue" placeholder="请输入数值">
+        </div>
+        <div class="form-group">
+            <label for="fromUnit">从:</label>
+            <select id="fromUnit"></select>
+        </div>
+        <div class="form-group">
+            <label for="toUnit">到:</label>
+            <select id="toUnit"></select>
+        </div>
+        <button class="convert-btn" onclick="convert()">转换</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const units = {
+            length: {
+                meters: { name: '米', factor: 1 },
+                kilometers: { name: '千米', factor: 0.001 },
+                feet: { name: '英尺', factor: 3.28084 },
+                miles: { name: '英里', factor: 0.000621371 }
+            },
+            mass: {
+                grams: { name: '克', factor: 1 },
+                kilograms: { name: '千克', factor: 0.001 },
+                pounds: { name: '磅', factor: 0.00220462 },
+                ounces: { name: '盎司', factor: 0.035274 }
+            },
+            temperature: {
+                celsius: { name: '摄氏度' },
+                fahrenheit: { name: '华氏度' },
+                kelvin: { name: '开尔文' }
+            },
+            volume: {
+                liters: { name: '升', factor: 1 },
+                milliliters: { name: '毫升', factor: 1000 },
+                gallons: { name: '加仑', factor: 0.264172 },
+                cubicMeters: { name: '立方米', factor: 0.001 }
+            },
+            speed: {
+                metersPerSecond: { name: '米/秒', factor: 1 },
+                kilometersPerHour: { name: '千米/小时', factor: 3.6 },
+                milesPerHour: { name: '英里/小时', factor: 2.23694 }
+            }
+        };
+
+        const typeSelect = document.getElementById('type');
+        const fromUnitSelect = document.getElementById('fromUnit');
+        const toUnitSelect = document.getElementById('toUnit');
+        const inputValue = document.getElementById('inputValue');
+        const resultDiv = document.getElementById('result');
+
+        function populateUnits(type) {
+            const unitOptions = units[type];
+            fromUnitSelect.innerHTML = '';
+            toUnitSelect.innerHTML = '';
+            for (const key in unitOptions) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.text = unitOptions[key].name;
+                fromUnitSelect.appendChild(option.cloneNode(true));
+                toUnitSelect.appendChild(option);
+            }
+        }
+
+        typeSelect.addEventListener('change', () => {
+            const type = typeSelect.value;
+            populateUnits(type);
+            switch(type) {
+                case 'length':
+                    document.body.style.background = 'linear-gradient(270deg, #a1c4fd, #c2e9fb)';
+                    break;
+                case 'mass':
+                    document.body.style.background = 'linear-gradient(270deg, #84fab0, #8fd3f4)';
+                    break;
+                case 'temperature':
+                    document.body.style.background = 'linear-gradient(270deg, #ffecd2, #fcb69f)';
+                    break;
+                case 'volume':
+                    document.body.style.background = 'linear-gradient(270deg, #d4fc79, #96e6a1)';
+                    break;
+                case 'speed':
+                    document.body.style.background = 'linear-gradient(270deg, #ff9a9e, #fad0c4)';
+                    break;
+                default:
+                    document.body.style.background = 'linear-gradient(270deg, #ff9a9e, #fad0c4, #fad0c4, #ff9a9e)';
+            }
+            document.body.style.backgroundSize = '400% 400%';
+            document.body.style.animation = 'gradientBG 15s ease infinite';
+        });
+
+        populateUnits(typeSelect.value);
+
+        function getDecimalPlaces(value) {
+            const str = value.toString();
+            if (str.indexOf('.') !== -1) {
+                return str.split('.')[1].length;
+            }
+            return 0;
+        }
+
+        function convert() {
+            const type = typeSelect.value;
+            const fromUnit = fromUnitSelect.value;
+            const toUnit = toUnitSelect.value;
+            const valueStr = inputValue.value;
+            const value = parseFloat(valueStr);
+
+            if (isNaN(value)) {
+                resultDiv.textContent = '请输入有效的数值';
+                return;
+            }
+
+            let result;
+            if (type === 'temperature') {
+                if (fromUnit === 'celsius' && toUnit === 'fahrenheit') {
+                    result = (value * 9/5) + 32;
+                } else if (fromUnit === 'celsius' && toUnit === 'kelvin') {
+                    result = value + 273.15;
+                } else if (fromUnit === 'fahrenheit' && toUnit === 'celsius') {
+                    result = (value - 32) * 5/9;
+                } else if (fromUnit === 'fahrenheit' && toUnit === 'kelvin') {
+                    result = (value - 32) * 5/9 + 273.15;
+                } else if (fromUnit === 'kelvin' && toUnit === 'celsius') {
+                    result = value - 273.15;
+                } else if (fromUnit === 'kelvin' && toUnit === 'fahrenheit') {
+                    result = (value - 273.15) * 9/5 + 32;
+                } else {
+                    result = value;
+                }
+            } else {
+                const fromFactor = units[type][fromUnit].factor;
+                const toFactor = units[type][toUnit].factor;
+                result = value / fromFactor * toFactor;
+            }
+
+            const inputDecimalPlaces = getDecimalPlaces(valueStr);
+            let displayResult;
+            if (Number.isInteger(result)) {
+                displayResult = result.toString();
+            } else {
+                if (inputDecimalPlaces > 0) {
+                    displayResult = result.toFixed(inputDecimalPlaces);
+                } else {
+                    displayResult = result.toFixed(2);
+                }
+            }
+
+            resultDiv.textContent = `结果: ${displayResult} ${units[type][toUnit].name}`;
+            resultDiv.classList.remove('visible');
+            setTimeout(() => {
+                resultDiv.classList.add('visible');
+            }, 10);
+        }
+    </script>
+</body>
+</html>

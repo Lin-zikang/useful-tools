@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <title>四子棋</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg-soft: #ffffff;
+      --panel: rgba(255,255,255,0.82);
+      --text: #1f2937;
+      --subtext: #6b7280;
+      --line: #e5e7eb;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      --shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
+
+      --board: #dbeafe;
+      --board-deep: #bfdbfe;
+      --slot: #f8fbff;
+      --red: #ef4444;
+      --red-dark: #dc2626;
+      --yellow: #f59e0b;
+      --yellow-dark: #d97706;
+      --accent: #3b82f6;
+      --accent-soft: #eff6ff;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, #ffffff 0%, #f8fbff 32%, #f6f8fc 100%);
+      color: var(--text);
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding:
+        max(16px, env(safe-area-inset-top))
+        max(14px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .left,
+    .right {
+      min-width: 0;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.88);
+      backdrop-filter: blur(14px);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 22px 22px 16px;
+      margin-bottom: 16px;
+    }
+
+    .title-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, #ffffff, #eef5ff);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), var(--shadow-soft);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      flex: none;
+    }
+
+    .logo::before,
+    .logo::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      top: 20px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.7);
+    }
+
+    .logo::before {
+      left: 12px;
+      background: radial-gradient(circle at 35% 35%, #ffb0b0, var(--red));
+    }
+
+    .logo::after {
+      right: 12px;
+      background: radial-gradient(circle at 35% 35%, #ffe39a, var(--yellow));
+    }
+
+    .hero h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.55rem, 2vw + 1rem, 2.15rem);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--subtext);
+      line-height: 1.65;
+      font-size: 0.98rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid var(--line);
+      color: #334155;
+      font-size: 0.93rem;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .dot.red {
+      background: linear-gradient(145deg, #ffb3b3, var(--red));
+    }
+
+    .dot.yellow {
+      background: linear-gradient(145deg, #ffe4a6, var(--yellow));
+    }
+
+    .dot.blue {
+      background: linear-gradient(145deg, #93c5fd, var(--accent));
+    }
+
+    .board-card {
+      padding: 18px;
+      overflow: hidden;
+    }
+
+    .top-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff, #f8fbff);
+      border: 1px solid #e8eef7;
+      box-shadow: var(--shadow-soft);
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .status-indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      flex: none;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(59,130,246,0.12);
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .status-indicator.red {
+      background: var(--red);
+      box-shadow: 0 0 0 5px rgba(239,68,68,0.12);
+    }
+
+    .status-indicator.yellow {
+      background: var(--yellow);
+      box-shadow: 0 0 0 5px rgba(245,158,11,0.12);
+    }
+
+    .status-text {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+      font: inherit;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    .btn {
+      padding: 11px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #4f9cff, var(--accent));
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: #334155;
+      border: 1px solid var(--line);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .scores {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+
+
+    .mode-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff, #f8fbff);
+      border: 1px solid #e6eef9;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .mode-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 16px;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      min-width: 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      color: #1e40af;
+      background: transparent;
+      border: 1px solid transparent;
+      box-shadow: none;
+    }
+
+    .mode-btn.active {
+      color: #fff;
+      background: linear-gradient(180deg, #4f9cff, var(--accent));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .mode-meta {
+      display: grid;
+      gap: 6px;
+      min-width: min(100%, 280px);
+      flex: 1;
+    }
+
+    .mode-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #1d4ed8;
+      background: var(--accent-soft);
+      border: 1px solid #dbeafe;
+    }
+
+    .mode-note {
+      color: var(--subtext);
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .score-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,250,255,0.95));
+      border: 1px solid #edf2f7;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow-soft);
+      min-width: 0;
+    }
+
+    .score-label {
+      color: var(--subtext);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .score-value {
+      font-size: clamp(1.35rem, 2vw, 1.9rem);
+      font-weight: 800;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .piece {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex: none;
+      box-shadow: inset -3px -4px 7px rgba(0,0,0,0.12), inset 2px 3px 7px rgba(255,255,255,0.5);
+    }
+
+    .piece.red {
+      background: radial-gradient(circle at 32% 28%, #ffb8b8 0%, #ff7b7b 24%, var(--red) 62%, var(--red-dark) 100%);
+    }
+
+    .piece.yellow {
+      background: radial-gradient(circle at 32% 28%, #fff2be 0%, #ffd96f 24%, var(--yellow) 62%, var(--yellow-dark) 100%);
+    }
+
+    .piece.ghost {
+      background: radial-gradient(circle at 32% 28%, #f4f7fc 0%, #e5edf8 45%, #dbe5f1 100%);
+      box-shadow: inset -2px -4px 8px rgba(148,163,184,0.28), inset 1px 2px 6px rgba(255,255,255,0.75);
+    }
+
+    .game-shell {
+      border-radius: 28px;
+      background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+      border: 1px solid #eef3fa;
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .drop-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: clamp(6px, 1vw, 10px);
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .drop-btn {
+      min-width: 0;
+      height: clamp(36px, 6vw, 48px);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff, #eff6ff);
+      border: 1px solid #dbeafe;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: clamp(0.92rem, 1.4vw, 1rem);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-btn:hover:not(:disabled) {
+      box-shadow: 0 10px 18px rgba(59,130,246,0.12);
+      transform: translateY(-1px);
+    }
+
+    .drop-btn::before {
+      content: "↓";
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .drop-btn[data-hover="red"] {
+      background: linear-gradient(180deg, #fff5f5, #ffe8e8);
+      color: var(--red-dark);
+      border-color: #fecaca;
+    }
+
+    .drop-btn[data-hover="yellow"] {
+      background: linear-gradient(180deg, #fffcf0, #fff4cf);
+      color: var(--yellow-dark);
+      border-color: #fde68a;
+    }
+
+    .board-wrap {
+      overflow: hidden;
+      border-radius: 24px;
+      background: linear-gradient(180deg, #eef6ff, #dcecff);
+      border: 1px solid #d6e7fb;
+      padding: clamp(8px, 1.6vw, 12px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), var(--shadow-soft);
+      position: relative;
+      z-index: 1;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: clamp(6px, 1vw, 10px);
+      background: linear-gradient(180deg, var(--board), var(--board-deep));
+      padding: clamp(8px, 1.6vw, 12px);
+      border-radius: 22px;
+      position: relative;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .cell {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #ffffff 0%, #f7fbff 32%, var(--slot) 68%, #e7f0fb 100%);
+      box-shadow:
+        inset 0 6px 12px rgba(255,255,255,0.9),
+        inset 0 -7px 12px rgba(148,163,184,0.18);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s ease;
+      cursor: pointer;
+    }
+
+    .cell.win {
+      animation: pulseWin 0.9s ease-in-out infinite alternate;
+    }
+
+
+
+    .status-indicator.thinking {
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(59,130,246,0.14);
+      animation: pulseThinking 1s ease-in-out infinite;
+    }
+
+    @keyframes pulseThinking {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(59,130,246,0.14);
+      }
+      50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 9px rgba(59,130,246,0.08);
+      }
+    }
+
+    @keyframes pulseWin {
+      0% {
+        transform: scale(1);
+        box-shadow:
+          inset 0 6px 12px rgba(255,255,255,0.9),
+          inset 0 -7px 12px rgba(148,163,184,0.18),
+          0 0 0 0 rgba(16,185,129,0.28);
+      }
+      100% {
+        transform: scale(1.03);
+        box-shadow:
+          inset 0 6px 12px rgba(255,255,255,0.9),
+          inset 0 -7px 12px rgba(148,163,184,0.18),
+          0 0 0 8px rgba(16,185,129,0);
+      }
+    }
+
+    .disc {
+      position: absolute;
+      inset: 6%;
+      border-radius: 50%;
+      transform: translateY(-135%) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .disc.red {
+      background: radial-gradient(circle at 32% 28%, #ffbaba 0%, #ff7d7d 24%, var(--red) 62%, var(--red-dark) 100%);
+      box-shadow:
+        inset 3px 4px 8px rgba(255,255,255,0.38),
+        inset -4px -5px 10px rgba(0,0,0,0.14),
+        0 8px 14px rgba(239,68,68,0.18);
+    }
+
+    .disc.yellow {
+      background: radial-gradient(circle at 32% 28%, #fff1bf 0%, #ffd96d 24%, var(--yellow) 62%, var(--yellow-dark) 100%);
+      box-shadow:
+        inset 3px 4px 8px rgba(255,255,255,0.38),
+        inset -4px -5px 10px rgba(0,0,0,0.14),
+        0 8px 14px rgba(245,158,11,0.18);
+    }
+
+    .disc.show {
+      animation: dropIn 0.36s cubic-bezier(0.25, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes dropIn {
+      0% {
+        transform: translateY(-135%) scale(0.92);
+        opacity: 0.25;
+      }
+      75% {
+        transform: translateY(4%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+      color: #475569;
+      font-size: 0.92rem;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel {
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+      letter-spacing: 0.01em;
+    }
+
+    .turn-badges {
+      display: grid;
+      gap: 10px;
+    }
+
+    .turn-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #fafcff);
+      box-shadow: var(--shadow-soft);
+      transition: border-color 0.2s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .turn-badge.active.red {
+      border-color: #fecaca;
+      box-shadow: 0 10px 22px rgba(239,68,68,0.11);
+      transform: translateY(-1px);
+    }
+
+    .turn-badge.active.yellow {
+      border-color: #fde68a;
+      box-shadow: 0 10px 22px rgba(245,158,11,0.12);
+      transform: translateY(-1px);
+    }
+
+    .badge-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .badge-text {
+      min-width: 0;
+    }
+
+    .badge-title {
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .badge-sub {
+      color: var(--subtext);
+      font-size: 0.92rem;
+    }
+
+    .badge-flag {
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .badge-flag.active-red {
+      color: var(--red-dark);
+      background: #fff1f2;
+      border-color: #fecdd3;
+    }
+
+    .badge-flag.active-yellow {
+      color: var(--yellow-dark);
+      background: #fffbea;
+      border-color: #fde68a;
+    }
+
+    .rules {
+      display: grid;
+      gap: 12px;
+    }
+
+    .rule-item {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 13px 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border: 1px solid #edf2f7;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .rule-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #1d4ed8;
+      background: var(--accent-soft);
+      border: 1px solid #dbeafe;
+    }
+
+    .rule-content {
+      color: #334155;
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    .footer-note {
+      color: var(--subtext);
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(30,41,59,0.92);
+      color: #fff;
+      font-size: 0.93rem;
+      box-shadow: var(--shadow);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 30;
+      max-width: min(92vw, 520px);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .right {
+        order: 2;
+      }
+
+      .left {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding-top: max(12px, env(safe-area-inset-top));
+      }
+
+      .hero,
+      .panel,
+      .board-card {
+        padding: 14px;
+      }
+
+      .scores {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .score-card {
+        padding: 12px 10px;
+      }
+
+      .mode-strip {
+        padding: 12px;
+      }
+
+      .mode-group {
+        width: 100%;
+      }
+
+      .mode-btn {
+        flex: 1;
+      }
+
+      .mode-meta {
+        min-width: 0;
+      }
+
+
+      .score-label {
+        font-size: 0.84rem;
+      }
+
+      .score-value {
+        gap: 7px;
+        font-size: 1.15rem;
+      }
+
+      .piece {
+        width: 18px;
+        height: 18px;
+      }
+
+      .status {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .actions {
+        width: 100%;
+      }
+
+      .actions .btn {
+        flex: 1;
+      }
+
+      .drop-btn {
+        border-radius: 12px;
+      }
+
+      .board-wrap {
+        border-radius: 18px;
+      }
+
+      .board {
+        border-radius: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="left">
+      <section class="hero card">
+        <div class="title-row">
+          <div class="brand">
+            <div class="logo" aria-hidden="true"></div>
+            <div>
+              <h1>四子棋 Connect Four</h1>
+              <p>标准 7×6 棋盘，支持双人同屏与最难级 AI 对弈。保留原有清爽布局，手机与电脑端均可直接开玩。</p>
+            </div>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip"><span class="dot red"></span>红方先手</span>
+          <span class="chip"><span class="dot yellow"></span>黄方后手</span>
+          <span id="modeChipText" class="chip"><span class="dot blue"></span>AI 对弈：红方玩家 vs 黄方AI</span>
+        </div>
+      </section>
+
+      <section class="board-card card">
+        <div class="top-panel">
+          <div class="status" aria-live="polite">
+            <span id="statusIndicator" class="status-indicator red" aria-hidden="true"></span>
+            <div id="statusText" class="status-text">当前回合：红方玩家（先手）</div>
+          </div>
+          <div class="actions">
+            <button id="restartBtn" class="btn btn-primary" type="button">重新开始</button>
+            <button id="undoBtn" class="btn btn-secondary" type="button">悔棋一步</button>
+          </div>
+        </div>
+
+        <div class="mode-strip" aria-label="对战模式设置">
+          <div class="mode-group" role="tablist" aria-label="选择对战模式">
+            <button id="modeAiBtn" class="mode-btn active" type="button" role="tab" aria-selected="true">AI对弈</button>
+            <button id="modePvpBtn" class="mode-btn" type="button" role="tab" aria-selected="false">双人对战</button>
+          </div>
+          <div class="mode-meta">
+            <span id="modeBadge" class="mode-badge">最难级 AI</span>
+            <div id="modeNote" class="mode-note">博弈树搜索 + Alpha-Beta 剪枝 + 置换表 + 迭代加深，单步思考约 1.5 秒。</div>
+          </div>
+        </div>
+
+        <div class="scores" aria-label="比分板">
+          <div class="score-card">
+            <div class="score-label">红方胜场</div>
+            <div class="score-value">
+              <span class="piece red" aria-hidden="true"></span>
+              <span id="redScore">0</span>
+            </div>
+          </div>
+          <div class="score-card">
+            <div class="score-label">平局次数</div>
+            <div class="score-value">
+              <span class="piece ghost" aria-hidden="true"></span>
+              <span id="drawScore">0</span>
+            </div>
+          </div>
+          <div class="score-card">
+            <div class="score-label">黄方胜场</div>
+            <div class="score-value">
+              <span class="piece yellow" aria-hidden="true"></span>
+              <span id="yellowScore">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="game-shell">
+          <div id="dropRow" class="drop-row" aria-label="选择落子列"></div>
+
+          <div class="board-wrap">
+            <div
+              id="board"
+              class="board"
+              role="grid"
+              aria-label="四子棋棋盘，7列6行。点击上方箭头或棋盘中的任意格所在列即可落子。"
+            ></div>
+          </div>
+
+          <div class="legend">
+            <span class="legend-item"><span class="piece red"></span>红方：玩家 / 先手</span>
+            <span id="yellowLegendText" class="legend-item"><span class="piece yellow"></span>黄方：AI（最难级）</span>
+            <span class="legend-item"><span class="piece ghost"></span>空位：棋子会自动落到底部可用格</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <aside class="right">
+      <section class="panel card">
+        <h2>当前对局</h2>
+        <div class="turn-badges">
+          <div id="redBadge" class="turn-badge active red">
+            <div class="badge-left">
+              <span class="piece red" aria-hidden="true"></span>
+              <div class="badge-text">
+                <div id="redBadgeTitle" class="badge-title">红方玩家</div>
+                <div id="redBadgeSub" class="badge-sub">先手落子</div>
+              </div>
+            </div>
+            <span id="redFlag" class="badge-flag active-red">进行中</span>
+          </div>
+
+          <div id="yellowBadge" class="turn-badge">
+            <div class="badge-left">
+              <span class="piece yellow" aria-hidden="true"></span>
+              <div class="badge-text">
+                <div id="yellowBadgeTitle" class="badge-title">黄方AI</div>
+                <div id="yellowBadgeSub" class="badge-sub">最难级 / 后手搜索</div>
+              </div>
+            </div>
+            <span id="yellowFlag" class="badge-flag">等待中</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel card">
+        <h2>规则说明</h2>
+        <div class="rules">
+          <div class="rule-item">
+            <div class="rule-num">1</div>
+            <div class="rule-content">标准四子棋使用 <strong>7 列 × 6 行</strong> 棋盘。两位玩家分别执红、黄两色棋子。</div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-num">2</div>
+            <div class="rule-content">红方先手，双方轮流选择一列落子。棋子会因重力效果，自动落到该列 <strong>最底部的空格</strong>。</div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-num">3</div>
+            <div class="rule-content">任意一方只要先把自己的棋子连成连续 <strong>4 个</strong>，无论是 <strong>横向、纵向、左斜或右斜</strong>，立即获胜。</div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-num">4</div>
+            <div class="rule-content">如果棋盘已满，且双方都没有形成四连，则本局判为 <strong>平局</strong>。</div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-num">5</div>
+            <div class="rule-content">本页面支持 <strong>AI 对弈</strong> 与 <strong>双人对战</strong> 两种模式；AI 默认使用最难级搜索策略，单步思考约 <strong>1.5 秒</strong>。</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel card">
+        <h2>操作提示</h2>
+        <p id="tipsText" class="footer-note">
+          电脑端可点击上方箭头按钮落子，也可直接点击棋盘中任意一格所在的列；手机端同样支持。<br />
+          当前默认开启 <strong>AI 对弈</strong>：你执红先手，黄方由最难级 AI 控制；切换到“双人对战”后，则恢复为同屏轮流操作。
+        </p>
+      </section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+
+  <script>
+    (() => {
+      const COLS = 7;
+      const ROWS = 6;
+      const EMPTY = 0;
+      const RED = 1;
+      const YELLOW = 2;
+      const MODE_AI = "ai";
+      const MODE_PVP = "pvp";
+      const HUMAN_PLAYER = RED;
+      const AI_PLAYER = YELLOW;
+      const AI_THINK_MS = 1500;
+      const SEARCH_ORDER = [3, 4, 2, 5, 1, 6, 0];
+      const WIN_SCORE = 100000000;
+      const TIMEOUT_ERROR = "AI_TIMEOUT";
+
+      const boardEl = document.getElementById("board");
+      const dropRowEl = document.getElementById("dropRow");
+      const statusTextEl = document.getElementById("statusText");
+      const statusIndicatorEl = document.getElementById("statusIndicator");
+      const restartBtn = document.getElementById("restartBtn");
+      const undoBtn = document.getElementById("undoBtn");
+      const modeAiBtn = document.getElementById("modeAiBtn");
+      const modePvpBtn = document.getElementById("modePvpBtn");
+      const modeBadgeEl = document.getElementById("modeBadge");
+      const modeNoteEl = document.getElementById("modeNote");
+      const modeChipTextEl = document.getElementById("modeChipText");
+      const yellowLegendTextEl = document.getElementById("yellowLegendText");
+      const tipsTextEl = document.getElementById("tipsText");
+
+      const redScoreEl = document.getElementById("redScore");
+      const yellowScoreEl = document.getElementById("yellowScore");
+      const drawScoreEl = document.getElementById("drawScore");
+
+      const redBadge = document.getElementById("redBadge");
+      const yellowBadge = document.getElementById("yellowBadge");
+      const redFlag = document.getElementById("redFlag");
+      const yellowFlag = document.getElementById("yellowFlag");
+      const redBadgeTitleEl = document.getElementById("redBadgeTitle");
+      const redBadgeSubEl = document.getElementById("redBadgeSub");
+      const yellowBadgeTitleEl = document.getElementById("yellowBadgeTitle");
+      const yellowBadgeSubEl = document.getElementById("yellowBadgeSub");
+
+      const toastEl = document.getElementById("toast");
+
+      let board = [];
+      let currentPlayer = RED;
+      let gameOver = false;
+      let moveHistory = [];
+      let scores = {
+        red: 0,
+        yellow: 0,
+        draw: 0
+      };
+      let winningCells = [];
+      let toastTimer = null;
+      let gameMode = MODE_AI;
+      let aiThinking = false;
+      let aiTaskToken = 0;
+      let searchNodeCount = 0;
+
+      function createEmptyBoard() {
+        return Array.from({ length: ROWS }, () => Array(COLS).fill(EMPTY));
+      }
+
+      function init() {
+        createDropButtons();
+        createBoard();
+        bindEvents();
+        resetGame(false);
+      }
+
+      function bindEvents() {
+        restartBtn.addEventListener("click", () => {
+          cancelAiTurn();
+          resetGame(true);
+          showToast("已重新开始新的一局。", 2200);
+        });
+
+        undoBtn.addEventListener("click", undoMove);
+
+        modeAiBtn.addEventListener("click", () => setGameMode(MODE_AI));
+        modePvpBtn.addEventListener("click", () => setGameMode(MODE_PVP));
+
+        dropRowEl.addEventListener("click", (e) => {
+          const btn = e.target.closest(".drop-btn");
+          if (!btn) return;
+          const col = Number(btn.dataset.col);
+          void dropInColumn(col);
+        });
+
+        boardEl.addEventListener("click", (e) => {
+          const cell = e.target.closest(".cell");
+          if (!cell) return;
+          const col = Number(cell.dataset.col);
+          void dropInColumn(col);
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key >= "1" && e.key <= "7") {
+            void dropInColumn(Number(e.key) - 1);
+          } else if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+            e.preventDefault();
+            undoMove();
+          } else if (e.key === "r" || e.key === "R") {
+            cancelAiTurn();
+            resetGame(true);
+            showToast("已重新开始新的一局。", 2200);
+          }
+        });
+
+        dropRowEl.addEventListener("mouseover", handleDropButtonHover);
+        dropRowEl.addEventListener("mouseout", clearDropButtonHover);
+        dropRowEl.addEventListener("focusin", handleDropButtonHover);
+        dropRowEl.addEventListener("focusout", clearDropButtonHover);
+      }
+
+      function setGameMode(mode) {
+        if (gameMode === mode) return;
+        cancelAiTurn();
+        gameMode = mode;
+        resetGame(false);
+        showToast(mode === MODE_AI ? "已切换为 AI 对弈：黄方为最难级 AI。" : "已切换为双人对战模式。", 2400);
+      }
+
+      function handleDropButtonHover(e) {
+        const btn = e.target.closest(".drop-btn");
+        if (!btn || btn.disabled || aiThinking) return;
+        btn.dataset.hover = currentPlayer === RED ? "red" : "yellow";
+      }
+
+      function clearDropButtonHover(e) {
+        const btn = e.target.closest(".drop-btn");
+        if (!btn) return;
+        btn.dataset.hover = "";
+      }
+
+      function createDropButtons() {
+        dropRowEl.innerHTML = "";
+        for (let col = 0; col < COLS; col++) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "drop-btn";
+          btn.dataset.col = String(col);
+          btn.setAttribute("aria-label", `向第 ${col + 1} 列落子`);
+          btn.title = `向第 ${col + 1} 列落子`;
+          dropRowEl.appendChild(btn);
+        }
+      }
+
+      function createBoard() {
+        boardEl.innerHTML = "";
+        for (let row = 0; row < ROWS; row++) {
+          for (let col = 0; col < COLS; col++) {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            cell.dataset.row = String(row);
+            cell.dataset.col = String(col);
+            cell.setAttribute("role", "gridcell");
+            cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列`);
+            boardEl.appendChild(cell);
+          }
+        }
+      }
+
+      function resetGame(keepScores = true) {
+        board = createEmptyBoard();
+        currentPlayer = RED;
+        gameOver = false;
+        moveHistory = [];
+        winningCells = [];
+        aiThinking = false;
+        aiTaskToken++;
+        if (!keepScores) {
+          scores = { red: 0, yellow: 0, draw: 0 };
+        }
+        render();
+      }
+
+      function cancelAiTurn() {
+        aiThinking = false;
+        aiTaskToken++;
+      }
+
+      function getNextOpenRow(col, stateBoard = board) {
+        for (let row = ROWS - 1; row >= 0; row--) {
+          if (stateBoard[row][col] === EMPTY) return row;
+        }
+        return -1;
+      }
+
+      function isBoardFull(stateBoard = board) {
+        for (let col = 0; col < COLS; col++) {
+          if (stateBoard[0][col] === EMPTY) return false;
+        }
+        return true;
+      }
+
+      async function dropInColumn(col) {
+        if (aiThinking) {
+          showToast("AI 正在思考中，请稍候。", 1600);
+          return;
+        }
+
+        if (gameOver) {
+          showToast("本局已结束，请点击“重新开始”。", 1800);
+          return;
+        }
+
+        if (col < 0 || col >= COLS) return;
+
+        if (gameMode === MODE_AI && currentPlayer !== HUMAN_PLAYER) {
+          showToast("当前是 AI 回合。", 1500);
+          return;
+        }
+
+        const action = applyMove(col, { actor: gameMode === MODE_AI ? "human" : "player" });
+        if (!action.ok) {
+          showToast(action.message, 1800);
+          return;
+        }
+
+        if (gameMode === MODE_AI && !gameOver && currentPlayer === AI_PLAYER) {
+          await triggerAiTurn();
+        }
+      }
+
+      function applyMove(col, meta = {}) {
+        const row = getNextOpenRow(col);
+        if (row === -1) {
+          return {
+            ok: false,
+            message: `第 ${col + 1} 列已满，请选择其他列。`
+          };
+        }
+
+        board[row][col] = currentPlayer;
+        moveHistory.push({ row, col, player: currentPlayer, actor: meta.actor || "player" });
+
+        const result = checkWinner(row, col, currentPlayer, board);
+        if (result.win) {
+          winningCells = result.cells;
+          gameOver = true;
+          if (currentPlayer === RED) {
+            scores.red++;
+          } else {
+            scores.yellow++;
+          }
+          render({ animatedCell: { row, col } });
+          if (gameMode === MODE_AI && currentPlayer === AI_PLAYER) {
+            showToast("黄方 AI 获胜！已完成四连。", 2600);
+          } else if (gameMode === MODE_AI && currentPlayer === HUMAN_PLAYER) {
+            showToast("你赢了！红方成功连成四子。", 2400);
+          } else {
+            showToast(currentPlayer === RED ? "红方获胜！成功连成四子。" : "黄方获胜！成功连成四子。", 2400);
+          }
+          return { ok: true, row, col };
+        }
+
+        if (isBoardFull(board)) {
+          gameOver = true;
+          scores.draw++;
+          winningCells = [];
+          render({ animatedCell: { row, col } });
+          showToast("棋盘已满，双方都未形成四连，本局平局。", 2400);
+          return { ok: true, row, col };
+        }
+
+        currentPlayer = currentPlayer === RED ? YELLOW : RED;
+        render({ animatedCell: { row, col } });
+        return { ok: true, row, col };
+      }
+
+      function undoMove() {
+        if (aiThinking) {
+          showToast("AI 正在思考，暂时不能悔棋。", 1700);
+          return;
+        }
+
+        if (moveHistory.length === 0) {
+          showToast("当前没有可悔棋的步骤。", 1700);
+          return;
+        }
+
+        if (gameOver) {
+          showToast("本局已结束，请重新开始新的一局。", 1700);
+          return;
+        }
+
+        winningCells = [];
+        let removedCount = 0;
+
+        if (gameMode === MODE_AI) {
+          const last = moveHistory[moveHistory.length - 1];
+          if (last && last.player === AI_PLAYER) {
+            const aiMove = moveHistory.pop();
+            board[aiMove.row][aiMove.col] = EMPTY;
+            removedCount++;
+          }
+          if (moveHistory.length > 0) {
+            const humanMove = moveHistory.pop();
+            board[humanMove.row][humanMove.col] = EMPTY;
+            removedCount++;
+          }
+          currentPlayer = HUMAN_PLAYER;
+          render();
+          showToast(removedCount > 0 ? "已回退到你的上一步之前。" : "当前没有可回退的玩家落子。", 2000);
+          return;
+        }
+
+        const lastMove = moveHistory.pop();
+        board[lastMove.row][lastMove.col] = EMPTY;
+        currentPlayer = lastMove.player;
+        render();
+        showToast(`已悔棋：撤回第 ${lastMove.col + 1} 列的落子。`, 2000);
+      }
+
+      function checkWinner(row, col, player, stateBoard = board) {
+        const directions = [
+          [0, 1],
+          [1, 0],
+          [1, 1],
+          [1, -1]
+        ];
+
+        for (const [dr, dc] of directions) {
+          const cells = [{ row, col }];
+
+          let r = row + dr;
+          let c = col + dc;
+          while (isInside(r, c) && stateBoard[r][c] === player) {
+            cells.push({ row: r, col: c });
+            r += dr;
+            c += dc;
+          }
+
+          r = row - dr;
+          c = col - dc;
+          while (isInside(r, c) && stateBoard[r][c] === player) {
+            cells.unshift({ row: r, col: c });
+            r -= dr;
+            c -= dc;
+          }
+
+          if (cells.length >= 4) {
+            return { win: true, cells };
+          }
+        }
+
+        return { win: false, cells: [] };
+      }
+
+      function isWinningMove(stateBoard, col, player) {
+        const row = getNextOpenRow(col, stateBoard);
+        if (row === -1) return false;
+        stateBoard[row][col] = player;
+        const win = checkWinner(row, col, player, stateBoard).win;
+        stateBoard[row][col] = EMPTY;
+        return win;
+      }
+
+      function isInside(row, col) {
+        return row >= 0 && row < ROWS && col >= 0 && col < COLS;
+      }
+
+      function render(options = {}) {
+        renderModePanel();
+        renderDropButtons();
+        renderBoard(options.animatedCell || null);
+        renderStatus();
+        renderScores();
+        renderTurnPanel();
+        undoBtn.disabled = moveHistory.length === 0 || gameOver || aiThinking;
+      }
+
+      function renderModePanel() {
+        const isAiMode = gameMode === MODE_AI;
+        modeAiBtn.classList.toggle("active", isAiMode);
+        modePvpBtn.classList.toggle("active", !isAiMode);
+        modeAiBtn.setAttribute("aria-selected", String(isAiMode));
+        modePvpBtn.setAttribute("aria-selected", String(!isAiMode));
+
+        modeBadgeEl.textContent = isAiMode ? "最难级 AI" : "双人同屏";
+        modeNoteEl.textContent = isAiMode
+          ? "博弈树搜索 + Alpha-Beta 剪枝 + 置换表 + 迭代加深，单步思考约 1.5 秒。"
+          : "保留原版双人轮流落子玩法，同一设备即可对战。";
+        modeChipTextEl.innerHTML = isAiMode
+          ? '<span class="dot blue"></span>AI 对弈：红方玩家 vs 黄方AI'
+          : '<span class="dot blue"></span>双人模式：红黄双方轮流';
+        yellowLegendTextEl.innerHTML = isAiMode
+          ? '<span class="piece yellow"></span>黄方：AI（最难级）'
+          : '<span class="piece yellow"></span>黄方：后手玩家';
+        yellowBadgeTitleEl.textContent = isAiMode ? "黄方AI" : "黄方玩家";
+        yellowBadgeSubEl.textContent = isAiMode ? "最难级 / 后手搜索" : "后手落子";
+        redBadgeTitleEl.textContent = "红方玩家";
+        redBadgeSubEl.textContent = isAiMode ? "先手对战 AI" : "先手落子";
+        tipsTextEl.innerHTML = isAiMode
+          ? '电脑端可点击上方箭头按钮落子，也可直接点击棋盘中任意一格所在的列；手机端同样支持。<br />当前默认开启 <strong>AI 对弈</strong>：你执红先手，黄方由最难级 AI 控制；切换到“双人对战”后，则恢复为同屏轮流操作。'
+          : '电脑端可点击上方箭头按钮落子，也可直接点击棋盘中任意一格所在的列；手机端同样支持。<br />当前为 <strong>双人同屏对战</strong>：红黄双方在同一设备上轮流操作即可。';
+      }
+
+      function renderDropButtons() {
+        const buttons = dropRowEl.querySelectorAll(".drop-btn");
+        const blockedByAi = gameMode === MODE_AI && (aiThinking || currentPlayer === AI_PLAYER);
+        buttons.forEach((btn, col) => {
+          const full = getNextOpenRow(col) === -1;
+          btn.disabled = gameOver || full || blockedByAi;
+          btn.dataset.hover = "";
+          btn.title = full ? `第 ${col + 1} 列已满` : `向第 ${col + 1} 列落子`;
+          btn.setAttribute("aria-label", full ? `第 ${col + 1} 列已满` : `向第 ${col + 1} 列落子`);
+        });
+      }
+
+      function renderBoard(animatedCell) {
+        const cells = boardEl.querySelectorAll(".cell");
+        cells.forEach((cell) => {
+          const row = Number(cell.dataset.row);
+          const col = Number(cell.dataset.col);
+          const value = board[row][col];
+
+          cell.innerHTML = "";
+          cell.classList.remove("win");
+
+          if (value !== EMPTY) {
+            const disc = document.createElement("div");
+            disc.className = "disc " + (value === RED ? "red" : "yellow");
+
+            if (animatedCell && animatedCell.row === row && animatedCell.col === col) {
+              disc.classList.add("show");
+            } else {
+              disc.style.transform = "translateY(0) scale(1)";
+              disc.style.opacity = "1";
+            }
+
+            cell.appendChild(disc);
+          }
+
+          if (winningCells.some((item) => item.row === row && item.col === col)) {
+            cell.classList.add("win");
+          }
+        });
+      }
+
+      function renderStatus() {
+        statusIndicatorEl.className = "status-indicator";
+
+        if (aiThinking) {
+          statusIndicatorEl.classList.add("thinking");
+          statusTextEl.textContent = "AI 正在思考（最难级，约 1.5 秒）…";
+          return;
+        }
+
+        if (gameOver) {
+          if (winningCells.length > 0) {
+            const winner = board[winningCells[0].row][winningCells[0].col];
+            if (winner === RED) {
+              statusIndicatorEl.classList.add("red");
+              statusTextEl.textContent = gameMode === MODE_AI ? "本局结束：你获胜了，已形成连续四子。" : "本局结束：红方获胜，已形成连续四子。";
+            } else {
+              statusIndicatorEl.classList.add("yellow");
+              statusTextEl.textContent = gameMode === MODE_AI ? "本局结束：黄方 AI 获胜，已形成连续四子。" : "本局结束：黄方获胜，已形成连续四子。";
+            }
+          } else {
+            statusTextEl.textContent = "本局结束：棋盘已满，双方战成平局。";
+          }
+          return;
+        }
+
+        if (currentPlayer === RED) {
+          statusIndicatorEl.classList.add("red");
+          statusTextEl.textContent = gameMode === MODE_AI ? "当前回合：你（红方先手）" : "当前回合：红方玩家（先手）";
+        } else {
+          statusIndicatorEl.classList.add("yellow");
+          statusTextEl.textContent = gameMode === MODE_AI ? "当前回合：黄方 AI" : "当前回合：黄方玩家（后手）";
+        }
+      }
+
+      function renderScores() {
+        redScoreEl.textContent = String(scores.red);
+        yellowScoreEl.textContent = String(scores.yellow);
+        drawScoreEl.textContent = String(scores.draw);
+      }
+
+      function renderTurnPanel() {
+        redBadge.className = "turn-badge";
+        yellowBadge.className = "turn-badge";
+        redFlag.className = "badge-flag";
+        yellowFlag.className = "badge-flag";
+
+        if (gameOver) {
+          if (winningCells.length > 0) {
+            const winner = board[winningCells[0].row][winningCells[0].col];
+            if (winner === RED) {
+              redBadge.classList.add("active", "red");
+              redFlag.classList.add("active-red");
+              redFlag.textContent = gameMode === MODE_AI ? "你赢了" : "获胜";
+              yellowFlag.textContent = gameMode === MODE_AI ? "AI 落败" : "落败";
+            } else {
+              yellowBadge.classList.add("active", "yellow");
+              yellowFlag.classList.add("active-yellow");
+              yellowFlag.textContent = gameMode === MODE_AI ? "AI 获胜" : "获胜";
+              redFlag.textContent = gameMode === MODE_AI ? "你落败" : "落败";
+            }
+          } else {
+            redFlag.textContent = "平局";
+            yellowFlag.textContent = gameMode === MODE_AI ? "AI 平局" : "平局";
+          }
+          return;
+        }
+
+        if (currentPlayer === RED) {
+          redBadge.classList.add("active", "red");
+          redFlag.classList.add("active-red");
+          redFlag.textContent = "进行中";
+          yellowFlag.textContent = gameMode === MODE_AI ? (aiThinking ? "思考中" : "等待中") : "等待中";
+          return;
+        }
+
+        yellowBadge.classList.add("active", "yellow");
+        yellowFlag.classList.add("active-yellow");
+        yellowFlag.textContent = gameMode === MODE_AI ? (aiThinking ? "思考中" : "进行中") : "进行中";
+        redFlag.textContent = "等待中";
+      }
+
+      function showToast(message, duration = 2200) {
+        toastEl.textContent = message;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.remove("show");
+        }, duration);
+      }
+
+      async function triggerAiTurn() {
+        if (gameMode !== MODE_AI || gameOver || currentPlayer !== AI_PLAYER) return;
+
+        const token = ++aiTaskToken;
+        aiThinking = true;
+        render();
+        await sleep(80);
+
+        let bestMove = null;
+        let depthReached = 0;
+
+        try {
+          const result = findBestMoveForAi();
+          bestMove = result.col;
+          depthReached = result.depthReached;
+        } catch (error) {
+          console.error(error);
+        }
+
+        if (token !== aiTaskToken) return;
+
+        aiThinking = false;
+        render();
+
+        if (bestMove == null || gameOver || currentPlayer !== AI_PLAYER) {
+          return;
+        }
+
+        if (depthReached > 0) {
+          showToast(`AI 已完成搜索并落子（深度 ${depthReached}）。`, 1200);
+        }
+        await sleep(60);
+        if (token !== aiTaskToken) return;
+        applyMove(bestMove, { actor: "ai" });
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function cloneBoard(stateBoard = board) {
+        return stateBoard.map((row) => row.slice());
+      }
+
+      function getValidColumns(stateBoard) {
+        return SEARCH_ORDER.filter((col) => stateBoard[0][col] === EMPTY);
+      }
+
+      function simulateDrop(stateBoard, col, player) {
+        const row = getNextOpenRow(col, stateBoard);
+        if (row === -1) return -1;
+        stateBoard[row][col] = player;
+        return row;
+      }
+
+      function undoDrop(stateBoard, col, row) {
+        if (row >= 0) {
+          stateBoard[row][col] = EMPTY;
+        }
+      }
+
+      function getImmediateWinningColumns(stateBoard, player) {
+        const wins = [];
+        for (const col of SEARCH_ORDER) {
+          const row = simulateDrop(stateBoard, col, player);
+          if (row === -1) continue;
+          if (checkWinner(row, col, player, stateBoard).win) {
+            wins.push(col);
+          }
+          undoDrop(stateBoard, col, row);
+        }
+        return wins;
+      }
+
+      function moveAllowsImmediateLoss(stateBoard, col, player) {
+        const row = simulateDrop(stateBoard, col, player);
+        if (row === -1) return true;
+        const moveWinsNow = checkWinner(row, col, player, stateBoard).win;
+        if (moveWinsNow) {
+          undoDrop(stateBoard, col, row);
+          return false;
+        }
+        const opponent = player === RED ? YELLOW : RED;
+        const opponentWins = getImmediateWinningColumns(stateBoard, opponent);
+        undoDrop(stateBoard, col, row);
+        return opponentWins.length > 0;
+      }
+
+      function scoreWindow(window, player) {
+        const opponent = player === RED ? YELLOW : RED;
+        let playerCount = 0;
+        let opponentCount = 0;
+        let emptyCount = 0;
+
+        for (const cell of window) {
+          if (cell === player) playerCount++;
+          else if (cell === opponent) opponentCount++;
+          else emptyCount++;
+        }
+
+        if (playerCount === 4) return 120000;
+        if (opponentCount === 4) return -120000;
+        if (playerCount === 3 && emptyCount === 1) return 2400;
+        if (playerCount === 2 && emptyCount === 2) return 180;
+        if (playerCount === 1 && emptyCount === 3) return 18;
+        if (opponentCount === 3 && emptyCount === 1) return -3000;
+        if (opponentCount === 2 && emptyCount === 2) return -220;
+        if (opponentCount === 1 && emptyCount === 3) return -20;
+        return 0;
+      }
+
+      function evaluateBoardPosition(stateBoard, perspective = AI_PLAYER) {
+        let score = 0;
+        let centerPerspective = 0;
+        let centerOpponent = 0;
+        const opponent = perspective === RED ? YELLOW : RED;
+
+        for (let row = 0; row < ROWS; row++) {
+          if (stateBoard[row][3] === perspective) centerPerspective++;
+          if (stateBoard[row][3] === opponent) centerOpponent++;
+        }
+        score += centerPerspective * 30;
+        score -= centerOpponent * 26;
+
+        for (let row = 0; row < ROWS; row++) {
+          for (let col = 0; col <= COLS - 4; col++) {
+            score += scoreWindow([
+              stateBoard[row][col],
+              stateBoard[row][col + 1],
+              stateBoard[row][col + 2],
+              stateBoard[row][col + 3]
+            ], perspective);
+          }
+        }
+
+        for (let col = 0; col < COLS; col++) {
+          for (let row = 0; row <= ROWS - 4; row++) {
+            score += scoreWindow([
+              stateBoard[row][col],
+              stateBoard[row + 1][col],
+              stateBoard[row + 2][col],
+              stateBoard[row + 3][col]
+            ], perspective);
+          }
+        }
+
+        for (let row = 0; row <= ROWS - 4; row++) {
+          for (let col = 0; col <= COLS - 4; col++) {
+            score += scoreWindow([
+              stateBoard[row][col],
+              stateBoard[row + 1][col + 1],
+              stateBoard[row + 2][col + 2],
+              stateBoard[row + 3][col + 3]
+            ], perspective);
+          }
+        }
+
+        for (let row = 0; row <= ROWS - 4; row++) {
+          for (let col = 3; col < COLS; col++) {
+            score += scoreWindow([
+              stateBoard[row][col],
+              stateBoard[row + 1][col - 1],
+              stateBoard[row + 2][col - 2],
+              stateBoard[row + 3][col - 3]
+            ], perspective);
+          }
+        }
+
+        return score;
+      }
+
+      function serializeBoard(stateBoard, playerToMove) {
+        let out = playerToMove === RED ? "1|" : "2|";
+        for (let row = 0; row < ROWS; row++) {
+          out += stateBoard[row].join("");
+        }
+        return out;
+      }
+
+      function orderMoves(stateBoard, validCols, playerToMove, principalCol = null) {
+        const opponent = playerToMove === RED ? YELLOW : RED;
+        return validCols
+          .map((col) => {
+            let score = 0;
+            if (principalCol === col) score += 80000;
+            score += 400 - Math.abs(3 - col) * 30;
+
+            const row = simulateDrop(stateBoard, col, playerToMove);
+            if (row !== -1) {
+              if (checkWinner(row, col, playerToMove, stateBoard).win) {
+                score += 1000000;
+              } else {
+                const oppWins = getImmediateWinningColumns(stateBoard, opponent).length;
+                score -= oppWins * 6000;
+                score += evaluateBoardPosition(stateBoard, AI_PLAYER) * (playerToMove === AI_PLAYER ? 1 : -1) * 0.06;
+              }
+              undoDrop(stateBoard, col, row);
+            }
+            return { col, score };
+          })
+          .sort((a, b) => b.score - a.score)
+          .map((item) => item.col);
+      }
+
+      function checkSearchTimeout(deadline) {
+        searchNodeCount++;
+        if ((searchNodeCount & 2047) === 0 && performance.now() >= deadline) {
+          throw new Error(TIMEOUT_ERROR);
+        }
+      }
+
+      function negamax(stateBoard, depth, alpha, beta, playerToMove, lastMove, deadline, cache, principalCol = null) {
+        checkSearchTimeout(deadline);
+
+        const previousPlayer = playerToMove === RED ? YELLOW : RED;
+        if (lastMove && checkWinner(lastMove.row, lastMove.col, previousPlayer, stateBoard).win) {
+          return -(WIN_SCORE + depth);
+        }
+
+        const validCols = getValidColumns(stateBoard);
+        if (validCols.length === 0) {
+          return 0;
+        }
+
+        if (depth === 0) {
+          const evalScore = evaluateBoardPosition(stateBoard, AI_PLAYER);
+          return playerToMove === AI_PLAYER ? evalScore : -evalScore;
+        }
+
+        const key = `${depth}|${serializeBoard(stateBoard, playerToMove)}`;
+        if (cache.has(key)) {
+          return cache.get(key);
+        }
+
+        const orderedCols = orderMoves(stateBoard, validCols, playerToMove, principalCol);
+        let bestScore = -Infinity;
+
+        for (const col of orderedCols) {
+          const row = simulateDrop(stateBoard, col, playerToMove);
+          if (row === -1) continue;
+
+          const score = -negamax(
+            stateBoard,
+            depth - 1,
+            -beta,
+            -alpha,
+            playerToMove === RED ? YELLOW : RED,
+            { row, col },
+            deadline,
+            cache,
+            null
+          );
+
+          undoDrop(stateBoard, col, row);
+
+          if (score > bestScore) {
+            bestScore = score;
+          }
+          if (score > alpha) {
+            alpha = score;
+          }
+          if (alpha >= beta) {
+            break;
+          }
+        }
+
+        cache.set(key, bestScore);
+        return bestScore;
+      }
+
+      function findBestMoveForAi() {
+        const stateBoard = cloneBoard(board);
+        const validCols = getValidColumns(stateBoard);
+        const deadline = performance.now() + AI_THINK_MS;
+        searchNodeCount = 0;
+
+        if (validCols.length === 0) {
+          return { col: null, depthReached: 0 };
+        }
+
+        const instantWin = validCols.find((col) => isWinningMove(stateBoard, col, AI_PLAYER));
+        if (instantWin != null) {
+          return { col: instantWin, depthReached: 1 };
+        }
+
+        const opponentWins = getImmediateWinningColumns(stateBoard, HUMAN_PLAYER);
+        if (opponentWins.length === 1) {
+          return { col: opponentWins[0], depthReached: 1 };
+        }
+
+        let rootMoves = validCols.filter((col) => !moveAllowsImmediateLoss(stateBoard, col, AI_PLAYER));
+        if (rootMoves.length === 0) {
+          rootMoves = validCols.slice();
+        }
+
+        let bestCol = rootMoves[0];
+        let depthReached = 0;
+        let cache = new Map();
+
+        for (let depth = 1; depth <= 12; depth++) {
+          const iterationCache = cache;
+          let bestScore = -Infinity;
+          let bestMoveThisDepth = bestCol;
+          let alpha = -Infinity;
+          const orderedRoot = orderMoves(stateBoard, rootMoves, AI_PLAYER, bestCol);
+
+          try {
+            for (const col of orderedRoot) {
+              checkSearchTimeout(deadline);
+              const row = simulateDrop(stateBoard, col, AI_PLAYER);
+              if (row === -1) continue;
+
+              const score = -negamax(
+                stateBoard,
+                depth - 1,
+                -Infinity,
+                -alpha,
+                HUMAN_PLAYER,
+                { row, col },
+                deadline,
+                iterationCache,
+                null
+              );
+
+              undoDrop(stateBoard, col, row);
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestMoveThisDepth = col;
+              }
+              if (score > alpha) {
+                alpha = score;
+              }
+            }
+
+            bestCol = bestMoveThisDepth;
+            depthReached = depth;
+            cache = iterationCache;
+          } catch (error) {
+            if (error && error.message === TIMEOUT_ERROR) {
+              break;
+            }
+            throw error;
+          }
+        }
+
+        return { col: bestCol, depthReached };
+      }
+
+      init();
+    })();
+  </script>
+
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

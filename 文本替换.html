@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文本替换工具</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/" />
+  <style>
+    :root{
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, .12);
+      --muted: rgba(17, 24, 39, .65);
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --shadow: 0 10px 25px rgba(15,23,42,.08);
+      --radius: 16px;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      color: #111827;
+      line-height: 1.5;
+      padding: 18px;
+    }
+
+    .container{
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header{
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h1{
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: .2px;
+    }
+    .subtitle{
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .grid{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .panel h2{
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    label{
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px 11px;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    textarea:focus, input:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    textarea{
+      min-height: 190px;
+      resize: vertical;
+    }
+
+    .file-box{
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .file-box input[type="file"]{
+      padding: 8px 10px;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .rules{
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rule-row{
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 12px;
+      background: rgba(255,255,255,.7);
+    }
+
+    @media (max-width: 860px){
+      .rule-row{ grid-template-columns: 1fr; }
+    }
+
+    .field label{
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .row-actions{
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button{
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      transition: transform .05s ease, background .15s ease;
+      white-space: nowrap;
+    }
+    button:hover{ background: var(--primary-hover); }
+    button:active{ transform: scale(.99); }
+
+    .btn-secondary{
+      background: rgba(37,99,235,.12);
+      color: var(--primary);
+      border: 1px solid rgba(37,99,235,.18);
+    }
+    .btn-secondary:hover{
+      background: rgba(37,99,235,.18);
+    }
+
+    .btn-danger{
+      background: rgba(239, 68, 68, .12);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, .22);
+    }
+    .btn-danger:hover{
+      background: rgba(239, 68, 68, .18);
+      color: var(--danger-hover);
+    }
+
+    .btns{
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .helper{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .output-container{
+      margin-top: 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: none;
+    }
+    .output-header{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .output-title{
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .replace-count{
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: rgba(37,99,235,.08);
+      border: 1px solid rgba(37,99,235,.14);
+      color: #0f172a;
+      border-radius: 14px;
+      display: none;
+      font-size: 13px;
+    }
+    .replace-count span{
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .counts-list{
+      margin: 8px 0 0;
+      padding-left: 18px;
+      color: rgba(15,23,42,.9);
+    }
+    .counts-list li{
+      margin: 4px 0;
+    }
+    /* New styles for file upload button and file list */
+    .file-upload-btn{
+      display: inline-block;
+      padding: 8px 14px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+    .file-upload-btn:hover{
+      background: var(--primary-hover);
+    }
+    .file-list{
+      list-style: none;
+      margin: 10px 0 0 0;
+      padding: 0;
+    }
+    .file-list li{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.8);
+      margin-top: 8px;
+    }
+    .file-remove-btn{
+      background: rgba(239,68,68,.12);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,.22);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .file-remove-btn:hover{
+      background: rgba(239,68,68,.18);
+      color: var(--danger-hover);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>文本替换工具</h1>
+        <p class="subtitle">支持一次替换多组内容；手机 / 电脑均可用。</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- 左侧：原始文本 -->
+      <section class="panel">
+        <h2>原始文本</h2>
+
+        <div class="file-box">
+          <label>批量文件替换（可选）：</label>
+          <div id="fileUploadWrapper">
+            <label for="fileInput" class="file-upload-btn">选择文件
+              <input id="fileInput" type="file" multiple
+                accept=".txt,.text,.html,.htm,.md,.csv,.json,.xml,.docx" style="display:none">
+            </label>
+          </div>
+          <ul id="fileList" class="file-list" style="display:none"></ul>
+          <div class="helper">
+            选择一个或多个文件后，点击右侧“执行替换”将直接批量替换并下载结果；
+            若上传多个文件，则会返回一个 zip：<b>Compressed_file.zip</b>。
+            <br/>
+            说明：Word 仅支持 <b>.docx</b>（会尽量保留字体、颜色等格式不变）；不支持老式 <b>.doc</b>。
+          </div>
+        </div>
+
+        <div id="textAreaContainer">
+          <label for="inputText">请输入原始文本：</label>
+          <textarea id="inputText" placeholder="在这里输入要修改的文本"></textarea>
+        </div>
+      </section>
+
+      <!-- 右侧：替换规则 -->
+      <section class="panel">
+        <h2>替换规则（可多组）</h2>
+
+        <div class="rules" id="rulesContainer"></div>
+
+        <div class="btns">
+          <!-- 按下初始设置会刷新页面，回到初始状态 -->
+          <button class="btn-secondary" type="button" onclick="resetPage()">初始设置</button>
+          <button class="btn-secondary" type="button" onclick="addRule()">添加一组</button>
+          <button type="button" onclick="replaceText()">执行替换</button>
+        </div>
+
+        <div class="helper">提示：所有规则会“同时生效”（基于原文一次性替换，不会连锁替换）；空的“要替换内容”会被忽略。</div>
+      </section>
+    </div>
+
+    <!-- 输出区域 -->
+    <div class="output-container" id="outputContainer">
+      <div class="output-header">
+        <div class="output-title">替换后文本</div>
+      </div>
+      <textarea id="resultText" readonly placeholder="替换结果会显示在这里…"></textarea>
+    </div>
+
+    <!-- 替换次数（单独放最下方） -->
+    <div id="replaceCount" class="replace-count"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function countOccurrences(text, sub) {
+      if (!sub) return 0;
+      let count = 0;
+      let pos = 0;
+      while (true) {
+        const idx = text.indexOf(sub, pos);
+        if (idx === -1) break;
+        count++;
+        pos = idx + sub.length;
+      }
+      return count;
+    }
+
+    function replaceAllPlain(text, search, replacement) {
+      if (!search) return text;
+      return text.split(search).join(replacement);
+    }
+
+    function createRuleRow(searchVal = "", replaceVal = "") {
+      const row = document.createElement("div");
+      row.className = "rule-row";
+
+      row.innerHTML = `
+        <div class="field">
+          <label>要替换的内容：</label>
+          <input type="text" class="searchText" placeholder="输入要替换的字符或单词" value="${escapeHtml(searchVal)}" />
+        </div>
+        <div class="field">
+          <label>替换为：</label>
+          <input type="text" class="replaceText" placeholder="输入替换后的字符或单词" value="${escapeHtml(replaceVal)}" />
+        </div>
+        <div class="row-actions">
+          <button class="btn-danger" type="button" onclick="removeRule(this)">删除</button>
+        </div>
+      `;
+      return row;
+    }
+
+    function addRule(searchVal = "", replaceVal = "") {
+      const container = document.getElementById("rulesContainer");
+      container.appendChild(createRuleRow(searchVal, replaceVal));
+      refreshDeleteButtons();
+    }
+
+    function removeRule(btn) {
+      const row = btn.closest(".rule-row");
+      if (!row) return;
+      row.remove();
+      refreshDeleteButtons();
+    }
+
+    function refreshDeleteButtons() {
+      const rows = document.querySelectorAll(".rule-row");
+      rows.forEach(r => {
+        const delBtn = r.querySelector(".btn-danger");
+        if (delBtn) {
+          const disabled = (rows.length <= 1);
+          delBtn.disabled = disabled;
+          delBtn.style.opacity = disabled ? "0.5" : "1";
+          delBtn.style.cursor = disabled ? "not-allowed" : "pointer";
+        }
+      });
+    }
+
+    function getRules() {
+      const rows = document.querySelectorAll(".rule-row");
+      const rules = [];
+      rows.forEach(row => {
+        const search = row.querySelector(".searchText")?.value ?? "";
+        const replacement = row.querySelector(".replaceText")?.value ?? "";
+        if (search) rules.push({ search, replacement });
+      });
+      return rules;
+    }
+
+    function buildReplaceEngine(rules) {
+      const map = Object.create(null);
+      rules.forEach(r => { map[r.search] = r.replacement; });
+      const uniqKeys = Array.from(new Set(rules.map(r => r.search)))
+        .sort((a, b) => b.length - a.length);
+      if (uniqKeys.length === 0) {
+        return { apply: (t) => t, re: null, map, uniqKeys };
+      }
+      const pattern = uniqKeys.map(escapeRegExp).join("|");
+      const re = new RegExp(pattern, "g");
+      return {
+        apply: (t) => String(t).replace(re, (m) => map[m]),
+        re,
+        map,
+        uniqKeys
+      };
+    }
+
+    function getOutputName(filename) {
+      const dot = filename.lastIndexOf(".");
+      if (dot === -1) return filename + "_replaced";
+      return filename.slice(0, dot) + "_replaced" + filename.slice(dot);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    async function processDocx(file, engine) {
+      const buf = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(buf);
+      const docPath = "word/document.xml";
+      const f = zip.file(docPath);
+      if (!f) {
+        throw new Error("该 docx 文件缺少 word/document.xml，无法处理。");
+      }
+      const xml = await f.async("string");
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xml, "application/xml");
+      const parseErr = xmlDoc.getElementsByTagName("parsererror");
+      if (parseErr && parseErr.length) {
+        throw new Error("解析 docx XML 失败，无法处理。");
+      }
+      const nodes = xmlDoc.getElementsByTagName("w:t");
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        n.textContent = engine.apply(n.textContent);
+      }
+      const serializer = new XMLSerializer();
+      const newXml = serializer.serializeToString(xmlDoc);
+      zip.file(docPath, newXml);
+      const outBuf = await zip.generateAsync({ type: "arraybuffer" });
+      return new Blob([outBuf], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      });
+    }
+
+    async function processTextLike(file, engine) {
+      const text = await file.text();
+      const replaced = engine.apply(text);
+      return new Blob([replaced], { type: "text/plain;charset=utf-8" });
+    }
+
+    // Store selected files for upload; used to display and delete
+    let selectedFiles = [];
+
+    // Initialize file input event
+    document.addEventListener('DOMContentLoaded', () => {
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelect);
+      }
+    });
+
+    function handleFileSelect(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length > 0) {
+        selectedFiles = selectedFiles.concat(files);
+        renderFileList();
+      }
+      // Clear input so selecting same file again triggers change
+      event.target.value = "";
+    }
+
+    function renderFileList() {
+      const fileListEl = document.getElementById('fileList');
+      const uploadWrapper = document.getElementById('fileUploadWrapper');
+      const textContainer = document.getElementById('textAreaContainer');
+      if (selectedFiles.length === 0) {
+        // show upload button, hide list
+        if (uploadWrapper) uploadWrapper.style.display = 'block';
+        if (fileListEl) {
+          fileListEl.innerHTML = '';
+          fileListEl.style.display = 'none';
+        }
+        // show textarea and its label when no files selected
+        if (textContainer) textContainer.style.display = 'block';
+        return;
+      }
+      // hide upload button
+      if (uploadWrapper) uploadWrapper.style.display = 'none';
+      // show list
+      if (!fileListEl) return;
+      fileListEl.style.display = 'block';
+      fileListEl.innerHTML = '';
+      selectedFiles.forEach((file, idx) => {
+        const li = document.createElement('li');
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = file.name;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = '删除';
+        removeBtn.className = 'file-remove-btn';
+        removeBtn.addEventListener('click', () => {
+          removeSelectedFile(idx);
+        });
+        li.appendChild(nameSpan);
+        li.appendChild(removeBtn);
+        fileListEl.appendChild(li);
+      });
+      // hide textarea container when there is at least one file
+      if (textContainer) textContainer.style.display = 'none';
+    }
+
+    function removeSelectedFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+
+    async function replaceFiles() {
+      const files = selectedFiles;
+      const replaceCountDiv = document.getElementById('replaceCount');
+      const outputContainer = document.getElementById('outputContainer');
+      const resultText = document.getElementById('resultText');
+      const rules = getRules();
+      if (rules.length === 0) {
+        alert("请至少填写一组“要替换的内容”！");
+        return;
+      }
+      if (files.length === 0) {
+        // no files, fallback to textarea replacement
+        replaceTextFromTextarea();
+        return;
+      }
+      outputContainer.style.display = "block";
+      resultText.value = "正在处理文件，请稍候…";
+      const engine = buildReplaceEngine(rules);
+      try {
+        if (files.length === 1) {
+          const file = files[0];
+          const ext = (file.name.split(".").pop() || "").toLowerCase();
+          let outBlob;
+          if (ext === "docx") {
+            outBlob = await processDocx(file, engine);
+          } else if (ext === "doc") {
+            alert("不支持 .doc（老式 Word 格式）。请先另存为 .docx 后再处理。");
+            resultText.value = "不支持 .doc（老式 Word 格式）。";
+            return;
+          } else {
+            outBlob = await processTextLike(file, engine);
+          }
+          downloadBlob(outBlob, getOutputName(file.name));
+          resultText.value = `已处理 1 个文件：${file.name}\n已开始下载：${getOutputName(file.name)}`;
+          replaceCountDiv.innerHTML = `已处理 <span>1</span> 个文件，并下载替换结果。`;
+          replaceCountDiv.style.display = "block";
+          return;
+        }
+        const outZip = new JSZip();
+        const report = [];
+        for (const file of files) {
+          const ext = (file.name.split(".").pop() || "").toLowerCase();
+          if (ext === "doc") {
+            report.push(`跳过：${file.name}（不支持 .doc，请另存为 .docx）`);
+            continue;
+          }
+          const outName = getOutputName(file.name);
+          if (ext === "docx") {
+            const blob = await processDocx(file, engine);
+            const ab = await blob.arrayBuffer();
+            outZip.file(outName, ab, { binary: true });
+          } else {
+            const blob = await processTextLike(file, engine);
+            const text = await blob.text();
+            outZip.file(outName, text);
+          }
+          report.push(`完成：${file.name} → ${outName}`);
+        }
+        const zipBlob = await outZip.generateAsync({ type: "blob" });
+        downloadBlob(zipBlob, "Compressed_file.zip");
+        resultText.value =
+          `已处理 ${files.length} 个文件（部分可能被跳过）。\n已开始下载：Compressed_file.zip\n\n` +
+          report.join("\n");
+        replaceCountDiv.innerHTML =
+          `已处理 <span>${files.length}</span> 个文件；多个文件已打包为 <span>Compressed_file.zip</span>。`;
+        replaceCountDiv.style.display = "block";
+      } catch (err) {
+        console.error(err);
+        alert("处理文件时出错：" + (err?.message || err));
+        resultText.value = "处理文件时出错：" + (err?.message || err);
+        replaceCountDiv.style.display = "none";
+      }
+    }
+
+    function replaceTextFromTextarea() {
+      const original = document.getElementById('inputText').value;
+      const resultText = document.getElementById('resultText');
+      const replaceCountDiv = document.getElementById('replaceCount');
+      const outputContainer = document.getElementById('outputContainer');
+      const rules = getRules();
+      if (rules.length === 0) {
+        alert("请至少填写一组“要替换的内容”！");
+        return;
+      }
+      let totalCount = 0;
+      const perRuleCounts = rules.map(r => {
+        const c = countOccurrences(original, r.search);
+        totalCount += c;
+        return { ...r, count: c };
+      });
+      const engine = buildReplaceEngine(rules);
+      const text = engine.apply(original);
+      outputContainer.style.display = "block";
+      if (totalCount > 0) {
+        resultText.value = text;
+        let html = `共替换了 <span>${totalCount}</span> 处`;
+        html += `<ul class="counts-list">`;
+        perRuleCounts.forEach((r, idx) => {
+          const s = r.search.length > 26 ? (r.search.slice(0, 26) + "…") : r.search;
+          html += `<li>第 ${idx + 1} 组： “${escapeHtml(s)}” → “${escapeHtml(r.replacement)}” ，替换 <span>${r.count}</span> 处</li>`;
+        });
+        html += `</ul>`;
+        replaceCountDiv.innerHTML = html;
+        replaceCountDiv.style.display = "block";
+      } else {
+        resultText.value = "未找到匹配项";
+        replaceCountDiv.style.display = "none";
+      }
+    }
+
+    function replaceText() {
+      // Determine if there are selected files
+      if (selectedFiles && selectedFiles.length > 0) {
+        replaceFiles();
+      } else {
+        replaceTextFromTextarea();
+      }
+    }
+
+    function escapeRegExp(str) {
+      return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    // Initialize: default one rule row
+    addRule();
+
+    // Reset page to its initial state by refreshing the browser. When called,
+    // this function reloads the current document, clearing any selected
+    // files and user input. It is used by the “初始设置” button on the page.
+    function resetPage() {
+      location.reload();
+    }
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v67327c56f0bb4ef8b305cae61679db8f1769101564043" integrity="sha512-rdcWY47ByXd76cbCFzznIcEaCN71jqkWBBqlwhF1SY7KubdLKZiEGeP7AyieKZlGP9hbY/MhGrwXzJC/HulNyg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light only" />
+  <title>Markdown预览器</title>
+
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <!-- 国内常用 CDN：BootCDN -->
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --panel-2: #fcfcfd;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --line-2: #eef2f7;
+      --primary: #2563eb;
+      --primary-soft: #eff6ff;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --editor-h: min(68vh, 860px);
+      --max-w: 1320px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(180deg, #fbfcfe 0%, #f7f8fa 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .app {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .hero-left {
+      flex: 1 1 520px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #111827;
+    }
+
+    .hero p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .hero-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      box-shadow: var(--shadow);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: #374151;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-2);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: #ffffff;
+      color: #111827;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid var(--line);
+      transition: all .2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+      border-color: #d1d5db;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.soft {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: #dbeafe;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      min-height: var(--editor-h);
+    }
+
+    .col {
+      min-width: 0;
+      background: var(--panel);
+    }
+
+    .col + .col {
+      border-left: 1px solid var(--line-2);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line-2);
+      background: var(--panel-2);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .editor-wrap {
+      height: calc(var(--editor-h) - 54px);
+      min-height: 380px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      outline: none;
+      resize: none;
+      padding: 20px;
+      font: 15px/1.8 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #111827;
+      background: #ffffff;
+      tab-size: 2;
+    }
+
+    textarea::placeholder {
+      color: #9ca3af;
+    }
+
+    .preview-wrap {
+      height: calc(var(--editor-h) - 54px);
+      min-height: 380px;
+      overflow: auto;
+      background: linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%);
+    }
+
+    .preview {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 26px 26px 40px;
+      color: #1f2937;
+      line-height: 1.85;
+      font-size: 16px;
+      word-break: break-word;
+    }
+
+    .preview > *:first-child {
+      margin-top: 0;
+    }
+
+    .preview h1,
+    .preview h2,
+    .preview h3,
+    .preview h4,
+    .preview h5,
+    .preview h6 {
+      color: #111827;
+      line-height: 1.35;
+      margin-top: 1.7em;
+      margin-bottom: 0.8em;
+      letter-spacing: -0.02em;
+    }
+
+    .preview h1 {
+      font-size: 2em;
+      padding-bottom: .35em;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview h2 {
+      font-size: 1.55em;
+      padding-bottom: .3em;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .preview h3 {
+      font-size: 1.28em;
+    }
+
+    .preview p,
+    .preview ul,
+    .preview ol,
+    .preview blockquote,
+    .preview pre,
+    .preview table {
+      margin: 1em 0;
+    }
+
+    .preview ul,
+    .preview ol {
+      padding-left: 1.5em;
+    }
+
+    .preview li + li {
+      margin-top: 0.35em;
+    }
+
+    .preview a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .preview a:hover {
+      text-decoration: underline;
+    }
+
+    .preview blockquote {
+      margin-left: 0;
+      padding: 12px 16px;
+      color: #4b5563;
+      background: #f8fafc;
+      border-left: 4px solid #dbeafe;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .preview code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      background: #f3f4f6;
+      color: #111827;
+      border-radius: 8px;
+      padding: .2em .4em;
+    }
+
+    .preview pre {
+      overflow: auto;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .preview pre code {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .preview table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+      margin: 0;
+    }
+
+    .preview th,
+    .preview td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .preview th {
+      background: #f9fafb;
+      font-weight: 700;
+    }
+
+    .preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 16px;
+      display: block;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .preview hr {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 2em 0;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 100%;
+      color: var(--muted);
+      text-align: center;
+      padding: 32px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 4px;
+    }
+
+    .footer strong {
+      color: #374151;
+    }
+
+    .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 2px;
+    }
+
+    @media (max-width: 960px) {
+      body {
+        padding: 16px;
+      }
+
+      :root {
+        --editor-h: auto;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .col + .col {
+        border-left: 0;
+        border-top: 1px solid var(--line-2);
+      }
+
+      .editor-wrap,
+      .preview-wrap {
+        height: auto;
+        min-height: 320px;
+      }
+
+      textarea {
+        min-height: 320px;
+      }
+
+      .preview {
+        padding: 20px 18px 28px;
+        font-size: 15px;
+      }
+
+      .hero p {
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .toolbar,
+      .section-head {
+        padding: 12px 14px;
+      }
+
+      button {
+        padding: 9px 12px;
+        font-size: 13px;
+      }
+
+      .hero-right {
+        width: 100%;
+      }
+
+      .badge {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <div class="hero-left">
+        <h1>Markdown + LaTeX 渲染器</h1>
+        <p>
+          支持 <strong>Markdown 实时预览</strong>、<strong>LaTeX 公式渲染</strong>、代码高亮、自动保存，
+          整体采用简洁白色风格。
+        </p>
+      </div>
+      <div class="hero-right">
+        <div class="badge"><span class="dot"></span><span id="saveStatus">内容已自动保存</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="primary" id="btnExample">填充示例</button>
+          <button class="soft" id="btnCopyMarkdown">复制 Markdown</button>
+          <button id="btnCopyHtml">复制渲染后的 HTML</button>
+          <button id="btnClear">清空内容</button>
+        </div>
+        <div class="toolbar-right">
+          <span class="hint">公式支持：<code>$...$</code>、<code>$$...$$</code>、<code>\(...\)</code>、<code>\[...\]</code></span>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <section class="col">
+          <div class="section-head">
+            <div class="section-title">编辑区</div>
+            <div class="meta" id="stats">0 字符</div>
+          </div>
+          <div class="editor-wrap">
+            <textarea id="editor" placeholder="# 在这里输入 Markdown\n\n支持标题、列表、表格、代码块，以及 LaTeX 公式。"></textarea>
+          </div>
+        </section>
+
+        <section class="col">
+          <div class="section-head">
+            <div class="section-title">预览区</div>
+            <div class="meta">实时渲染</div>
+          </div>
+          <div class="preview-wrap" id="previewWrap">
+            <article class="preview" id="preview">
+              <div class="empty-state">开始输入 Markdown，这里会实时显示渲染结果。</div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>依赖：<strong>Marked</strong> + <strong>DOMPurify</strong> + <strong>KaTeX</strong> + <strong>highlight.js</strong>（通过 BootCDN 加载）</div>
+      <div>本地自动保存键：<code>markdown-latex-editor-content</code></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script defer src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script defer src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+  <script>
+    const STORAGE_KEY = 'markdown-latex-editor-content-v3';
+    const LEGACY_STORAGE_KEYS = [
+      'markdown-latex-editor-content',
+      'markdown-latex-editor-content-v2'
+    ];
+
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const previewWrap = document.getElementById('previewWrap');
+    const stats = document.getElementById('stats');
+    const saveStatus = document.getElementById('saveStatus');
+    const btnExample = document.getElementById('btnExample');
+    const btnCopyMarkdown = document.getElementById('btnCopyMarkdown');
+    const btnCopyHtml = document.getElementById('btnCopyHtml');
+    const btnClear = document.getElementById('btnClear');
+
+    const sample = String.raw`# Markdown + LaTeX 示例
+
+这是一个 **纯前端** 的 Markdown 渲染页面，支持实时预览、代码高亮与公式渲染。
+
+## 行内公式
+
+爱因斯坦质能方程：$E = mc^2$
+
+## 块级公式
+
+$$
+\int_{0}^{1} x^2 \, dx = \frac{1}{3}
+$$
+
+$$
+\sum_{k=1}^{n} k = \frac{n(n+1)}{2}
+$$
+
+## 列表
+
+- 支持标题、列表、引用、表格
+- 支持 GFM 代码块
+- 支持 $\alpha, \beta, \gamma$ 等 LaTeX 符号
+
+## 表格
+
+| 功能 | 状态 | 说明 |
+| --- | --- | --- |
+| Markdown 渲染 | ✅ | 基于 Marked |
+| LaTeX 渲染 | ✅ | 基于 KaTeX |
+| 安全净化 | ✅ | 基于 DOMPurify |
+| 代码高亮 | ✅ | 基于 highlight.js |
+
+## 代码块
+
+~~~javascript
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+console.log(fibonacci(8));
+~~~
+
+## 引用
+
+> 这是一个干净、轻量、适合手机和电脑端的白色风格页面。
+
+## 另一个公式
+
+\[
+P(A \mid B) = \frac{P(B \mid A)P(A)}{P(B)}
+\]
+`;
+
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      async: false
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function protectDisplayMath(markdown) {
+      const fenceRegex = /(```[\s\S]*?```|~~~[\s\S]*?~~~)/g;
+      const parts = markdown.split(fenceRegex);
+
+      return parts.map((part, index) => {
+        if (index % 2 === 1) return part;
+
+        let segment = part;
+
+        segment = segment.replace(/(^|\n)\$\$\s*\n?([\s\S]*?)\n?\s*\$\$(?=\n|$)/g, (match, prefix, expr) => {
+          return `${prefix}\n<div class="math-block-placeholder">${escapeHtml(expr.trim())}</div>\n`;
+        });
+
+        segment = segment.replace(/(^|\n)\\\[\s*\n?([\s\S]*?)\n?\s*\\\](?=\n|$)/g, (match, prefix, expr) => {
+          return `${prefix}\n<div class="math-block-placeholder">${escapeHtml(expr.trim())}</div>\n`;
+        });
+
+        segment = segment.replace(/\\\((.+?)\\\)/g, (match, expr) => {
+          return `<span class="math-inline-placeholder">${escapeHtml(expr.trim())}</span>`;
+        });
+
+        return segment;
+      }).join('');
+    }
+
+    function wrapTables(root) {
+      root.querySelectorAll('table').forEach((table) => {
+        if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrap';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      });
+    }
+
+    function renderProtectedMath(root) {
+      if (!window.katex) return;
+
+      root.querySelectorAll('.math-block-placeholder').forEach((el) => {
+        const expr = el.textContent.trim();
+        try {
+          katex.render(expr, el, {
+            displayMode: true,
+            throwOnError: false,
+            strict: 'ignore'
+          });
+        } catch (error) {
+          el.textContent = expr;
+        }
+      });
+
+      root.querySelectorAll('.math-inline-placeholder').forEach((el) => {
+        const expr = el.textContent.trim();
+        try {
+          katex.render(expr, el, {
+            displayMode: false,
+            throwOnError: false,
+            strict: 'ignore'
+          });
+        } catch (error) {
+          el.textContent = expr;
+        }
+      });
+    }
+
+    function updateStats(text) {
+      const chars = text.length;
+      const lines = text ? text.split('\n').length : 0;
+      stats.textContent = `${chars} 字符 · ${lines} 行`;
+    }
+
+    let saveTimer = null;
+    function setSavedLabel(text) {
+      saveStatus.textContent = text;
+    }
+
+    function persist(text) {
+      clearTimeout(saveTimer);
+      setSavedLabel('正在保存...');
+      saveTimer = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, text);
+        setSavedLabel('内容已自动保存');
+      }, 200);
+    }
+
+    function renderMarkdown(text) {
+      updateStats(text);
+
+      if (!text.trim()) {
+        preview.innerHTML = '<div class="empty-state">开始输入 Markdown，这里会实时显示渲染结果。</div>';
+        return;
+      }
+
+      try {
+        const preparedMarkdown = protectDisplayMath(text);
+        const rawHtml = marked.parse(preparedMarkdown);
+        const cleanHtml = DOMPurify.sanitize(rawHtml, {
+          USE_PROFILES: { html: true }
+        });
+
+        preview.innerHTML = cleanHtml;
+        wrapTables(preview);
+
+        preview.querySelectorAll('pre code').forEach((block) => {
+          hljs.highlightElement(block);
+        });
+
+        renderProtectedMath(preview);
+
+        if (window.renderMathInElement) {
+          renderMathInElement(preview, {
+            delimiters: [
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false,
+            strict: 'ignore',
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'option']
+          });
+        }
+      } catch (error) {
+        preview.innerHTML = `
+          <div class="empty-state" style="color:#b91c1c;">
+            渲染失败：${String(error.message || error)}
+          </div>
+        `;
+      }
+    }
+
+    function copyText(text, successText) {
+      navigator.clipboard.writeText(text).then(() => {
+        const old = saveStatus.textContent;
+        setSavedLabel(successText);
+        setTimeout(() => setSavedLabel(old || '内容已自动保存'), 1400);
+      }).catch(() => {
+        alert('复制失败，请检查浏览器权限。');
+      });
+    }
+
+    function getStoredContent() {
+      const latest = localStorage.getItem(STORAGE_KEY);
+      if (latest && latest.trim()) return latest;
+
+      for (const key of LEGACY_STORAGE_KEYS) {
+        const value = localStorage.getItem(key);
+        if (value && value.trim()) return value;
+      }
+
+      return '';
+    }
+
+    function initialLoad() {
+      const cached = getStoredContent();
+      const initialValue = cached && cached.trim() ? cached : sample;
+      editor.value = initialValue;
+      renderMarkdown(initialValue);
+      updateStats(initialValue);
+
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        localStorage.setItem(STORAGE_KEY, initialValue);
+      }
+    }
+
+    editor.addEventListener('input', () => {
+      const value = editor.value;
+      renderMarkdown(value);
+      persist(value);
+    });
+
+    btnExample.addEventListener('click', () => {
+      editor.value = sample;
+      renderMarkdown(sample);
+      persist(sample);
+    });
+
+    btnClear.addEventListener('click', () => {
+      editor.value = '';
+      renderMarkdown('');
+      persist('');
+      editor.focus();
+    });
+
+    btnCopyMarkdown.addEventListener('click', () => {
+      copyText(editor.value, 'Markdown 已复制');
+    });
+
+    btnCopyHtml.addEventListener('click', () => {
+      copyText(preview.innerHTML, 'HTML 已复制');
+    });
+
+    window.addEventListener('load', () => {
+      initialLoad();
+      setTimeout(() => renderMarkdown(editor.value), 120);
+    });
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

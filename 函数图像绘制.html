@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>函数图像绘制器</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.2/lib/browser/math.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --line: #e7ebf3;
+      --line-2: #d7dde9;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-soft: rgba(37, 99, 235, 0.1);
+      --danger: #dc2626;
+      --shadow: 0 12px 36px rgba(15, 23, 42, 0.06);
+      --intersection: #f59e0b;
+      --root: #ef4444;
+      --extremum: #06b6d4;
+      --yint: #10b981;
+      --plot-bg: #ffffff;
+      --grid: #e8edf6;
+      --grid-strong: #cbd5e1;
+      --axis: #111827;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: linear-gradient(180deg, #fbfcff 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body { padding: 18px; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .panel,
+    .workspace {
+      min-width: 0;
+    }
+
+    .brand {
+      padding: 22px 22px 18px;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 30%),
+        linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .brand h1 {
+      margin: 0 0 8px;
+      font-size: 1.42rem;
+      letter-spacing: 0.01em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 16px 18px 0;
+    }
+
+    .card-head h2,
+    .card-body h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .helper {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.88rem;
+    }
+
+    textarea,
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    textarea {
+      min-height: 148px;
+      resize: vertical;
+      line-height: 1.56;
+    }
+
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: rgba(37, 99, 235, 0.6);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .range-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .range-grid .field small {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 13px;
+      padding: 11px 15px;
+      background: var(--primary);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    button.ghost {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line-2);
+      box-shadow: none;
+    }
+
+    button.small {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 10px;
+    }
+
+    .precision-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .precision-value {
+      min-width: 56px;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #f3f6fc;
+      border: 1px solid var(--line);
+      font-weight: 600;
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      border: 1px solid rgba(220, 38, 38, 0.14);
+      background: rgba(220, 38, 38, 0.06);
+      color: #991b1b;
+    }
+
+    .notice.hidden,
+    .graph-tooltip.hidden {
+      display: none;
+    }
+
+    .workspace {
+      display: grid;
+      gap: 18px;
+    }
+
+    .graph-card {
+      padding: 0;
+    }
+
+    .graph-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(252,253,255,0.98));
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      background: #f7f9fd;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--status-dot, var(--primary));
+      opacity: 0.7;
+    }
+
+    #graphWrap {
+      position: relative;
+      width: 100%;
+      height: min(70vh, 720px);
+      min-height: 430px;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.04), transparent 28%),
+        linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+    }
+
+    #graphSvg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .graph-tooltip {
+      position: absolute;
+      z-index: 20;
+      min-width: 180px;
+      max-width: 280px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text);
+      transform: translate(12px, -12px);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f8fafd;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+
+    .mini-legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .point-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .point-item {
+      width: 100%;
+      text-align: left;
+      background: #fbfcff;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      padding: 12px 12px;
+      border-radius: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .point-item:hover {
+      transform: none;
+      border-color: rgba(37, 99, 235, 0.28);
+      background: #ffffff;
+    }
+
+    .point-item strong {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.94rem;
+    }
+
+    .point-item small {
+      color: var(--muted);
+      display: block;
+      line-height: 1.5;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 18px;
+    }
+
+    .markdown-body,
+    .selected-point {
+      padding: 18px;
+    }
+
+    .markdown-body {
+      min-height: 220px;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      line-height: 1.72;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3 {
+      margin: 0.2em 0 0.55em;
+      line-height: 1.35;
+    }
+
+    .markdown-body h1 { font-size: 1.25rem; }
+    .markdown-body h2 { font-size: 1.08rem; }
+    .markdown-body h3 { font-size: 0.98rem; }
+
+    .markdown-body p {
+      margin: 0.5em 0;
+      color: var(--text);
+    }
+
+    .markdown-body ul {
+      margin: 0.3em 0 0.8em 1.1em;
+      padding: 0;
+    }
+
+    .markdown-body li {
+      margin: 0.2em 0;
+    }
+
+    .markdown-body code {
+      padding: 0.14em 0.42em;
+      border-radius: 7px;
+      background: rgba(37, 99, 235, 0.07);
+      color: #0f172a;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.92em;
+      word-break: break-word;
+    }
+
+    .markdown-body pre {
+      margin: 0.8em 0 1em;
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+      overflow: auto;
+      line-height: 1.58;
+    }
+
+    .markdown-body pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .markdown-source {
+      width: calc(100% - 36px);
+      margin: 0 18px 18px;
+      min-height: 160px;
+      resize: vertical;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.92rem;
+      background: #fbfcff;
+    }
+
+    .selected-point.empty {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .empty-note {
+      padding: 12px 0 4px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .svg-label {
+      fill: #6b7280;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    .svg-axis-label {
+      fill: #111827;
+      font-size: 12px;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .svg-fn {
+      fill: none;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .svg-point {
+      cursor: pointer;
+      vector-effect: non-scaling-stroke;
+      transition: transform .15s ease;
+    }
+
+    .svg-point:hover { filter: brightness(1.03); }
+
+    .svg-hit {
+      cursor: pointer;
+      fill: transparent;
+      stroke: transparent;
+      vector-effect: non-scaling-stroke;
+    }
+
+    @media (max-width: 1120px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .brand { padding: 18px 18px 16px; }
+      .card-body { padding: 16px; }
+      .graph-toolbar { padding: 14px 14px 8px; }
+      #graphWrap {
+        height: min(60vh, 560px);
+        min-height: 360px;
+      }
+      .grid2,
+      .range-grid,
+      .mini-legend {
+        grid-template-columns: 1fr;
+      }
+      .markdown-source {
+        width: calc(100% - 28px);
+        margin: 0 14px 14px;
+      }
+      .markdown-body,
+      .selected-point {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <section class="brand">
+        <h1>函数图像绘制器</h1>
+        <p>每行输入一个函数即可绘制。支持多函数同时显示、自适应精度采样、交点/零点/极值点标注点击查看，以及按 <code>x</code> 或 <code>y</code> 查询高精度结果。</p>
+      </section>
+
+      <div class="stack">
+        <section class="card">
+          <div class="card-body">
+            <label for="functionsInput">
+              函数输入（每行一个；可写 <code>y = ...</code> 或 <code>f(x) = ...</code>）
+              <textarea id="functionsInput" spellcheck="false" placeholder="例如：
+sin(x)
+x^2 - 4
+0.5x + 1
+exp(-x^2) * cos(3x)">sin(x)
+x^2 - 4
+0.5x + 1</textarea>
+            </label>
+            <div class="row">
+              <button id="plotBtn">绘制图像</button>
+              <button id="sampleBtn" class="ghost" type="button">填入示例</button>
+              <button id="fitBtn" class="ghost" type="button">自动适配 y 范围</button>
+            </div>
+            <div class="helper">支持常见表达式与函数：<code>sin</code>、<code>cos</code>、<code>tan</code>、<code>log</code>、<code>ln</code>、<code>sqrt</code>、<code>abs</code>、<code>exp</code>、<code>pi</code>、<code>e</code> 等；可直接写 <code>2x</code>、<code>(x+1)(x-1)</code>。</div>
+            <div id="errorBox" class="notice hidden"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-body">
+            <h2>坐标范围与精度</h2>
+            <div class="range-grid">
+              <label class="field">x 最小值
+                <input id="xMin" type="number" step="any" value="-10" />
+              </label>
+              <label class="field">x 最大值
+                <input id="xMax" type="number" step="any" value="10" />
+              </label>
+              <label class="field">y 最小值
+                <input id="yMin" type="number" step="any" value="-10" />
+              </label>
+              <label class="field">y 最大值
+                <input id="yMax" type="number" step="any" value="10" />
+              </label>
+            </div>
+
+            <div class="precision-wrap">
+              <label for="precision">
+                显示精度（自适应采样基准）
+                <input id="precision" type="range" min="10" max="100" value="55" />
+              </label>
+              <div class="precision-value" id="precisionValue">55</div>
+            </div>
+
+            <div class="helper">精度越高，曲线越细致、特殊点扫描越密；对高频函数或大范围函数建议适当调高。</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-body">
+            <h2>数值查询</h2>
+            <div class="grid2">
+              <label>已知 x（可写 <code>pi/6</code>）
+                <input id="queryX" type="text" placeholder="例如 pi/6" />
+              </label>
+              <label>已知 y
+                <input id="queryY" type="text" placeholder="例如 1" />
+              </label>
+            </div>
+            <div class="row">
+              <button id="analyzeBtn" type="button">计算结果</button>
+              <button id="clearQueryBtn" class="ghost" type="button">清空查询</button>
+            </div>
+            <div class="helper">输入 <code>x</code> 时：计算每条函数对应的 <code>y</code>；输入 <code>y</code> 时：在当前 <code>x</code> 范围内寻找满足该 <code>y</code> 的全部 <code>x</code> 值。</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-body">
+            <h2>特殊点图例</h2>
+            <div class="mini-legend">
+              <div class="legend-chip"><span class="dot" style="background: var(--intersection);"></span>交点</div>
+              <div class="legend-chip"><span class="dot" style="background: var(--root);"></span>零点 / x 轴截距</div>
+              <div class="legend-chip"><span class="dot" style="background: var(--extremum);"></span>极值点 / 顶点</div>
+              <div class="legend-chip"><span class="dot" style="background: var(--yint);"></span>y 轴截距</div>
+            </div>
+            <div id="pointList" class="point-list">
+              <div class="empty-note">绘制后会自动列出特殊点；点击列表项或图中标记可查看精确坐标信息。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="card graph-card">
+        <div class="graph-toolbar">
+          <div id="functionLegend" class="legend"></div>
+          <div id="statusText" class="status-pill">准备就绪</div>
+        </div>
+        <div id="graphWrap">
+          <svg id="graphSvg" xmlns="http://www.w3.org/2000/svg" aria-label="函数图像"></svg>
+          <div id="graphTooltip" class="graph-tooltip hidden"></div>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <section class="card">
+          <div class="card-head">
+            <h2>Markdown 结果</h2>
+            <button id="copyMdBtn" class="ghost small" type="button">复制 Markdown</button>
+          </div>
+          <div id="markdownRender" class="markdown-body"></div>
+          <textarea id="markdownSource" class="markdown-source" readonly></textarea>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>选中点</h2>
+          </div>
+          <div id="selectedPointBox" class="selected-point empty">点击图中的特殊点后，这里会显示详细坐标、类型与所属函数。</div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const COLORS = [
+        '#2563eb', '#ef4444', '#10b981', '#8b5cf6', '#f59e0b',
+        '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'
+      ];
+
+      function getCss(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      }
+
+      const TYPE_STYLE = {
+        '交点': { color: getCss('--intersection'), priority: 1 },
+        '零点': { color: getCss('--root'), priority: 2 },
+        '极大值点': { color: getCss('--extremum'), priority: 3 },
+        '极小值点': { color: getCss('--extremum'), priority: 3 },
+        '驻点': { color: getCss('--extremum'), priority: 4 },
+        'y 轴截距': { color: getCss('--yint'), priority: 5 }
+      };
+
+      const els = {
+        functionsInput: document.getElementById('functionsInput'),
+        plotBtn: document.getElementById('plotBtn'),
+        sampleBtn: document.getElementById('sampleBtn'),
+        fitBtn: document.getElementById('fitBtn'),
+        errorBox: document.getElementById('errorBox'),
+        xMin: document.getElementById('xMin'),
+        xMax: document.getElementById('xMax'),
+        yMin: document.getElementById('yMin'),
+        yMax: document.getElementById('yMax'),
+        precision: document.getElementById('precision'),
+        precisionValue: document.getElementById('precisionValue'),
+        graphWrap: document.getElementById('graphWrap'),
+        graphSvg: document.getElementById('graphSvg'),
+        graphTooltip: document.getElementById('graphTooltip'),
+        functionLegend: document.getElementById('functionLegend'),
+        statusText: document.getElementById('statusText'),
+        queryX: document.getElementById('queryX'),
+        queryY: document.getElementById('queryY'),
+        analyzeBtn: document.getElementById('analyzeBtn'),
+        clearQueryBtn: document.getElementById('clearQueryBtn'),
+        markdownRender: document.getElementById('markdownRender'),
+        markdownSource: document.getElementById('markdownSource'),
+        selectedPointBox: document.getElementById('selectedPointBox'),
+        pointList: document.getElementById('pointList'),
+        copyMdBtn: document.getElementById('copyMdBtn')
+      };
+
+      const state = {
+        functions: [],
+        points: [],
+        selectedPointId: null,
+        lastMarkdown: '',
+        viewport: null,
+        resizeRaf: 0
+      };
+
+      function setStatus(text, isError = false) {
+        els.statusText.textContent = text;
+        els.statusText.style.color = isError ? '#991b1b' : '';
+        els.statusText.style.background = isError ? 'rgba(220,38,38,0.06)' : '';
+        els.statusText.style.borderColor = isError ? 'rgba(220,38,38,0.18)' : '';
+        els.statusText.style.setProperty('--status-dot', isError ? '#dc2626' : getCss('--primary'));
+      }
+
+      function showError(lines) {
+        if (!lines || !lines.length) {
+          els.errorBox.classList.add('hidden');
+          els.errorBox.innerHTML = '';
+          return;
+        }
+        els.errorBox.classList.remove('hidden');
+        els.errorBox.innerHTML = lines.map(line => escapeHtml(line)).join('<br>');
+      }
+
+      function getRanges() {
+        const xMin = parseFloat(els.xMin.value);
+        const xMax = parseFloat(els.xMax.value);
+        const yMin = parseFloat(els.yMin.value);
+        const yMax = parseFloat(els.yMax.value);
+
+        if (![xMin, xMax, yMin, yMax].every(Number.isFinite)) {
+          throw new Error('坐标范围必须全部是有效数字。');
+        }
+        if (xMin >= xMax) {
+          throw new Error('x 最小值必须小于 x 最大值。');
+        }
+        if (yMin >= yMax) {
+          throw new Error('y 最小值必须小于 y 最大值。');
+        }
+        return { xMin, xMax, yMin, yMax };
+      }
+
+      function sanitizeExpression(raw) {
+        let expr = raw.trim()
+          .replace(/[，；]/g, m => m === '，' ? ',' : ';')
+          .replace(/（/g, '(')
+          .replace(/）/g, ')')
+          .replace(/【/g, '[')
+          .replace(/】/g, ']')
+          .replace(/[πΠ]/g, 'pi')
+          .replace(/\s+/g, ' ');
+
+        expr = expr.replace(/^\s*y\s*=\s*/i, '');
+        expr = expr.replace(/^\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\s*x\s*\)\s*=\s*/i, '');
+        return expr.trim();
+      }
+
+      function parseFunctions() {
+        if (!window.math) {
+          throw new Error('math.js 加载失败，请检查网络或改为本地引用。');
+        }
+
+        const rawLines = els.functionsInput.value
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(Boolean)
+          .filter(line => !line.startsWith('#'));
+
+        if (!rawLines.length) {
+          throw new Error('请至少输入一个函数。');
+        }
+
+        const errors = [];
+        const parsed = [];
+
+        rawLines.forEach((line, idx) => {
+          const expr = sanitizeExpression(line);
+          try {
+            const node = math.parse(expr);
+            const compiled = node.compile();
+            let derivativeCompiled = null;
+            try {
+              derivativeCompiled = math.derivative(node, 'x').compile();
+            } catch (_) {
+              derivativeCompiled = null;
+            }
+
+            parsed.push({
+              id: `fn-${idx + 1}`,
+              name: expr,
+              display: line,
+              node,
+              compiled,
+              derivativeCompiled,
+              color: COLORS[idx % COLORS.length]
+            });
+          } catch (err) {
+            errors.push(`第 ${idx + 1} 行解析失败：${line}（${err && err.message ? err.message : '表达式无效'}）`);
+          }
+        });
+
+        if (!parsed.length) {
+          throw new Error(errors.join('\n') || '没有可绘制的有效函数。');
+        }
+
+        showError(errors);
+        return parsed;
+      }
+
+      function toRealNumber(value) {
+        if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+        if (value && typeof value === 'object') {
+          if (typeof value.re === 'number' && typeof value.im === 'number') {
+            return Math.abs(value.im) < 1e-12 ? value.re : NaN;
+          }
+          if (typeof value.toNumber === 'function') {
+            const n = value.toNumber();
+            return Number.isFinite(n) ? n : NaN;
+          }
+          if (typeof value.valueOf === 'function') {
+            const n = Number(value.valueOf());
+            return Number.isFinite(n) ? n : NaN;
+          }
+        }
+        const n = Number(value);
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      function evalRaw(fn, x) {
+        try {
+          return toRealNumber(fn.compiled.evaluate({ x }));
+        } catch (_) {
+          return NaN;
+        }
+      }
+
+      function evalDerivative(fn, x, xRange) {
+        if (fn.derivativeCompiled) {
+          try {
+            return toRealNumber(fn.derivativeCompiled.evaluate({ x }));
+          } catch (_) {}
+        }
+        const h = Math.max(Math.abs(xRange) * 1e-5, 1e-6);
+        const y1 = evalRaw(fn, x - h);
+        const y2 = evalRaw(fn, x + h);
+        if (!Number.isFinite(y1) || !Number.isFinite(y2)) return NaN;
+        return (y2 - y1) / (2 * h);
+      }
+
+      function evalForPlot(fn, x, ranges) {
+        const y = evalRaw(fn, x);
+        if (!Number.isFinite(y)) return NaN;
+        const ySpan = ranges.yMax - ranges.yMin;
+        const yCenter = (ranges.yMin + ranges.yMax) / 2;
+        if (Math.abs(y - yCenter) > ySpan * 180) return NaN;
+        return y;
+      }
+
+      function niceStep(range, targetTicks = 8) {
+        const rough = Math.abs(range) / Math.max(targetTicks, 1);
+        if (!Number.isFinite(rough) || rough === 0) return 1;
+        const power = Math.pow(10, Math.floor(Math.log10(rough)));
+        const normalized = rough / power;
+        let step;
+        if (normalized <= 1) step = 1;
+        else if (normalized <= 2) step = 2;
+        else if (normalized <= 5) step = 5;
+        else step = 10;
+        return step * power;
+      }
+
+      function ticks(min, max, pixelLength, minPixelGap = 72) {
+        const desired = Math.max(2, Math.floor(pixelLength / minPixelGap));
+        const step = niceStep(max - min, desired);
+        const start = Math.ceil(min / step) * step;
+        const out = [];
+        for (let v = start; v <= max + step * 0.5; v += step) {
+          out.push(cleanZero(v));
+        }
+        return out;
+      }
+
+      function cleanZero(n) {
+        return Math.abs(n) < 1e-12 ? 0 : n;
+      }
+
+      function worldToScreen(x, y, vp, ranges) {
+        const sx = vp.pad.left + ((x - ranges.xMin) / (ranges.xMax - ranges.xMin)) * vp.plotWidth;
+        const sy = vp.height - vp.pad.bottom - ((y - ranges.yMin) / (ranges.yMax - ranges.yMin)) * vp.plotHeight;
+        return { x: sx, y: sy };
+      }
+
+      function formatAxisNumber(n) {
+        if (Math.abs(n) >= 1e4 || (Math.abs(n) > 0 && Math.abs(n) < 1e-3)) {
+          return n.toExponential(2).replace('+', '');
+        }
+        return trimZeros(n.toFixed(8));
+      }
+
+      function trimZeros(str) {
+        return str.replace(/(\.\d*?[1-9])0+$/g, '$1').replace(/\.0+$/g, '').replace(/^(-?)0\./, '$10.');
+      }
+
+      function createSvg(tag, attrs = {}) {
+        const el = document.createElementNS(SVG_NS, tag);
+        Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+        return el;
+      }
+
+      function drawGrid(svg, vp, ranges) {
+        const gridGroup = createSvg('g', { class: 'grid' });
+
+        const bg = createSvg('rect', {
+          x: vp.pad.left,
+          y: vp.pad.top,
+          width: vp.plotWidth,
+          height: vp.plotHeight,
+          rx: 18,
+          fill: getCss('--plot-bg'),
+          stroke: 'rgba(148, 163, 184, 0.16)',
+          'stroke-width': 1
+        });
+        gridGroup.appendChild(bg);
+
+        const xTicks = ticks(ranges.xMin, ranges.xMax, vp.plotWidth, vp.width < 540 ? 64 : 82);
+        const yTicks = ticks(ranges.yMin, ranges.yMax, vp.plotHeight, vp.height < 420 ? 58 : 74);
+
+        xTicks.forEach(value => {
+          const p = worldToScreen(value, ranges.yMin, vp, ranges);
+          gridGroup.appendChild(createSvg('line', {
+            x1: p.x, y1: vp.pad.top, x2: p.x, y2: vp.height - vp.pad.bottom,
+            stroke: value === 0 ? getCss('--grid-strong') : getCss('--grid'),
+            'stroke-width': value === 0 ? 1.3 : 1
+          }));
+
+          const label = createSvg('text', {
+            x: p.x,
+            y: vp.height - vp.pad.bottom + 22,
+            'text-anchor': 'middle',
+            class: value === 0 ? 'svg-axis-label' : 'svg-label'
+          });
+          label.textContent = formatAxisNumber(value);
+          gridGroup.appendChild(label);
+        });
+
+        yTicks.forEach(value => {
+          const p = worldToScreen(ranges.xMin, value, vp, ranges);
+          gridGroup.appendChild(createSvg('line', {
+            x1: vp.pad.left, y1: p.y, x2: vp.width - vp.pad.right, y2: p.y,
+            stroke: value === 0 ? getCss('--grid-strong') : getCss('--grid'),
+            'stroke-width': value === 0 ? 1.3 : 1
+          }));
+
+          const label = createSvg('text', {
+            x: vp.pad.left - 10,
+            y: p.y + 4,
+            'text-anchor': 'end',
+            class: value === 0 ? 'svg-axis-label' : 'svg-label'
+          });
+          label.textContent = formatAxisNumber(value);
+          gridGroup.appendChild(label);
+        });
+
+        if (ranges.yMin <= 0 && ranges.yMax >= 0) {
+          const p0 = worldToScreen(ranges.xMin, 0, vp, ranges);
+          const p1 = worldToScreen(ranges.xMax, 0, vp, ranges);
+          gridGroup.appendChild(createSvg('line', {
+            x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y,
+            stroke: getCss('--axis'),
+            'stroke-width': 1.8
+          }));
+
+          const xText = createSvg('text', {
+            x: vp.width - vp.pad.right - 10,
+            y: p0.y - 10,
+            'text-anchor': 'end',
+            class: 'svg-axis-label'
+          });
+          xText.textContent = 'x';
+          gridGroup.appendChild(xText);
+        }
+
+        if (ranges.xMin <= 0 && ranges.xMax >= 0) {
+          const p0 = worldToScreen(0, ranges.yMin, vp, ranges);
+          const p1 = worldToScreen(0, ranges.yMax, vp, ranges);
+          gridGroup.appendChild(createSvg('line', {
+            x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y,
+            stroke: getCss('--axis'),
+            'stroke-width': 1.8
+          }));
+
+          const yText = createSvg('text', {
+            x: p0.x + 10,
+            y: vp.pad.top + 14,
+            class: 'svg-axis-label'
+          });
+          yText.textContent = 'y';
+          gridGroup.appendChild(yText);
+        }
+
+        svg.appendChild(gridGroup);
+      }
+
+      function midpointError(x0, y0, xm, ym, x1, y1, vp, ranges) {
+        const p0 = worldToScreen(x0, y0, vp, ranges);
+        const pm = worldToScreen(xm, ym, vp, ranges);
+        const p1 = worldToScreen(x1, y1, vp, ranges);
+        const lx = (p0.x + p1.x) / 2;
+        const ly = (p0.y + p1.y) / 2;
+        const dx = pm.x - lx;
+        const dy = pm.y - ly;
+        const err = Math.hypot(dx, dy);
+        const len = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        return { err, len };
+      }
+
+      function buildAdaptivePoints(fn, ranges, vp, precision) {
+        const result = [];
+        const initialSegments = Math.max(14, Math.round(precision / 3));
+        const thresholdPx = 5 - (precision / 100) * 4.25;
+        const maxDepth = Math.round(6 + (precision / 100) * 10);
+        const xMin = ranges.xMin;
+        const xMax = ranges.xMax;
+
+        function trace(x0, y0, x1, y1, depth) {
+          const xm = (x0 + x1) / 2;
+          const ym = evalForPlot(fn, xm, ranges);
+
+          const valid0 = Number.isFinite(y0);
+          const valid1 = Number.isFinite(y1);
+          const validm = Number.isFinite(ym);
+
+          if (!(valid0 && valid1 && validm)) {
+            if (depth < maxDepth) {
+              trace(x0, y0, xm, ym, depth + 1);
+              result.push(null);
+              trace(xm, ym, x1, y1, depth + 1);
+            } else {
+              result.push(null);
+            }
+            return;
+          }
+
+          const { err, len } = midpointError(x0, y0, xm, ym, x1, y1, vp, ranges);
+          const slope0 = (ym - y0) / (xm - x0 || 1);
+          const slope1 = (y1 - ym) / (x1 - xm || 1);
+          const slopeJump = Math.abs(Math.atan(slope1) - Math.atan(slope0));
+          const needSplit = depth < maxDepth && (err > thresholdPx || len > 80 || slopeJump > 0.22);
+
+          if (needSplit) {
+            trace(x0, y0, xm, ym, depth + 1);
+            trace(xm, ym, x1, y1, depth + 1);
+          } else {
+            if (!result.length || result[result.length - 1] === null) {
+              result.push({ x: x0, y: y0 });
+            } else {
+              const last = result[result.length - 1];
+              if (Math.abs(last.x - x0) > 1e-12 || Math.abs(last.y - y0) > 1e-12) {
+                result.push({ x: x0, y: y0 });
+              }
+            }
+            result.push({ x: x1, y: y1 });
+          }
+        }
+
+        for (let i = 0; i < initialSegments; i++) {
+          const a = xMin + (i / initialSegments) * (xMax - xMin);
+          const b = xMin + ((i + 1) / initialSegments) * (xMax - xMin);
+          const ya = evalForPlot(fn, a, ranges);
+          const yb = evalForPlot(fn, b, ranges);
+          trace(a, ya, b, yb, 0);
+          if (i !== initialSegments - 1) result.push(null);
+        }
+
+        return compressPoints(result);
+      }
+
+      function compressPoints(points) {
+        const out = [];
+        let prev = null;
+        points.forEach(p => {
+          if (p === null) {
+            if (out.length && out[out.length - 1] !== null) out.push(null);
+            prev = null;
+            return;
+          }
+          if (!prev || Math.abs(prev.x - p.x) > 1e-12 || Math.abs(prev.y - p.y) > 1e-12) {
+            out.push(p);
+            prev = p;
+          }
+        });
+        if (out.length && out[out.length - 1] === null) out.pop();
+        return out;
+      }
+
+      function pointsToPath(points, vp, ranges) {
+        let d = '';
+        let open = false;
+
+        points.forEach(point => {
+          if (point === null) {
+            open = false;
+            return;
+          }
+          const sp = worldToScreen(point.x, point.y, vp, ranges);
+          if (!Number.isFinite(sp.x) || !Number.isFinite(sp.y)) {
+            open = false;
+            return;
+          }
+          if (!open) {
+            d += `M ${sp.x.toFixed(3)} ${sp.y.toFixed(3)} `;
+            open = true;
+          } else {
+            d += `L ${sp.x.toFixed(3)} ${sp.y.toFixed(3)} `;
+          }
+        });
+
+        return d.trim();
+      }
+
+      function rootFindBrackets(h, a, b, fa, fb, tolX, tolY) {
+        let left = a;
+        let right = b;
+        let fl = fa;
+        let fr = fb;
+
+        if (!Number.isFinite(fl) || !Number.isFinite(fr)) return null;
+
+        if (Math.abs(fl) < tolY) return a;
+        if (Math.abs(fr) < tolY) return b;
+
+        for (let i = 0; i < 64; i++) {
+          let x = (left * fr - right * fl) / (fr - fl);
+          if (!Number.isFinite(x) || x <= Math.min(left, right) || x >= Math.max(left, right)) {
+            x = (left + right) / 2;
+          }
+          const fx = h(x);
+          if (!Number.isFinite(fx)) {
+            x = (left + right) / 2;
+          }
+          const fm = Number.isFinite(fx) ? fx : h((left + right) / 2);
+          if (!Number.isFinite(fm)) return null;
+          if (Math.abs(fm) < tolY || Math.abs(right - left) < tolX) return x;
+
+          if (Math.sign(fl) === 0) return left;
+          if (Math.sign(fr) === 0) return right;
+
+          if (Math.sign(fl) * Math.sign(fm) <= 0) {
+            right = x;
+            fr = fm;
+          } else {
+            left = x;
+            fl = fm;
+          }
+        }
+
+        return (left + right) / 2;
+      }
+
+      function findNearMinimumAbs(h, a, b, tolX, tolY) {
+        let left = a;
+        let right = b;
+        let bestX = null;
+        let bestF = Infinity;
+
+        for (let i = 0; i < 42; i++) {
+          const m1 = left + (right - left) / 3;
+          const m2 = right - (right - left) / 3;
+          const f1 = Math.abs(h(m1));
+          const f2 = Math.abs(h(m2));
+          if (f1 < bestF) { bestF = f1; bestX = m1; }
+          if (f2 < bestF) { bestF = f2; bestX = m2; }
+          if (f1 <= f2) right = m2;
+          else left = m1;
+          if (Math.abs(right - left) < tolX) break;
+        }
+
+        if (bestX !== null && bestF < tolY * 1.5) return bestX;
+        return null;
+      }
+
+      function scanRoots(h, ranges, precision, cap = 24) {
+        const xSpan = ranges.xMax - ranges.xMin;
+        const ySpan = ranges.yMax - ranges.yMin;
+        const samples = Math.min(2400, Math.max(220, Math.round(260 + precision * 10)));
+        const tolX = Math.max(1e-8, xSpan * 1e-7);
+        const tolY = Math.max(1e-8, ySpan * 1e-7);
+        const roots = [];
+        let prevX = null;
+        let prevY = null;
+
+        for (let i = 0; i <= samples; i++) {
+          const x = ranges.xMin + (i / samples) * xSpan;
+          const y = h(x);
+
+          if (prevX !== null && Number.isFinite(prevY) && Number.isFinite(y)) {
+            if (Math.sign(prevY) !== Math.sign(y) || Math.abs(prevY) < tolY || Math.abs(y) < tolY) {
+              const root = rootFindBrackets(h, prevX, x, prevY, y, tolX, tolY);
+              if (root !== null) roots.push(root);
+            } else {
+              const mid = (prevX + x) / 2;
+              const ym = h(mid);
+              if (Number.isFinite(ym) && Math.abs(ym) <= Math.abs(prevY) && Math.abs(ym) <= Math.abs(y) && Math.abs(ym) < tolY * 1.35) {
+                const near = findNearMinimumAbs(h, prevX, x, tolX, tolY);
+                if (near !== null) roots.push(near);
+              }
+            }
+          }
+
+          prevX = x;
+          prevY = y;
+        }
+
+        return uniqueNumbers(roots, tolX * 12).slice(0, cap);
+      }
+
+      function uniqueNumbers(values, tol) {
+        return values
+          .filter(Number.isFinite)
+          .sort((a, b) => a - b)
+          .filter((v, i, arr) => i === 0 || Math.abs(v - arr[i - 1]) > tol);
+      }
+
+      function inferPointColor(types) {
+        const sorted = [...types].sort((a, b) => {
+          const pa = TYPE_STYLE[a] ? TYPE_STYLE[a].priority : 999;
+          const pb = TYPE_STYLE[b] ? TYPE_STYLE[b].priority : 999;
+          return pa - pb;
+        });
+        const main = sorted[0];
+        return (TYPE_STYLE[main] && TYPE_STYLE[main].color) || '#64748b';
+      }
+
+      function mergePoints(points, ranges) {
+        const tolX = Math.max((ranges.xMax - ranges.xMin) * 1e-5, 1e-7);
+        const tolY = Math.max((ranges.yMax - ranges.yMin) * 1e-5, 1e-7);
+        const merged = [];
+
+        points.forEach(point => {
+          if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+          const existing = merged.find(item =>
+            Math.abs(item.x - point.x) <= tolX &&
+            Math.abs(item.y - point.y) <= tolY
+          );
+
+          if (!existing) {
+            merged.push({
+              ...point,
+              types: [...new Set(point.types || [point.type].filter(Boolean))],
+              functions: [...new Set(point.functions || [])]
+            });
+          } else {
+            const types = point.types || [point.type].filter(Boolean);
+            existing.types = [...new Set([...existing.types, ...types])];
+            existing.functions = [...new Set([...existing.functions, ...(point.functions || [])])];
+          }
+        });
+
+        merged.forEach((point, idx) => {
+          point.id = `p-${idx + 1}`;
+          point.x = cleanZero(point.x);
+          point.y = cleanZero(point.y);
+          point.color = inferPointColor(point.types);
+          point.label = point.types.join(' / ');
+        });
+
+        return merged
+          .filter(point => point.x >= ranges.xMin && point.x <= ranges.xMax && point.y >= ranges.yMin && point.y <= ranges.yMax)
+          .sort((a, b) => a.x - b.x || a.y - b.y)
+          .slice(0, 120);
+      }
+
+      function collectSpecialPoints(functions, ranges, precision) {
+        const all = [];
+        const xSpan = ranges.xMax - ranges.xMin;
+
+        functions.forEach(fn => {
+          const roots = scanRoots(x => evalRaw(fn, x), ranges, precision, 20);
+          roots.forEach(x => {
+            const y = evalRaw(fn, x);
+            if (Number.isFinite(y)) {
+              all.push({
+                x,
+                y,
+                type: '零点',
+                types: ['零点'],
+                functions: [fn.name]
+              });
+            }
+          });
+
+          if (ranges.xMin <= 0 && ranges.xMax >= 0) {
+            const y0 = evalRaw(fn, 0);
+            if (Number.isFinite(y0)) {
+              all.push({
+                x: 0,
+                y: y0,
+                type: 'y 轴截距',
+                types: ['y 轴截距'],
+                functions: [fn.name]
+              });
+            }
+          }
+
+          const dRoots = scanRoots(x => evalDerivative(fn, x, xSpan), ranges, precision, 16);
+          dRoots.forEach(x => {
+            const y = evalRaw(fn, x);
+            if (!Number.isFinite(y)) return;
+            const dx = Math.max(xSpan * 1e-4, 1e-5);
+            const left = evalDerivative(fn, x - dx, xSpan);
+            const right = evalDerivative(fn, x + dx, xSpan);
+
+            let type = '驻点';
+            if (Number.isFinite(left) && Number.isFinite(right)) {
+              if (left > 0 && right < 0) type = '极大值点';
+              else if (left < 0 && right > 0) type = '极小值点';
+            }
+
+            all.push({
+              x,
+              y,
+              type,
+              types: [type],
+              functions: [fn.name]
+            });
+          });
+        });
+
+        for (let i = 0; i < functions.length; i++) {
+          for (let j = i + 1; j < functions.length; j++) {
+            const f1 = functions[i];
+            const f2 = functions[j];
+            const intersections = scanRoots(x => evalRaw(f1, x) - evalRaw(f2, x), ranges, precision, 18);
+            intersections.forEach(x => {
+              const y1 = evalRaw(f1, x);
+              const y2 = evalRaw(f2, x);
+              if (!Number.isFinite(y1) || !Number.isFinite(y2)) return;
+              const y = (y1 + y2) / 2;
+              all.push({
+                x,
+                y,
+                type: '交点',
+                types: ['交点'],
+                functions: [f1.name, f2.name]
+              });
+            });
+          }
+        }
+
+        return mergePoints(all, ranges);
+      }
+
+      function drawFunctions(svg, functions, ranges, vp, precision) {
+        const defs = createSvg('defs');
+        const clip = createSvg('clipPath', { id: 'plotClip' });
+        clip.appendChild(createSvg('rect', {
+          x: vp.pad.left,
+          y: vp.pad.top,
+          width: vp.plotWidth,
+          height: vp.plotHeight,
+          rx: 18
+        }));
+        defs.appendChild(clip);
+        svg.appendChild(defs);
+
+        const group = createSvg('g', { 'clip-path': 'url(#plotClip)' });
+
+        functions.forEach(fn => {
+          const points = buildAdaptivePoints(fn, ranges, vp, precision);
+          const d = pointsToPath(points, vp, ranges);
+          if (!d) return;
+          const path = createSvg('path', {
+            d,
+            stroke: fn.color,
+            class: 'svg-fn'
+          });
+          group.appendChild(path);
+        });
+
+        svg.appendChild(group);
+      }
+
+      function drawSelectedCrosshair(svg, point, vp, ranges) {
+        if (!point) return;
+        const p = worldToScreen(point.x, point.y, vp, ranges);
+        const g = createSvg('g');
+
+        g.appendChild(createSvg('line', {
+          x1: p.x, y1: vp.pad.top, x2: p.x, y2: vp.height - vp.pad.bottom,
+          stroke: 'rgba(15, 23, 42, 0.18)',
+          'stroke-dasharray': '6 6',
+          'stroke-width': 1.2
+        }));
+
+        g.appendChild(createSvg('line', {
+          x1: vp.pad.left, y1: p.y, x2: vp.width - vp.pad.right, y2: p.y,
+          stroke: 'rgba(15, 23, 42, 0.18)',
+          'stroke-dasharray': '6 6',
+          'stroke-width': 1.2
+        }));
+
+        svg.appendChild(g);
+      }
+
+      function drawPoints(svg, points, ranges, vp) {
+        const group = createSvg('g');
+        const selected = state.points.find(p => p.id === state.selectedPointId) || null;
+
+        if (selected) {
+          drawSelectedCrosshair(svg, selected, vp, ranges);
+        }
+
+        points.forEach(point => {
+          if (point.x < ranges.xMin || point.x > ranges.xMax || point.y < ranges.yMin || point.y > ranges.yMax) {
+            return;
+          }
+
+          const p = worldToScreen(point.x, point.y, vp, ranges);
+          const isSelected = point.id === state.selectedPointId;
+          const radius = isSelected ? 7.8 : 5.6;
+
+          const outer = createSvg('circle', {
+            cx: p.x,
+            cy: p.y,
+            r: radius + 2.2,
+            fill: '#ffffff',
+            stroke: point.color,
+            'stroke-width': isSelected ? 2.4 : 1.4,
+            class: 'svg-point',
+            'data-id': point.id
+          });
+
+          const inner = createSvg('circle', {
+            cx: p.x,
+            cy: p.y,
+            r: radius,
+            fill: point.color,
+            stroke: '#ffffff',
+            'stroke-width': 2,
+            class: 'svg-point',
+            'data-id': point.id
+          });
+
+          const hit = createSvg('circle', {
+            cx: p.x,
+            cy: p.y,
+            r: 14,
+            class: 'svg-hit',
+            'data-id': point.id
+          });
+
+          [outer, inner, hit].forEach(el => {
+            el.addEventListener('mouseenter', event => showTooltipForPoint(point, event));
+            el.addEventListener('mousemove', event => showTooltipForPoint(point, event));
+            el.addEventListener('mouseleave', hideTooltip);
+            el.addEventListener('click', () => selectPoint(point.id));
+          });
+
+          group.appendChild(outer);
+          group.appendChild(inner);
+          group.appendChild(hit);
+        });
+
+        svg.appendChild(group);
+      }
+
+      function showTooltipForPoint(point, event) {
+        const rect = els.graphWrap.getBoundingClientRect();
+        els.graphTooltip.innerHTML = `
+          <strong style="display:block; margin-bottom:4px;">${escapeHtml(point.label)}</strong>
+          <div><code>x = ${escapeHtml(formatNumberReadable(point.x, true))}</code></div>
+          <div><code>y = ${escapeHtml(formatNumberReadable(point.y, true))}</code></div>
+        `;
+        els.graphTooltip.classList.remove('hidden');
+        els.graphTooltip.style.left = `${event.clientX - rect.left}px`;
+        els.graphTooltip.style.top = `${event.clientY - rect.top}px`;
+      }
+
+      function hideTooltip() {
+        els.graphTooltip.classList.add('hidden');
+      }
+
+      function drawLegend(functions) {
+        els.functionLegend.innerHTML = '';
+        functions.forEach(fn => {
+          const chip = document.createElement('div');
+          chip.className = 'legend-chip';
+          chip.innerHTML = `<span class="dot" style="background:${fn.color};"></span>${escapeHtml(fn.name)}`;
+          els.functionLegend.appendChild(chip);
+        });
+      }
+
+      function renderPointList(points) {
+        els.pointList.innerHTML = '';
+        if (!points.length) {
+          els.pointList.innerHTML = '<div class="empty-note">当前范围内没有识别到可显示的特殊点。</div>';
+          return;
+        }
+
+        points.forEach(point => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'point-item';
+          item.innerHTML = `
+            <strong><span class="dot" style="background:${point.color};"></span>${escapeHtml(point.label)}</strong>
+            <small><code>x = ${escapeHtml(formatNumberReadable(point.x, true))}</code></small>
+            <small><code>y = ${escapeHtml(formatNumberReadable(point.y, true))}</code></small>
+          `;
+          item.addEventListener('click', () => selectPoint(point.id));
+          els.pointList.appendChild(item);
+        });
+      }
+
+      function renderGraph() {
+        const ranges = getRanges();
+        const rect = els.graphWrap.getBoundingClientRect();
+        const width = Math.max(320, Math.round(rect.width));
+        const height = Math.max(360, Math.round(rect.height));
+        const pad = width < 540
+          ? { top: 18, right: 16, bottom: 42, left: 50 }
+          : { top: 22, right: 20, bottom: 46, left: 56 };
+
+        state.viewport = {
+          width,
+          height,
+          pad,
+          plotWidth: width - pad.left - pad.right,
+          plotHeight: height - pad.top - pad.bottom
+        };
+
+        const svg = els.graphSvg;
+        svg.innerHTML = '';
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+        drawGrid(svg, state.viewport, ranges);
+        drawFunctions(svg, state.functions, ranges, state.viewport, Number(els.precision.value));
+        drawPoints(svg, state.points, ranges, state.viewport);
+      }
+
+      function buildPointMarkdown(point) {
+        const fnText = point.functions.length
+          ? point.functions.map(f => `- \`${f}\``).join('\n')
+          : '- 无';
+
+        return [
+          `## 已选中特殊点`,
+          ``,
+          `- 类型：\`${point.label}\``,
+          `- x：\`${formatNumberReadable(point.x, true)}\``,
+          `- y：\`${formatNumberReadable(point.y, true)}\``,
+          ``,
+          `### 所属函数`,
+          fnText
+        ].join('\n');
+      }
+
+      function selectPoint(pointId) {
+        state.selectedPointId = pointId;
+        const point = state.points.find(p => p.id === pointId) || null;
+        if (!point) return;
+
+        renderGraph();
+        const md = buildPointMarkdown(point);
+        els.selectedPointBox.classList.remove('empty');
+        els.selectedPointBox.innerHTML = renderMarkdown(md);
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function inlineMarkdown(text) {
+        return escapeHtml(text)
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      }
+
+      function renderMarkdown(md) {
+        const codeBlocks = [];
+        let safe = md.replace(/```([\s\S]*?)```/g, (_, code) => {
+          const placeholder = `@@CODE_${codeBlocks.length}@@`;
+          codeBlocks.push(`<pre><code>${escapeHtml(code.trim())}</code></pre>`);
+          return placeholder;
+        });
+
+        const lines = safe.split(/\r?\n/);
+        let html = '';
+        let paragraph = [];
+        let inList = false;
+
+        const flushParagraph = () => {
+          if (paragraph.length) {
+            html += `<p>${paragraph.map(inlineMarkdown).join('<br>')}</p>`;
+            paragraph = [];
+          }
+        };
+
+        const closeList = () => {
+          if (inList) {
+            html += '</ul>';
+            inList = false;
+          }
+        };
+
+        lines.forEach(rawLine => {
+          const line = rawLine.trim();
+
+          if (!line) {
+            flushParagraph();
+            closeList();
+            return;
+          }
+
+          if (/^@@CODE_\d+@@$/.test(line)) {
+            flushParagraph();
+            closeList();
+            html += line;
+            return;
+          }
+
+          const heading = line.match(/^(#{1,6})\s+(.*)$/);
+          if (heading) {
+            flushParagraph();
+            closeList();
+            const level = Math.min(heading[1].length, 6);
+            html += `<h${level}>${inlineMarkdown(heading[2])}</h${level}>`;
+            return;
+          }
+
+          const item = line.match(/^- (.*)$/);
+          if (item) {
+            flushParagraph();
+            if (!inList) {
+              html += '<ul>';
+              inList = true;
+            }
+            html += `<li>${inlineMarkdown(item[1])}</li>`;
+            return;
+          }
+
+          closeList();
+          paragraph.push(line);
+        });
+
+        flushParagraph();
+        closeList();
+
+        codeBlocks.forEach((block, idx) => {
+          html = html.replace(`@@CODE_${idx}@@`, block);
+        });
+
+        return html;
+      }
+
+      function rationalApprox(value, maxDen = 48, tol = 1e-10) {
+        if (!Number.isFinite(value)) return null;
+        const sign = value < 0 ? -1 : 1;
+        let x = Math.abs(value);
+        let h1 = 1, h0 = 0, k1 = 0, k0 = 1;
+        let iter = 0;
+
+        while (iter < 32) {
+          const a = Math.floor(x);
+          const h2 = a * h1 + h0;
+          const k2 = a * k1 + k0;
+          if (k2 > maxDen) break;
+          const approx = h2 / k2;
+          if (Math.abs(Math.abs(value) - approx) < tol) {
+            return { n: sign * h2, d: k2 };
+          }
+          h0 = h1; h1 = h2; k0 = k1; k1 = k2;
+          const frac = x - a;
+          if (frac < tol) break;
+          x = 1 / frac;
+          iter++;
+        }
+
+        for (let d = 1; d <= maxDen; d++) {
+          const n = Math.round(value * d);
+          if (Math.abs(value - n / d) < tol) {
+            return { n, d };
+          }
+        }
+        return null;
+      }
+
+      function piApprox(value, tol = 1e-10) {
+        const ratio = value / Math.PI;
+        const frac = rationalApprox(ratio, 24, tol);
+        if (!frac) return null;
+        const n = frac.n;
+        const d = frac.d;
+        if (Math.abs(value - (n / d) * Math.PI) > tol) return null;
+        if (n === 0) return '0';
+        const absN = Math.abs(n);
+        const sign = n < 0 ? '-' : '';
+        if (d === 1) {
+          return `${sign}${absN === 1 ? '' : absN}pi`;
+        }
+        return `${sign}${absN === 1 ? '' : absN}pi/${d}`;
+      }
+
+      function formatApprox(value) {
+        if (!Number.isFinite(value)) return '未定义';
+        if (Math.abs(value) >= 1e8 || (Math.abs(value) > 0 && Math.abs(value) < 1e-8)) {
+          return value.toExponential(12).replace('+', '');
+        }
+        return trimZeros(value.toPrecision(15));
+      }
+
+      function formatNumberReadable(value, allowExactish = true) {
+        if (!Number.isFinite(value)) return '未定义';
+        const cleaned = cleanZero(value);
+        const intVal = Math.round(cleaned);
+        if (Math.abs(cleaned - intVal) < 1e-12) return String(intVal);
+
+        if (allowExactish) {
+          const piText = piApprox(cleaned, 1e-10);
+          if (piText && piText !== '0') {
+            return `${piText} ≈ ${formatApprox(cleaned)}`;
+          }
+          const frac = rationalApprox(cleaned, 48, 1e-10);
+          if (frac && frac.d !== 1) {
+            return `${frac.n}/${frac.d} ≈ ${formatApprox(cleaned)}`;
+          }
+        }
+
+        return formatApprox(cleaned);
+      }
+
+      function setMarkdown(md) {
+        state.lastMarkdown = md;
+        els.markdownSource.value = md;
+        els.markdownRender.innerHTML = renderMarkdown(md);
+      }
+
+      function defaultMarkdown(functions) {
+        const list = functions.length
+          ? functions.map(fn => `- \`${fn.name}\``).join('\n')
+          : '- 暂无';
+
+        return [
+          '# 函数图像状态',
+          '',
+          '## 当前函数',
+          list,
+          '',
+          '## 使用方式',
+          '- 每行输入一个函数，点击 **绘制图像**。',
+          '- 点击图中的特殊点，可查看 `x`、`y` 与所属函数。',
+          '- 在“数值查询”中输入 `x` 或 `y`，结果会在这里以 Markdown 渲染显示。',
+          '- 如果函数变化很快或范围很大，可以适当提高精度。'
+        ].join('\n');
+      }
+
+      function parseScalarExpression(raw) {
+        const text = (raw || '').trim();
+        if (!text) return null;
+        try {
+          const value = toRealNumber(math.evaluate(text));
+          if (!Number.isFinite(value)) throw new Error('结果不是有限实数');
+          return { raw: text, value };
+        } catch (err) {
+          throw new Error(`无法解析数值：${text}`);
+        }
+      }
+
+      function buildAnalysisMarkdown() {
+        const qx = parseScalarExpression(els.queryX.value);
+        const qy = parseScalarExpression(els.queryY.value);
+
+        if (!qx && !qy) {
+          setMarkdown(defaultMarkdown(state.functions));
+          return;
+        }
+
+        const ranges = getRanges();
+        const precision = Number(els.precision.value);
+        const lines = ['# 数值查询结果', ''];
+
+        if (qx) {
+          lines.push('## 已知 `x = ' + qx.raw + '`');
+          state.functions.forEach(fn => {
+            const y = evalRaw(fn, qx.value);
+            lines.push('### `' + fn.name + '`');
+            if (Number.isFinite(y)) {
+              lines.push('- `y = ' + formatNumberReadable(y, true) + '`');
+            } else {
+              lines.push('- 在该 x 下函数值未定义或不是实数。');
+            }
+            lines.push('');
+          });
+        }
+
+        if (qy) {
+          lines.push('## 已知 `y = ' + qy.raw + '`');
+          state.functions.forEach(fn => {
+            const xs = scanRoots(x => evalRaw(fn, x) - qy.value, ranges, precision, 32);
+            lines.push('### `' + fn.name + '`');
+            if (!xs.length) {
+              lines.push('- 在当前 x 范围 `[' + formatApprox(ranges.xMin) + ', ' + formatApprox(ranges.xMax) + ']` 内未找到对应实数解。');
+            } else {
+              xs.forEach((x, index) => {
+                lines.push('- 解 ' + (index + 1) + '：`x = ' + formatNumberReadable(x, true) + '`');
+              });
+            }
+            lines.push('');
+          });
+        }
+
+        const previewLines = lines.slice();
+        lines.push('```markdown');
+        lines.push(previewLines.filter(Boolean).slice(0, 14).join('\n'));
+        lines.push('```');
+
+        setMarkdown(lines.join('\n'));
+      }
+
+      function autoFitY() {
+        if (!state.functions.length) return;
+        const ranges = getRanges();
+        const values = [];
+        const samples = 1200;
+
+        state.functions.forEach(fn => {
+          for (let i = 0; i <= samples; i++) {
+            const x = ranges.xMin + (i / samples) * (ranges.xMax - ranges.xMin);
+            const y = evalRaw(fn, x);
+            if (Number.isFinite(y) && Math.abs(y) < 1e8) values.push(y);
+          }
+        });
+
+        if (values.length < 2) {
+          setStatus('自动适配失败：有效采样点不足。', true);
+          return;
+        }
+
+        values.sort((a, b) => a - b);
+        const low = quantile(values, 0.03);
+        const high = quantile(values, 0.97);
+        const span = Math.max(high - low, 1e-6);
+        const pad = span * 0.12;
+
+        els.yMin.value = trimZeros((low - pad).toPrecision(12));
+        els.yMax.value = trimZeros((high + pad).toPrecision(12));
+        drawAll(true);
+      }
+
+      function quantile(arr, q) {
+        const pos = (arr.length - 1) * q;
+        const base = Math.floor(pos);
+        const rest = pos - base;
+        const next = arr[base + 1] !== undefined ? arr[base + 1] : arr[base];
+        return arr[base] + rest * (next - arr[base]);
+      }
+
+      function drawAll(keepStatus = false) {
+        try {
+          const ranges = getRanges();
+          const precision = Number(els.precision.value);
+          state.functions = parseFunctions();
+          state.points = collectSpecialPoints(state.functions, ranges, precision);
+
+          if (!state.points.some(p => p.id === state.selectedPointId)) {
+            state.selectedPointId = state.points[0] ? state.points[0].id : null;
+          }
+
+          drawLegend(state.functions);
+          renderPointList(state.points);
+          renderGraph();
+          buildAnalysisMarkdown();
+
+          if (state.selectedPointId) {
+            selectPoint(state.selectedPointId);
+          } else {
+            els.selectedPointBox.classList.add('empty');
+            els.selectedPointBox.innerHTML = '点击图中的特殊点后，这里会显示详细坐标、类型与所属函数。';
+          }
+
+          if (!keepStatus) {
+            setStatus(`已绘制 ${state.functions.length} 条函数，识别到 ${state.points.length} 个特殊点。`);
+          } else {
+            setStatus(`已更新图像：${state.functions.length} 条函数，${state.points.length} 个特殊点。`);
+          }
+        } catch (err) {
+          setStatus(err.message || '绘制失败。', true);
+          showError([err.message || '绘制失败。']);
+        }
+      }
+
+      function scheduleRender() {
+        cancelAnimationFrame(state.resizeRaf);
+        state.resizeRaf = requestAnimationFrame(() => {
+          if (!state.functions.length) return;
+          try {
+            renderGraph();
+            if (state.selectedPointId) selectPoint(state.selectedPointId);
+          } catch (_) {}
+        });
+      }
+
+      function bindEvents() {
+        els.plotBtn.addEventListener('click', () => drawAll());
+
+        els.sampleBtn.addEventListener('click', () => {
+          els.functionsInput.value = [
+            'sin(x)',
+            'x^2 - 4',
+            '0.5x + 1',
+            'exp(-x^2) * cos(3x)'
+          ].join('\n');
+          drawAll();
+        });
+
+        els.fitBtn.addEventListener('click', autoFitY);
+
+        els.precision.addEventListener('input', () => {
+          els.precisionValue.textContent = els.precision.value;
+        });
+
+        els.precision.addEventListener('change', () => {
+          if (state.functions.length) drawAll(true);
+        });
+
+        [els.xMin, els.xMax, els.yMin, els.yMax].forEach(input => {
+          input.addEventListener('change', () => {
+            if (state.functions.length) drawAll(true);
+          });
+        });
+
+        els.analyzeBtn.addEventListener('click', () => {
+          try {
+            buildAnalysisMarkdown();
+            setStatus(`数值查询已更新。当前函数：${state.functions.length} 条。`);
+          } catch (err) {
+            setStatus(err.message || '数值查询失败。', true);
+          }
+        });
+
+        els.clearQueryBtn.addEventListener('click', () => {
+          els.queryX.value = '';
+          els.queryY.value = '';
+          setMarkdown(defaultMarkdown(state.functions));
+        });
+
+        els.copyMdBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(state.lastMarkdown || '');
+            setStatus('Markdown 已复制到剪贴板。');
+          } catch (_) {
+            els.markdownSource.focus();
+            els.markdownSource.select();
+            setStatus('已选中 Markdown 源码，可手动复制。');
+          }
+        });
+
+        els.functionsInput.addEventListener('keydown', event => {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            drawAll();
+          }
+        });
+
+        [els.queryX, els.queryY].forEach(input => {
+          input.addEventListener('keydown', event => {
+            if (event.key === 'Enter') buildAnalysisMarkdown();
+          });
+        });
+
+        new ResizeObserver(scheduleRender).observe(els.graphWrap);
+      }
+
+      function init() {
+        els.precisionValue.textContent = els.precision.value;
+        bindEvents();
+        setMarkdown(defaultMarkdown([]));
+        drawAll();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

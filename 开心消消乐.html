@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>开心消消乐</title>
+<link
+  rel="icon"
+  href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+  type="image/png"
+/>
+  <style>
+    :root{
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --card-2:#fcfcfe;
+      --line:#e7ebf3;
+      --text:#182230;
+      --sub:#697586;
+      --primary:#4f7cff;
+      --primary-soft:#eef4ff;
+      --success:#16b364;
+      --warn:#f79009;
+      --danger:#ef4444;
+      --shadow:0 18px 48px rgba(15,23,42,.08);
+      --shadow-soft:0 10px 30px rgba(15,23,42,.06);
+      --radius:24px;
+      --cell-size:64px;
+      --gap:8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Microsoft YaHei","PingFang SC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(79,124,255,.08), transparent 22%),
+        radial-gradient(circle at top right, rgba(34,197,94,.08), transparent 22%),
+        linear-gradient(180deg,#ffffff 0%, #f7f8fb 58%, #f5f7fb 100%);
+    }
+    button,select{font:inherit}
+    .page{
+      max-width:1360px;
+      margin:0 auto;
+      padding:20px clamp(14px,2vw,28px) 34px;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.8);
+      background:linear-gradient(135deg, rgba(255,255,255,.96), rgba(245,248,255,.95));
+      box-shadow:var(--shadow);
+      border-radius:32px;
+      padding:24px clamp(18px,4vw,38px);
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .hero::before,.hero::after{
+      content:"";
+      position:absolute;
+      border-radius:999px;
+      filter:blur(6px);
+      opacity:.7;
+      pointer-events:none;
+    }
+    .hero::before{
+      width:240px;height:240px;
+      right:-70px;top:-70px;
+      background:radial-gradient(circle, rgba(79,124,255,.16), transparent 60%);
+    }
+    .hero::after{
+      width:180px;height:180px;
+      left:-45px;bottom:-55px;
+      background:radial-gradient(circle, rgba(22,179,100,.12), transparent 60%);
+    }
+    .hero-copy{
+      position:relative;
+      z-index:1;
+      min-width:0;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:var(--primary-soft);
+      color:var(--primary);
+      border:1px solid #dce8ff;
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:14px;
+      font-weight:600;
+      margin-bottom:12px;
+    }
+    h1{
+      margin:0 0 10px;
+      font-size:clamp(28px,4vw,44px);
+      line-height:1.1;
+      letter-spacing:.5px;
+    }
+    .hero p{
+      margin:0;
+      color:var(--sub);
+      max-width:760px;
+      line-height:1.7;
+      font-size:15px;
+    }
+    .hero-badges{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(110px,1fr));
+      gap:12px;
+      min-width:min(420px,48%);
+    }
+    .badge-card{
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:16px 14px;
+      box-shadow:var(--shadow-soft);
+      text-align:center;
+    }
+    .badge-card strong{
+      display:block;
+      font-size:26px;
+      margin-bottom:6px;
+    }
+    .badge-card span{
+      color:var(--sub);
+      font-size:13px;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(320px, 1.15fr) minmax(280px, .85fr);
+      gap:18px;
+      align-items:start;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow-soft);
+    }
+    .main-panel{
+      padding:18px;
+    }
+    .section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .section-title h2{
+      margin:0;
+      font-size:20px;
+    }
+    .section-title p{
+      margin:2px 0 0;
+      color:var(--sub);
+      font-size:13px;
+    }
+    .dot{
+      width:12px;height:12px;border-radius:50%;
+      background:linear-gradient(135deg,var(--primary),#7ba0ff);
+      box-shadow:0 0 0 6px rgba(79,124,255,.12);
+      flex:0 0 auto;
+    }
+    .toolbar{
+      display:grid;
+      grid-template-columns:1.2fr 1fr 1fr 1fr auto auto;
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .field label{
+      font-size:12px;
+      color:var(--sub);
+      padding-left:2px;
+    }
+    .field select,.field button,.btn{
+      height:46px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      padding:0 14px;
+      color:var(--text);
+      transition:.22s ease;
+    }
+    .field select:focus,.field button:focus,.btn:focus{
+      outline:none;
+      border-color:#bdd0ff;
+      box-shadow:0 0 0 4px rgba(79,124,255,.12);
+    }
+    .btn{
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn.primary{
+      background:linear-gradient(135deg,var(--primary),#6b92ff);
+      color:#fff;
+      border-color:transparent;
+      box-shadow:0 12px 24px rgba(79,124,255,.22);
+    }
+    .btn.primary:hover{transform:translateY(-1px)}
+    .btn.ghost{
+      background:#fff;
+    }
+    .btn.soft{
+      background:var(--primary-soft);
+      color:var(--primary);
+      border-color:#dce8ff;
+    }
+    .btn.warn{
+      background:#fff7ed;
+      color:#b45309;
+      border-color:#fed7aa;
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none !important;
+      box-shadow:none !important;
+    }
+    .mode-switch{
+      display:flex;
+      gap:10px;
+      background:#f5f7fb;
+      border:1px solid var(--line);
+      padding:8px;
+      border-radius:20px;
+      margin-bottom:14px;
+    }
+    .mode-switch button{
+      flex:1;
+      border:none;
+      background:transparent;
+      border-radius:14px;
+      padding:12px 10px;
+      cursor:pointer;
+      color:var(--sub);
+      font-weight:700;
+      transition:.2s;
+    }
+    .mode-switch button.active{
+      background:#fff;
+      color:var(--text);
+      box-shadow:var(--shadow-soft);
+      border:1px solid rgba(79,124,255,.08);
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .stat{
+      background:linear-gradient(180deg,#fff,#fbfcff);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:16px 14px;
+      min-height:92px;
+    }
+    .stat-label{
+      color:var(--sub);
+      font-size:12px;
+      margin-bottom:8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .stat-value{
+      font-size:26px;
+      font-weight:800;
+      letter-spacing:.4px;
+    }
+    .star-row{
+      display:flex;gap:6px;align-items:center;
+      font-size:20px;
+    }
+    .star{filter:grayscale(1); opacity:.32; transition:.2s}
+    .star.on{filter:none; opacity:1}
+    .target-panel{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .goal-card,.mission-card{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,#fcfcff);
+      border-radius:22px;
+      padding:16px;
+    }
+    .goal-title,.mission-title{
+      font-size:13px;
+      color:var(--sub);
+      margin-bottom:8px;
+    }
+    .goal-main{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .goal-main strong{
+      font-size:30px;
+      line-height:1;
+    }
+    .goal-main span{
+      color:var(--sub);
+      font-size:13px;
+    }
+    .progress{
+      height:10px;
+      border-radius:999px;
+      background:#eef2f7;
+      overflow:hidden;
+      margin-top:14px;
+    }
+    .progress-bar{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--primary),#84a6ff);
+      transition:width .35s ease;
+    }
+    .mission-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      min-height:36px;
+    }
+    .mission-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#f7f9ff;
+      color:#334155;
+      border:1px solid #dbe5ff;
+      border-radius:999px;
+      padding:9px 12px;
+      font-size:13px;
+      font-weight:600;
+    }
+    .board-shell{
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:16px;
+      background:linear-gradient(180deg,#ffffff,#fbfcff);
+      position:relative;
+      overflow:hidden;
+    }
+    .board-shell::after{
+      content:"";
+      position:absolute;
+      inset:auto -50px -70px auto;
+      width:180px;height:180px;border-radius:999px;
+      background:radial-gradient(circle,rgba(79,124,255,.1),transparent 60%);
+      pointer-events:none;
+    }
+    .board-wrap{
+      position:relative;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      width:100%;
+      min-height:340px;
+      overflow:auto;
+      padding:6px;
+    }
+    #gameBoard{
+      display:grid;
+      gap:var(--gap);
+      touch-action:manipulation;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .cell{
+      width:var(--cell-size);
+      height:var(--cell-size);
+      border:none;
+      border-radius:20px;
+      background:linear-gradient(180deg,#fff,#f7faff);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.8),
+        0 10px 18px rgba(15,23,42,.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      position:relative;
+      transition:transform .18s ease, box-shadow .18s ease, outline-color .18s ease, opacity .2s ease;
+      outline:2px solid transparent;
+      font-size:calc(var(--cell-size) * .48);
+    }
+    .cell:hover{transform:translateY(-2px)}
+    .cell.selected{
+      outline-color:rgba(79,124,255,.72);
+      transform:translateY(-2px) scale(1.04);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.8),
+        0 14px 24px rgba(79,124,255,.18);
+    }
+    .cell.hint{
+      animation:hintPulse 1s infinite;
+      outline-color:rgba(22,179,100,.55);
+    }
+    .cell.removing{
+      animation:popOut .24s ease forwards;
+    }
+    .cell.locked{
+      cursor:not-allowed;
+      opacity:.85;
+    }
+    .cell .piece{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:74%;
+      height:74%;
+      border-radius:18px;
+      background:rgba(255,255,255,.86);
+      backdrop-filter:blur(4px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+      transform:translateZ(0);
+    }
+    .piece.apple{background:linear-gradient(180deg,#fff1f2,#ffe4e6)}
+    .piece.lemon{background:linear-gradient(180deg,#fffbeb,#fef3c7)}
+    .piece.grape{background:linear-gradient(180deg,#faf5ff,#ede9fe)}
+    .piece.melon{background:linear-gradient(180deg,#ecfeff,#cffafe)}
+    .piece.strawberry{background:linear-gradient(180deg,#fff1f2,#fecdd3)}
+    .piece.blueberry{background:linear-gradient(180deg,#eff6ff,#dbeafe)}
+    .piece.peach{background:linear-gradient(180deg,#fff7ed,#fed7aa)}
+    .piece.mint{background:linear-gradient(180deg,#ecfdf3,#d1fae5)}
+    .piece.ice{
+      background:linear-gradient(180deg,#f8fbff,#ecf4ff);
+      color:#4f7cff;
+      border:1px solid #dbe8ff;
+    }
+    .sidebar{
+      display:grid;
+      gap:18px;
+    }
+    .side-card{
+      padding:18px;
+    }
+    .side-card h3{
+      margin:0 0 6px;
+      font-size:18px;
+    }
+    .side-card p{
+      margin:0;
+      color:var(--sub);
+      line-height:1.7;
+      font-size:14px;
+    }
+    .levels-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .level-card{
+      text-align:left;
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:14px;
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      cursor:pointer;
+      transition:.2s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .level-card:hover{transform:translateY(-2px); box-shadow:var(--shadow-soft)}
+    .level-card.active{
+      border-color:#bcd0ff;
+      box-shadow:0 10px 24px rgba(79,124,255,.12);
+      background:linear-gradient(180deg,#ffffff,#f5f8ff);
+    }
+    .level-card.locked{
+      opacity:.58;
+      cursor:not-allowed;
+      filter:grayscale(.15);
+    }
+    .level-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+      gap:8px;
+    }
+    .level-no{
+      font-size:13px;
+      color:var(--sub);
+      font-weight:700;
+    }
+    .level-name{
+      margin:0 0 8px;
+      font-size:16px;
+    }
+    .level-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      font-size:12px;
+      color:var(--sub);
+    }
+    .mini-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:#f8fafc;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 10px;
+    }
+    .record-list{
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+    }
+    .record-row{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fcfdff;
+      font-size:14px;
+    }
+    .record-row span:last-child{font-weight:700}
+    .hint-box{
+      margin-top:12px;
+      background:#f8fbff;
+      border:1px dashed #c8dafd;
+      border-radius:18px;
+      padding:12px 14px;
+      color:#4064c9;
+      font-size:13px;
+      line-height:1.65;
+    }
+    .rules-list{
+      margin:12px 0 0;
+      padding-left:20px;
+      color:var(--sub);
+      line-height:1.85;
+      font-size:14px;
+    }
+    .footer-note{
+      margin-top:16px;
+      text-align:center;
+      color:var(--sub);
+      font-size:12px;
+    }
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:24px;
+      transform:translateX(-50%) translateY(25px);
+      background:rgba(24,34,48,.94);
+      color:#fff;
+      padding:12px 16px;
+      border-radius:999px;
+      box-shadow:0 16px 40px rgba(15,23,42,.26);
+      opacity:0;
+      pointer-events:none;
+      transition:.28s ease;
+      z-index:40;
+      font-size:14px;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+      background:rgba(15,23,42,.34);
+      backdrop-filter:blur(5px);
+      z-index:35;
+    }
+    .modal.show{display:flex}
+    .modal-panel{
+      width:min(92vw,560px);
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:24px;
+      box-shadow:var(--shadow);
+      position:relative;
+    }
+    .modal-panel h3{
+      margin:0 0 10px;
+      font-size:24px;
+    }
+    .modal-panel p{
+      margin:0 0 14px;
+      color:var(--sub);
+      line-height:1.8;
+    }
+    .modal-close{
+      position:absolute;
+      right:14px;
+      top:14px;
+      width:40px;height:40px;
+      border-radius:50%;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      font-size:18px;
+    }
+    .result-stars{
+      display:flex;gap:12px;justify-content:center;
+      font-size:34px;
+      margin:14px 0 18px;
+    }
+    .result-stars span{
+      filter:grayscale(1);
+      opacity:.35;
+      transform:scale(.9);
+    }
+    .result-stars span.on{
+      filter:none;
+      opacity:1;
+      transform:scale(1);
+    }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:18px;
+    }
+    .hidden{display:none !important}
+    .confetti{
+      position:fixed;
+      top:-20px;
+      width:10px;
+      height:18px;
+      border-radius:999px;
+      opacity:.92;
+      z-index:50;
+      animation:fall linear forwards;
+      pointer-events:none;
+    }
+
+    @keyframes popOut{
+      from{transform:scale(1);opacity:1}
+      to{transform:scale(.4);opacity:0}
+    }
+    @keyframes hintPulse{
+      0%,100%{transform:translateY(0) scale(1)}
+      50%{transform:translateY(-2px) scale(1.05)}
+    }
+    @keyframes fall{
+      to{
+        transform:translateY(110vh) rotate(560deg);
+        opacity:.98;
+      }
+    }
+
+    @media (max-width:1100px){
+      .layout{grid-template-columns:1fr}
+      .hero{flex-direction:column; align-items:flex-start}
+      .hero-badges{min-width:0; width:100%; grid-template-columns:repeat(3,1fr)}
+    }
+    @media (max-width:860px){
+      .toolbar{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+      .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .target-panel{grid-template-columns:1fr}
+    }
+    @media (max-width:640px){
+      .page{padding:14px 12px 22px}
+      .hero{
+        border-radius:26px;
+        padding:18px 16px;
+      }
+      .hero-badges{grid-template-columns:1fr}
+      .main-panel,.side-card{padding:14px}
+      .mode-switch{gap:6px;padding:6px}
+      .mode-switch button{padding:11px 6px;font-size:14px}
+      .stats{grid-template-columns:1fr 1fr; gap:10px}
+      .stat{padding:14px 12px;min-height:80px}
+      .stat-value{font-size:24px}
+      .section-head{align-items:flex-start; flex-direction:column}
+      .board-shell{padding:12px}
+      .levels-grid{grid-template-columns:1fr}
+      .modal-panel{padding:20px 16px}
+      .actions .btn{flex:1}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">✨ 白色轻量视觉 · 关卡驱动玩法</div>
+        <h1>开心消消乐</h1>
+        <p>
+          重新设计为更适合吸引游客停留体验的轻拟物白色界面，加入关卡推进、星级评价、提示与洗牌、成就记录和更清晰的反馈节奏。
+          支持手机端与电脑端自适应，打开即可玩。
+        </p>
+      </div>
+      <div class="hero-badges">
+        <div class="badge-card"><strong id="heroUnlocked">1</strong><span>已解锁关卡</span></div>
+        <div class="badge-card"><strong id="heroBestStars">0</strong><span>累计星星</span></div>
+        <div class="badge-card"><strong id="heroBestScore">0</strong><span>最佳分数</span></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="card main-panel">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="dot"></span>
+            <div>
+              <h2>游戏中心</h2>
+              <p>可切换经典模式与关卡模式，默认白色主视觉，移动端也能舒适操作。</p>
+            </div>
+          </div>
+          <button class="btn soft" id="rulesButton">玩法说明</button>
+        </div>
+
+        <div class="mode-switch">
+          <button id="classicTab" class="active">经典模式</button>
+          <button id="levelTab">关卡模式</button>
+        </div>
+
+        <div class="toolbar">
+          <div class="field">
+            <label>游戏难度</label>
+            <select id="difficultySelect">
+              <option value="easy">简单 · 6 × 6</option>
+              <option value="medium" selected>中等 · 8 × 8</option>
+              <option value="hard">困难 · 9 × 9</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>当前关卡</label>
+            <button class="btn ghost" id="levelInfoBtn">Lv.1 花园初见</button>
+          </div>
+          <div class="field">
+            <label>开始 / 切换</label>
+            <button class="btn primary" id="startButton">开始游戏</button>
+          </div>
+          <div class="field">
+            <label>提示一步</label>
+            <button class="btn ghost" id="hintButton">查看提示</button>
+          </div>
+          <div class="field">
+            <label>重新洗牌</label>
+            <button class="btn warn" id="shuffleButton">洗牌</button>
+          </div>
+          <div class="field">
+            <label>重新开始</label>
+            <button class="btn ghost" id="restartButton">重开本局</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label"><span>当前分数</span><span>Score</span></div>
+            <div class="stat-value" id="scoreValue">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label"><span>连击倍率</span><span>Combo</span></div>
+            <div class="stat-value" id="comboValue">x1</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label"><span>剩余步数</span><span>Moves</span></div>
+            <div class="stat-value" id="movesValue">∞</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">
+              <span>本局评级</span>
+              <div class="star-row" id="starRow">
+                <span class="star">⭐</span>
+                <span class="star">⭐</span>
+                <span class="star">⭐</span>
+              </div>
+            </div>
+            <div class="stat-value" id="statusValue" style="font-size:18px;">准备开始</div>
+          </div>
+        </div>
+
+        <div class="target-panel">
+          <div class="goal-card">
+            <div class="goal-title">关卡目标进度</div>
+            <div class="goal-main">
+              <div>
+                <strong id="targetNow">0</strong>
+                <span id="targetText">目标：达到 0 分</span>
+              </div>
+              <span id="goalSubText">经典模式下无步数限制</span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" id="goalProgressBar"></div>
+            </div>
+          </div>
+          <div class="mission-card">
+            <div class="mission-title">本局任务</div>
+            <div class="mission-list" id="missionList">
+              <span class="mission-pill">🎯 开始一局游戏以查看任务</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-shell">
+          <div class="board-wrap">
+            <div id="gameBoard" aria-label="match-3-board"></div>
+          </div>
+        </div>
+
+        <div class="hint-box" id="hintBox">
+          小提示：关卡模式中完成目标后会依据剩余步数评星；经典模式更适合游客自由体验与刷分。
+        </div>
+
+        <div class="footer-note">
+          单文件版本，无需额外依赖；支持点击两枚相邻图块交换。
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="card side-card">
+          <h3>关卡选择</h3>
+          <p>每一关都有不同步数、目标分数与推荐图块数量。完成后会自动解锁下一关并记录星级。</p>
+          <div class="levels-grid" id="levelsGrid"></div>
+        </section>
+
+        <section class="card side-card">
+          <h3>游客吸引亮点</h3>
+          <p>新增更明确的“目标—反馈—奖励”循环，让用户更容易产生继续游玩的冲动。</p>
+          <div class="record-list">
+            <div class="record-row"><span>白色主视觉</span><span>更清爽耐看</span></div>
+            <div class="record-row"><span>关卡推进 + 星级</span><span>更有成就感</span></div>
+            <div class="record-row"><span>提示 / 洗牌</span><span>降低上手门槛</span></div>
+            <div class="record-row"><span>手机端适配</span><span>更适合扫码试玩</span></div>
+          </div>
+        </section>
+
+        <section class="card side-card">
+          <h3>操作说明</h3>
+          <p>电脑端点击两枚相邻图块交换；手机端同样通过连续点按两枚相邻图块完成操作。</p>
+          <ul class="rules-list">
+            <li>形成 3 个及以上同类图块连线即可消除。</li>
+            <li>连锁消除会提升倍率并获得更高分数。</li>
+            <li>关卡模式下步数有限，需在限制内完成目标。</li>
+            <li>没有可走步时可使用提示或洗牌继续游戏。</li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal" id="rulesModal">
+    <div class="modal-panel">
+      <button class="modal-close" id="closeRulesModal">✕</button>
+      <h3>游戏规则</h3>
+      <p>
+        这是一个重构后的单文件消消乐版本。你可以在经典模式中自由游玩，也可以切到关卡模式体验目标驱动玩法。
+      </p>
+      <ul class="rules-list" style="margin-top:0">
+        <li>选中两枚相邻图块即可交换。</li>
+        <li>若交换后没有形成消除，图块会自动回退。</li>
+        <li>每个基础消除图块获得 10 分，连击会增加奖励。</li>
+        <li>关卡模式达到目标分数后，剩余步数越多，获得星级越高。</li>
+        <li>当棋盘无可行操作时，系统会提示你使用“查看提示”或“重新洗牌”。</li>
+      </ul>
+      <div class="actions">
+        <button class="btn primary" id="startFromRules">马上开始</button>
+        <button class="btn ghost" id="rulesOk">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="resultModal">
+    <div class="modal-panel">
+      <button class="modal-close" id="closeResultModal">✕</button>
+      <h3 id="resultTitle">通关成功</h3>
+      <p id="resultDesc">你完成了本关目标，继续挑战下一关吧。</p>
+      <div class="result-stars" id="resultStars">
+        <span>⭐</span><span>⭐</span><span>⭐</span>
+      </div>
+      <div class="record-list">
+        <div class="record-row"><span>本局得分</span><span id="resultScore">0</span></div>
+        <div class="record-row"><span>剩余步数</span><span id="resultMoves">0</span></div>
+        <div class="record-row"><span>当前关卡</span><span id="resultLevel">Lv.1</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="nextLevelButton">下一关</button>
+        <button class="btn ghost" id="retryButton">再来一次</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "happyMatchV2";
+    const gameBoard = document.getElementById("gameBoard");
+    const toastEl = document.getElementById("toast");
+
+    const pieces = [
+      { id:"apple", emoji:"🍎", label:"苹果" },
+      { id:"lemon", emoji:"🍋", label:"柠檬" },
+      { id:"grape", emoji:"🍇", label:"葡萄" },
+      { id:"melon", emoji:"🍉", label:"西瓜" },
+      { id:"strawberry", emoji:"🍓", label:"草莓" },
+      { id:"blueberry", emoji:"🫐", label:"蓝莓" },
+      { id:"peach", emoji:"🍑", label:"桃子" },
+      { id:"mint", emoji:"🍃", label:"薄荷" }
+    ];
+
+    const classicConfigs = {
+      easy:   { rows:6, cols:6, moves:null, target:600, pool:5, title:"简单场" },
+      medium: { rows:8, cols:8, moves:null, target:1200, pool:6, title:"中等场" },
+      hard:   { rows:9, cols:9, moves:null, target:1800, pool:7, title:"困难场" }
+    };
+
+    const levels = [
+      { id:1,  name:"花园初见", rows:6, cols:6, moves:16, target:360, pool:5, description:"轻松上手，完成第一局目标。"},
+      { id:2,  name:"甜果微风", rows:6, cols:6, moves:15, target:450, pool:5, description:"更紧凑的步数，更顺滑的节奏。"},
+      { id:3,  name:"清晨果铺", rows:7, cols:7, moves:18, target:700, pool:6, description:"棋盘变大，注意连锁机会。"},
+      { id:4,  name:"白昼集市", rows:7, cols:7, moves:17, target:820, pool:6, description:"更高目标分，挑战开始升温。"},
+      { id:5,  name:"轻糖派对", rows:8, cols:8, moves:20, target:1100, pool:6, description:"适合游客持续尝试的关卡。"},
+      { id:6,  name:"玻璃花房", rows:8, cols:8, moves:18, target:1260, pool:6, description:"奖励连击，别浪费每一步。"},
+      { id:7,  name:"云端午后", rows:8, cols:8, moves:17, target:1380, pool:7, description:"可消除类型增加，组合更丰富。"},
+      { id:8,  name:"星河露台", rows:9, cols:9, moves:21, target:1720, pool:7, description:"更大的棋盘，更爽的连锁。"},
+      { id:9,  name:"月白剧场", rows:9, cols:9, moves:19, target:1880, pool:7, description:"需要更合理地规划步数。"},
+      { id:10, name:"终章庆典", rows:9, cols:9, moves:18, target:2100, pool:8, description:"终极关卡，适合反复挑战冲三星。"}
+    ];
+
+    let board = [];
+    let rows = 8;
+    let cols = 8;
+    let piecePool = pieces.slice(0, 6);
+    let selectedCell = null;
+    let score = 0;
+    let combo = 1;
+    let movesLeft = null;
+    let currentMode = "classic";
+    let currentLevelIndex = 0;
+    let isBusy = false;
+    let shuffleCount = 0;
+    let hintCells = [];
+    let gameActive = false;
+    let currentGoal = { target: 1200 };
+    let saveData = loadSave();
+
+    const els = {
+      classicTab: document.getElementById("classicTab"),
+      levelTab: document.getElementById("levelTab"),
+      difficultySelect: document.getElementById("difficultySelect"),
+      levelInfoBtn: document.getElementById("levelInfoBtn"),
+      startButton: document.getElementById("startButton"),
+      restartButton: document.getElementById("restartButton"),
+      hintButton: document.getElementById("hintButton"),
+      shuffleButton: document.getElementById("shuffleButton"),
+      scoreValue: document.getElementById("scoreValue"),
+      comboValue: document.getElementById("comboValue"),
+      movesValue: document.getElementById("movesValue"),
+      statusValue: document.getElementById("statusValue"),
+      targetNow: document.getElementById("targetNow"),
+      targetText: document.getElementById("targetText"),
+      goalSubText: document.getElementById("goalSubText"),
+      goalProgressBar: document.getElementById("goalProgressBar"),
+      starRow: document.getElementById("starRow"),
+      levelsGrid: document.getElementById("levelsGrid"),
+      hintBox: document.getElementById("hintBox"),
+      missionList: document.getElementById("missionList"),
+      rulesButton: document.getElementById("rulesButton"),
+      heroUnlocked: document.getElementById("heroUnlocked"),
+      heroBestStars: document.getElementById("heroBestStars"),
+      heroBestScore: document.getElementById("heroBestScore")
+    };
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { unlockedLevel: 1, bestStars: {}, bestClassicScore: 0, bestLevelScore: 0 };
+        const parsed = JSON.parse(raw);
+        return {
+          unlockedLevel: parsed.unlockedLevel || 1,
+          bestStars: parsed.bestStars || {},
+          bestClassicScore: parsed.bestClassicScore || 0,
+          bestLevelScore: parsed.bestLevelScore || 0
+        };
+      } catch (err) {
+        return { unlockedLevel: 1, bestStars: {}, bestClassicScore: 0, bestLevelScore: 0 };
+      }
+    }
+
+    function persistSave() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+      refreshHeroStats();
+      renderLevels();
+    }
+
+    function refreshHeroStats() {
+      const totalStars = Object.values(saveData.bestStars).reduce((sum, n) => sum + n, 0);
+      const bestScore = Math.max(saveData.bestClassicScore || 0, saveData.bestLevelScore || 0);
+      els.heroUnlocked.textContent = saveData.unlockedLevel;
+      els.heroBestStars.textContent = totalStars;
+      els.heroBestScore.textContent = bestScore;
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      els.classicTab.classList.toggle("active", mode === "classic");
+      els.levelTab.classList.toggle("active", mode === "level");
+      document.getElementById("difficultySelect").closest(".field").classList.toggle("hidden", mode !== "classic");
+      document.getElementById("levelInfoBtn").closest(".field").classList.toggle("hidden", mode !== "level");
+      els.levelInfoBtn.textContent = getCurrentLevel().id ? `Lv.${getCurrentLevel().id} ${getCurrentLevel().name}` : "Lv.1";
+      els.hintBox.textContent = mode === "classic"
+        ? "经典模式适合游客自由试玩和刷分，没有步数限制，轻松上手。"
+        : "关卡模式下，优先围绕目标分数进行规划；剩余步数越多，通关星级越高。";
+      updateStatus(mode === "classic" ? "经典模式待开始" : "关卡模式待开始");
+      updateControlLabels();
+      updateInfoPanel();
+    }
+
+    function updateControlLabels() {
+      els.startButton.textContent = currentMode === "classic" ? "开始经典模式" : "开始当前关卡";
+      els.restartButton.textContent = currentMode === "classic" ? "重开经典局" : "重开本关";
+    }
+
+    function getCurrentLevel() {
+      return levels[currentLevelIndex] || levels[0];
+    }
+
+    function applyConfig(config) {
+      rows = config.rows;
+      cols = config.cols;
+      piecePool = pieces.slice(0, config.pool);
+      movesLeft = config.moves;
+      currentGoal = { target: config.target };
+      shuffleCount = 0;
+      combo = 1;
+      score = 0;
+      selectedCell = null;
+      hintCells = [];
+      gameActive = true;
+      isBusy = false;
+      clearHintHighlights();
+      buildBoard();
+      ensurePlayableBoard();
+      renderBoard();
+      resizeBoard();
+      updateInfoPanel();
+      updateStatus(currentMode === "classic" ? `经典模式：${config.title}` : `关卡 Lv.${getCurrentLevel().id}`);
+    }
+
+    function buildBoard() {
+      board = Array.from({ length: rows }, () => Array(cols).fill(null));
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let options = piecePool.map(p => p.id);
+          if (c >= 2 && board[r][c - 1] === board[r][c - 2]) {
+            options = options.filter(id => id !== board[r][c - 1]);
+          }
+          if (r >= 2 && board[r - 1][c] === board[r - 2][c]) {
+            options = options.filter(id => id !== board[r - 1][c]);
+          }
+          board[r][c] = randomItem(options);
+        }
+      }
+    }
+
+    function ensurePlayableBoard() {
+      let safety = 0;
+      while (findPossibleMoves().length === 0 && safety < 60) {
+        shuffleBoardData();
+        safety++;
+      }
+    }
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function pieceById(id) {
+      return pieces.find(p => p.id === id) || pieces[0];
+    }
+
+    function renderBoard() {
+      gameBoard.innerHTML = "";
+      gameBoard.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const id = board[r][c];
+          const cell = document.createElement("button");
+          cell.className = "cell";
+          if (!gameActive || isBusy) cell.classList.add("locked");
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.type = "button";
+          if (selectedCell && selectedCell.row === r && selectedCell.col === c) {
+            cell.classList.add("selected");
+          }
+          if (hintCells.some(pos => pos.row === r && pos.col === c)) {
+            cell.classList.add("hint");
+          }
+          if (id) {
+            const piece = pieceById(id);
+            const inner = document.createElement("span");
+            inner.className = `piece ${piece.id}`;
+            inner.textContent = piece.emoji;
+            inner.title = piece.label;
+            cell.appendChild(inner);
+          }
+          cell.addEventListener("click", onCellClick);
+          gameBoard.appendChild(cell);
+        }
+      }
+    }
+
+    function resizeBoard() {
+      const wrap = document.querySelector(".board-wrap");
+      const isMobile = window.innerWidth <= 640;
+      const pad = isMobile ? 24 : 36;
+      const width = Math.max(280, wrap.clientWidth - pad);
+      const gap = window.innerWidth <= 640 ? 6 : 8;
+      const maxSize = isMobile ? 48 : 68;
+      const minSize = isMobile ? 34 : 44;
+      const size = Math.max(minSize, Math.min(maxSize, Math.floor((width - gap * (cols - 1)) / cols)));
+      document.documentElement.style.setProperty("--cell-size", size + "px");
+      document.documentElement.style.setProperty("--gap", gap + "px");
+    }
+
+    function onCellClick(event) {
+      if (!gameActive || isBusy) return;
+      const button = event.currentTarget;
+      const row = Number(button.dataset.row);
+      const col = Number(button.dataset.col);
+
+      if (!selectedCell) {
+        selectedCell = { row, col };
+        renderBoard();
+        return;
+      }
+
+      if (selectedCell.row === row && selectedCell.col === col) {
+        selectedCell = null;
+        renderBoard();
+        return;
+      }
+
+      if (!isAdjacent(selectedCell, { row, col })) {
+        selectedCell = { row, col };
+        renderBoard();
+        return;
+      }
+
+      attemptSwap(selectedCell, { row, col });
+    }
+
+    function isAdjacent(a, b) {
+      return Math.abs(a.row - b.row) + Math.abs(a.col - b.col) === 1;
+    }
+
+    async function attemptSwap(a, b) {
+      isBusy = true;
+      clearHintHighlights();
+      swapCells(a, b);
+      selectedCell = null;
+      renderBoard();
+
+      if (currentMode === "level" && movesLeft !== null) {
+        movesLeft = Math.max(0, movesLeft - 1);
+      }
+
+      const firstMatches = findMatches();
+      if (!firstMatches.length) {
+        await wait(180);
+        swapCells(a, b);
+        renderBoard();
+        combo = 1;
+        updateInfoPanel();
+        updateStatus("这一步没有形成消除");
+        isBusy = false;
+        checkEndState();
+        return;
+      }
+
+      updateStatus("消除成功");
+      await resolveMatchesLoop(firstMatches);
+      isBusy = false;
+      checkBoardAvailability();
+      checkEndState();
+    }
+
+    async function resolveMatchesLoop(initialMatches = null) {
+      let matches = initialMatches || findMatches();
+      let chain = 0;
+      while (matches.length) {
+        chain++;
+        markRemoving(matches);
+        await wait(180);
+        removeMatches(matches, chain);
+        renderBoard();
+        await wait(120);
+        collapseBoard();
+        fillBoard();
+        renderBoard();
+        await wait(160);
+        matches = findMatches();
+      }
+      combo = 1;
+      updateInfoPanel();
+    }
+
+    function markRemoving(matches) {
+      const cells = [...gameBoard.children];
+      matches.forEach(pos => {
+        const index = pos.row * cols + pos.col;
+        if (cells[index]) cells[index].classList.add("removing");
+      });
+    }
+
+    function removeMatches(matches, chain) {
+      const unique = new Map();
+      matches.forEach(pos => unique.set(`${pos.row}-${pos.col}`, pos));
+      const count = unique.size;
+      const gain = count * 10 * chain;
+      score += gain;
+      combo = Math.max(1, chain + 1);
+      unique.forEach(pos => board[pos.row][pos.col] = null);
+      updateStatus(chain > 1 ? `连锁 x${chain}` : `一次消除 +${gain}`);
+      updateInfoPanel();
+    }
+
+    function collapseBoard() {
+      for (let c = 0; c < cols; c++) {
+        let pointer = rows - 1;
+        for (let r = rows - 1; r >= 0; r--) {
+          if (board[r][c] !== null) {
+            board[pointer][c] = board[r][c];
+            if (pointer !== r) board[r][c] = null;
+            pointer--;
+          }
+        }
+        while (pointer >= 0) {
+          board[pointer][c] = null;
+          pointer--;
+        }
+      }
+    }
+
+    function fillBoard() {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (board[r][c] === null) {
+            board[r][c] = randomItem(piecePool.map(p => p.id));
+          }
+        }
+      }
+    }
+
+    function findMatches() {
+      const matches = [];
+      for (let r = 0; r < rows; r++) {
+        let streak = 1;
+        for (let c = 1; c <= cols; c++) {
+          if (c < cols && board[r][c] && board[r][c] === board[r][c - 1]) {
+            streak++;
+          } else {
+            if (streak >= 3) {
+              for (let k = 0; k < streak; k++) matches.push({ row:r, col:c - 1 - k });
+            }
+            streak = 1;
+          }
+        }
+      }
+      for (let c = 0; c < cols; c++) {
+        let streak = 1;
+        for (let r = 1; r <= rows; r++) {
+          if (r < rows && board[r][c] && board[r][c] === board[r - 1][c]) {
+            streak++;
+          } else {
+            if (streak >= 3) {
+              for (let k = 0; k < streak; k++) matches.push({ row:r - 1 - k, col:c });
+            }
+            streak = 1;
+          }
+        }
+      }
+      const map = new Map();
+      matches.forEach(pos => map.set(`${pos.row}-${pos.col}`, pos));
+      return Array.from(map.values());
+    }
+
+    function swapCells(a, b) {
+      const tmp = board[a.row][a.col];
+      board[a.row][a.col] = board[b.row][b.col];
+      board[b.row][b.col] = tmp;
+    }
+
+    function findPossibleMoves() {
+      const results = [];
+      const directions = [{dr:0,dc:1},{dr:1,dc:0}];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          for (const { dr, dc } of directions) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= rows || nc >= cols) continue;
+            swapCells({ row:r, col:c }, { row:nr, col:nc });
+            const matched = findMatches().length > 0;
+            swapCells({ row:r, col:c }, { row:nr, col:nc });
+            if (matched) {
+              results.push([{ row:r, col:c }, { row:nr, col:nc }]);
+            }
+          }
+        }
+      }
+      return results;
+    }
+
+    function clearHintHighlights() {
+      hintCells = [];
+    }
+
+    function showHint() {
+      if (!gameActive || isBusy) return;
+      const possible = findPossibleMoves();
+      if (!possible.length) {
+        showToast("当前没有可行操作，建议重新洗牌。");
+        updateStatus("暂无可消除组合");
+        return;
+      }
+      hintCells = possible[0];
+      renderBoard();
+      updateStatus("已为你高亮一组可行操作");
+      showToast("提示已标出一组可交换图块");
+    }
+
+    function shuffleBoardData() {
+      const flat = board.flat().filter(Boolean);
+      for (let i = flat.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [flat[i], flat[j]] = [flat[j], flat[i]];
+      }
+      let index = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          board[r][c] = flat[index++];
+        }
+      }
+      let safety = 0;
+      while ((findMatches().length > 0 || findPossibleMoves().length === 0) && safety < 40) {
+        const again = board.flat().filter(Boolean).sort(() => Math.random() - .5);
+        let idx = 0;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) board[r][c] = again[idx++];
+        }
+        safety++;
+      }
+    }
+
+    function shuffleBoardAction() {
+      if (!gameActive || isBusy) return;
+      if (currentMode === "level" && shuffleCount >= 2) {
+        showToast("每一关最多只能洗牌 2 次。");
+        return;
+      }
+      clearHintHighlights();
+      shuffleBoardData();
+      shuffleCount++;
+      renderBoard();
+      updateStatus("棋盘已重新洗牌");
+      updateInfoPanel();
+      showToast(`洗牌成功（已使用 ${shuffleCount}${currentMode === "level" ? "/2" : ""} 次）`);
+    }
+
+    function checkBoardAvailability() {
+      const moves = findPossibleMoves();
+      if (!moves.length) {
+        showToast("棋盘暂无可行步骤，已建议你使用洗牌。");
+        updateStatus("当前棋盘没有可行操作");
+      }
+    }
+
+    function calculateStars() {
+      if (currentMode === "classic") {
+        let stars = 1;
+        if (score >= currentGoal.target * 1.2) stars = 2;
+        if (score >= currentGoal.target * 1.6) stars = 3;
+        return stars;
+      }
+      if (score < currentGoal.target) return 0;
+      if (movesLeft >= 5) return 3;
+      if (movesLeft >= 2) return 2;
+      return 1;
+    }
+
+    function updateStarsVisual() {
+      const stars = calculateStars();
+      const starEls = els.starRow.querySelectorAll(".star");
+      starEls.forEach((el, idx) => el.classList.toggle("on", idx < stars));
+    }
+
+    function updateInfoPanel() {
+      els.scoreValue.textContent = score;
+      els.comboValue.textContent = `x${combo}`;
+      els.movesValue.textContent = currentMode === "classic" || movesLeft === null ? "∞" : movesLeft;
+      els.targetNow.textContent = Math.min(score, currentGoal.target);
+      els.targetText.textContent = `目标：达到 ${currentGoal.target} 分`;
+      const progress = Math.max(0, Math.min(100, (score / currentGoal.target) * 100));
+      els.goalProgressBar.style.width = progress + "%";
+      els.goalSubText.textContent = currentMode === "classic"
+        ? "经典模式下无步数限制，可自由刷分"
+        : `本关剩余洗牌次数：${Math.max(0, 2 - shuffleCount)} 次`;
+      updateStarsVisual();
+      renderMissionList();
+    }
+
+    function renderMissionList() {
+      const items = [];
+      if (currentMode === "classic") {
+        const diff = classicConfigs[els.difficultySelect.value];
+        items.push(`🎮 ${diff.title}`);
+        items.push(`🧩 棋盘 ${diff.rows}×${diff.cols}`);
+        items.push(`🏅 推荐挑战 ${diff.target} 分`);
+      } else {
+        const lv = getCurrentLevel();
+        items.push(`📍 Lv.${lv.id} ${lv.name}`);
+        items.push(`🚶 ${movesLeft} 步可用`);
+        items.push(`🎯 目标 ${lv.target} 分`);
+      }
+      els.missionList.innerHTML = items.map(text => `<span class="mission-pill">${text}</span>`).join("");
+    }
+
+    function updateStatus(text) {
+      els.statusValue.textContent = text;
+    }
+
+    function checkEndState() {
+      if (currentMode === "classic") {
+        if (score > saveData.bestClassicScore) {
+          saveData.bestClassicScore = score;
+          persistSave();
+        }
+        return;
+      }
+
+      if (score >= currentGoal.target) {
+        onLevelCompleted();
+        return;
+      }
+
+      if (movesLeft === 0) {
+        onLevelFailed();
+      }
+    }
+
+    function onLevelCompleted() {
+      gameActive = false;
+      const lv = getCurrentLevel();
+      const stars = calculateStars();
+      saveData.bestLevelScore = Math.max(saveData.bestLevelScore || 0, score);
+      saveData.bestStars[lv.id] = Math.max(saveData.bestStars[lv.id] || 0, stars);
+      saveData.unlockedLevel = Math.max(saveData.unlockedLevel, Math.min(levels.length, lv.id + 1));
+      persistSave();
+      showResultModal(true, stars);
+      burstConfetti();
+      showToast(`恭喜通关！获得 ${stars} 颗星`);
+    }
+
+    function onLevelFailed() {
+      gameActive = false;
+      showResultModal(false, 0);
+      showToast("步数已用尽，再试一次吧。");
+    }
+
+    function showResultModal(success, stars) {
+      const modal = document.getElementById("resultModal");
+      const title = document.getElementById("resultTitle");
+      const desc = document.getElementById("resultDesc");
+      const scoreEl = document.getElementById("resultScore");
+      const movesEl = document.getElementById("resultMoves");
+      const levelEl = document.getElementById("resultLevel");
+      const starsBox = document.getElementById("resultStars");
+      const nextBtn = document.getElementById("nextLevelButton");
+
+      title.textContent = success ? "通关成功" : "挑战失败";
+      desc.textContent = success
+        ? "你已经完成了本关目标，继续前进会更有成就感。"
+        : "这次还差一点，建议优先寻找可以制造连锁的位置。";
+      scoreEl.textContent = score;
+      movesEl.textContent = currentMode === "classic" ? "∞" : movesLeft;
+      levelEl.textContent = currentMode === "classic" ? "经典模式" : `Lv.${getCurrentLevel().id} ${getCurrentLevel().name}`;
+      nextBtn.classList.toggle("hidden", !success || getCurrentLevel().id >= levels.length);
+
+      starsBox.innerHTML = [0,1,2].map(i => `<span class="${i < stars ? 'on' : ''}">⭐</span>`).join("");
+      modal.classList.add("show");
+    }
+
+    function closeResultModal() {
+      document.getElementById("resultModal").classList.remove("show");
+    }
+
+    function burstConfetti() {
+      const colors = ["#4f7cff", "#7ba0ff", "#16b364", "#f79009", "#ffffff"];
+      for (let i = 0; i < 42; i++) {
+        const confetti = document.createElement("span");
+        confetti.className = "confetti";
+        confetti.style.left = Math.random() * 100 + "vw";
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDuration = 2.4 + Math.random() * 1.8 + "s";
+        confetti.style.transform = `translateY(0) rotate(${Math.random() * 90}deg)`;
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 4300);
+      }
+    }
+
+    function showToast(text) {
+      toastEl.textContent = text;
+      toastEl.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    function renderLevels() {
+      els.levelsGrid.innerHTML = "";
+      levels.forEach((lv, index) => {
+        const unlocked = lv.id <= saveData.unlockedLevel;
+        const bestStars = saveData.bestStars[lv.id] || 0;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "level-card" + (index === currentLevelIndex ? " active" : "") + (unlocked ? "" : " locked");
+        card.innerHTML = `
+          <div class="level-top">
+            <span class="level-no">LEVEL ${lv.id}</span>
+            <span>${unlocked ? "🔓" : "🔒"}</span>
+          </div>
+          <h4 class="level-name">${lv.name}</h4>
+          <div class="level-meta">
+            <span class="mini-pill">🎯 ${lv.target}</span>
+            <span class="mini-pill">🚶 ${lv.moves} 步</span>
+            <span class="mini-pill">⭐ ${"★".repeat(bestStars)}${"☆".repeat(3 - bestStars)}</span>
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          if (!unlocked) {
+            showToast("请先通关前一关。");
+            return;
+          }
+          currentLevelIndex = index;
+          els.levelInfoBtn.textContent = `Lv.${lv.id} ${lv.name}`;
+          renderLevels();
+          if (currentMode === "level") updateStatus(`已选择 Lv.${lv.id} ${lv.name}`);
+        });
+        els.levelsGrid.appendChild(card);
+      });
+    }
+
+    function startGame() {
+      closeResultModal();
+      if (currentMode === "classic") {
+        const config = classicConfigs[els.difficultySelect.value];
+        applyConfig(config);
+        showToast(`已开始 ${config.title}`);
+      } else {
+        const lv = getCurrentLevel();
+        applyConfig(lv);
+        showToast(`关卡 ${lv.id} 已开始`);
+      }
+    }
+
+    function restartGame() {
+      if (!gameActive && currentMode === "level") {
+        closeResultModal();
+      }
+      startGame();
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    window.addEventListener("resize", resizeBoard);
+
+    // 事件绑定
+    els.classicTab.addEventListener("click", () => setMode("classic"));
+    els.levelTab.addEventListener("click", () => setMode("level"));
+    els.startButton.addEventListener("click", startGame);
+    els.restartButton.addEventListener("click", restartGame);
+    els.hintButton.addEventListener("click", showHint);
+    els.shuffleButton.addEventListener("click", shuffleBoardAction);
+    els.levelInfoBtn.addEventListener("click", () => {
+      setMode("level");
+      showToast(`当前选择：Lv.${getCurrentLevel().id} ${getCurrentLevel().name}`);
+    });
+
+    document.getElementById("rulesButton").addEventListener("click", () => {
+      document.getElementById("rulesModal").classList.add("show");
+    });
+    document.getElementById("closeRulesModal").addEventListener("click", () => {
+      document.getElementById("rulesModal").classList.remove("show");
+    });
+    document.getElementById("rulesOk").addEventListener("click", () => {
+      document.getElementById("rulesModal").classList.remove("show");
+    });
+    document.getElementById("startFromRules").addEventListener("click", () => {
+      document.getElementById("rulesModal").classList.remove("show");
+      startGame();
+    });
+    document.getElementById("closeResultModal").addEventListener("click", closeResultModal);
+    document.getElementById("retryButton").addEventListener("click", () => {
+      closeResultModal();
+      startGame();
+    });
+    document.getElementById("nextLevelButton").addEventListener("click", () => {
+      const next = Math.min(levels.length - 1, currentLevelIndex + 1);
+      currentLevelIndex = next;
+      closeResultModal();
+      renderLevels();
+      setMode("level");
+      startGame();
+    });
+
+    document.querySelectorAll(".modal").forEach(modal => {
+      modal.addEventListener("click", e => {
+        if (e.target === modal) modal.classList.remove("show");
+      });
+    });
+
+    // 初始化
+    refreshHeroStats();
+    renderLevels();
+    setMode("classic");
+    applyConfig(classicConfigs.medium);
+    updateStatus("已加载中等难度示例局");
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"714420ba517c46f1a8fc9efa6e860813","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
