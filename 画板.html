@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>画板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            height: 100vh;
+            box-sizing: border-box;
+            flex-direction: column;
+        }
+        
+        #toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            margin-bottom: 10px;
+        }
+
+        .tool-btn {
+            padding: 8px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            min-width: 60px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .tool-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #canvas-container {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        input[type="color"],
+        input[type="range"] {
+            height: 32px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+                padding: 20px;
+            }
+            #toolbar {
+                flex-direction: column;
+                height: calc(100vh - 40px);
+                margin-bottom: 0;
+            }
+            #canvas-container {
+                margin-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button class="tool-btn active" data-tool="draw">绘制 ✍️</button>
+        <button class="tool-btn" data-tool="erase">擦除 🧹</button>
+        <button class="tool-btn" data-tool="line">直线 ➖</button>
+        <button class="tool-btn" data-tool="rect">矩形 ▭</button>
+        <button class="tool-btn" data-tool="circle">圆形 ⚪</button>
+        <button class="tool-btn" data-tool="fill">填充 🎨</button>
+        <input type="color" id="colorPicker" title="颜色">
+        <input type="range" id="lineWidth" min="1" max="50" value="5" title="粗细">
+        <button id="clearBtn" class="tool-btn">清空 🗑️</button>
+        <button id="saveBtn" class="tool-btn">保存 💾</button>
+        <button id="undoBtn" class="tool-btn">撤销 ↩️</button>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+
+<script>
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let currentTool = 'draw';
+let startX, startY;
+let history = [];
+let historyStep = -1;
+
+// 画布自适应
+function resizeCanvas() {
+    const container = document.getElementById('canvas-container');
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = container.clientWidth;
+    const cssHeight = container.clientHeight;
+
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+
+    if (history.length === 0) { // 仅当历史记录为空时保存初始状态
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, cssWidth, cssHeight);
+        saveState();
+    } else {
+        // 重新绘制当前历史状态
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        tempCtx.putImageData(history[historyStep], 0, 0);
+        ctx.drawImage(tempCanvas, 0, 0, cssWidth, cssHeight);
+    }
+}
+
+// 初始化
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// 工具选择
+document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentTool = this.dataset.tool;
+    });
+});
+
+// 坐标获取
+function getPointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return [
+        touch.clientX - rect.left,
+        touch.clientY - rect.top
+    ];
+}
+
+// 事件监听
+canvas.addEventListener('mousedown', start);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', end);
+canvas.addEventListener('mouseout', end);
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    start(e.touches[0]);
+});
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    draw(e.touches[0]);
+});
+canvas.addEventListener('touchend', end);
+
+// 绘图逻辑
+function start(e) {
+    isDrawing = true;
+    [startX, startY] = getPointerPos(e);
+    
+    ctx.globalCompositeOperation = currentTool === 'erase' 
+        ? 'destination-out' 
+        : 'source-over';
+
+    if (currentTool === 'fill') {
+        const dpr = window.devicePixelRatio || 1;
+        floodFill(
+            Math.round(startX * dpr),
+            Math.round(startY * dpr),
+            document.getElementById('colorPicker').value
+        );
+        isDrawing = false;
+        saveState(); // 填充操作完成后保存一次
+        return;
+    }
+
+    if (['draw', 'erase', 'line'].includes(currentTool)) {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+    }
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    
+    const [x, y] = getPointerPos(e);
+    ctx.strokeStyle = document.getElementById('colorPicker').value;
+    ctx.fillStyle = document.getElementById('colorPicker').value;
+    ctx.lineWidth = document.getElementById('lineWidth').value;
+    ctx.lineCap = 'round';
+
+    switch (currentTool) {
+        case 'draw':
+        case 'erase':
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            break;
+            
+        case 'line':
+            redraw();
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            break;
+
+        case 'rect':
+            redraw();
+            ctx.beginPath();
+            ctx.rect(startX, startY, x - startX, y - startY);
+            ctx.stroke();
+            break;
+            
+        case 'circle':
+            redraw();
+            ctx.beginPath();
+            const radius = Math.hypot(x - startX, y - startY);
+            ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+    }
+}
+
+function end() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    
+    // 所有绘图操作完成后保存一次
+    if (['draw', 'erase', 'line', 'rect', 'circle'].includes(currentTool)) {
+        saveState();
+    }
+    ctx.closePath();
+}
+
+// 洪水填充算法
+function floodFill(x, y, fillColor) {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const stack = [[x, y]];
+    const targetColor = hexToRgba(fillColor);
+    const baseColor = getPixel(x, y, imageData);
+    
+    if (colorsMatch(baseColor, targetColor)) return;
+
+    while (stack.length) {
+        const [x, y] = stack.pop();
+        if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) continue;
+        
+        const currentColor = getPixel(x, y, imageData);
+        if (!colorsMatch(currentColor, baseColor)) continue;
+        
+        setPixel(x, y, targetColor, imageData);
+        stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// 像素操作辅助函数
+function getPixel(x, y, imageData) {
+    const i = (y * imageData.width + x) * 4;
+    return {
+        r: imageData.data[i],
+        g: imageData.data[i + 1],
+        b: imageData.data[i + 2],
+        a: imageData.data[i + 3]
+    };
+}
+
+function setPixel(x, y, color, imageData) {
+    const i = (y * imageData.width + x) * 4;
+    imageData.data[i] = color.r;
+    imageData.data[i + 1] = color.g;
+    imageData.data[i + 2] = color.b;
+    imageData.data[i + 3] = color.a;
+}
+
+function colorsMatch(c1, c2) {
+    return c1.r === c2.r && c1.g === c2.g && c1.b === c2.b && c1.a === c2.a;
+}
+
+function hexToRgba(hex) {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return { r, g, b, a: 255 };
+}
+
+// 历史记录
+function saveState() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    historyStep++;
+    if (historyStep < history.length) history.length = historyStep;
+    history.push(tempCtx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
+function redraw() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.putImageData(history[historyStep], 0, 0);
+    ctx.drawImage(tempCanvas, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+}
+
+// 工具按钮功能
+document.getElementById('clearBtn').addEventListener('click', () => {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    saveState(); // 清空后只保存一次
+});
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+    if (historyStep > 0) {
+        historyStep--;
+        redraw();
+    }
+});
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'drawing.png';
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.drawImage(canvas, 0, 0);
+    link.href = tempCanvas.toDataURL();
+    link.click();
+});
+</script>
+</body>
+</html>

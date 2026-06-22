@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>质数判定器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <meta name="description" content="质数检测器：支持超大整数与 1e1000 输入，使用高精度 BigInt + Miller-Rabin 进行质数判定。" />
+  <style>
+    :root{
+      --bg1:#f6f8ff;
+      --bg2:#eef6ff;
+      --card:#ffffffcc;
+      --text:#0b1220;
+      --muted:#5a6475;
+      --border:#d7deea;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --ok:#047857;
+      --bad:#b91c1c;
+      --warn:#b45309;
+      --shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      --radius: 18px;
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg1:#0b1020;
+        --bg2:#0a1a2a;
+        --card:#0f172acc;
+        --text:#e5e7eb;
+        --muted:#a7b0c0;
+        --border:#233047;
+        --primary:#60a5fa;
+        --primary2:#3b82f6;
+        --ok:#34d399;
+        --bad:#fb7185;
+        --warn:#fbbf24;
+        --shadow: 0 12px 30px rgba(0,0,0,.35);
+      }
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC","Microsoft YaHei", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% 10%, var(--bg2), transparent 60%),
+        radial-gradient(900px 500px at 80% 0%, rgba(37,99,235,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg1), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg1));
+      padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    }
+
+    .wrap{
+      max-width: 860px;
+      margin: 0 auto;
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+    }
+
+    header{
+      padding: 8px 2px;
+    }
+
+    h1{
+      margin:0 0 8px 0;
+      font-size: clamp(22px, 4.5vw, 34px);
+      letter-spacing: .5px;
+    }
+
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+    }
+
+    .row{
+      display:flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    label{
+      display:block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 8px 2px;
+    }
+
+    input{
+      flex: 1 1 360px;
+      min-width: 240px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.55);
+      color: var(--text);
+      font-size: 16px; /* iOS 防止输入自动放大 */
+      outline: none;
+    }
+    @media (prefers-color-scheme: dark){
+      input{ background: rgba(15,23,42,.65); }
+    }
+    input:focus{
+      border-color: rgba(37,99,235,.65);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.18);
+    }
+
+    button{
+      flex: 0 0 auto;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(37,99,235,.25);
+      background: linear-gradient(180deg, var(--primary), var(--primary2));
+      color: white;
+      font-size: 16px;
+      font-weight: 650;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-width: 120px;
+      box-shadow: 0 10px 18px rgba(37,99,235,.25);
+    }
+    button:active{ transform: translateY(1px); }
+    button:disabled{
+      opacity: .65;
+      cursor: not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
+    .help{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .help code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: rgba(148,163,184,.18);
+      border: 1px solid rgba(148,163,184,.25);
+      padding: 0 6px;
+      border-radius: 8px;
+    }
+
+    .out{
+      margin-top: 14px;
+      border-radius: 14px;
+      border: 1px dashed var(--border);
+      padding: 12px;
+      min-height: 54px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      word-break: break-word;
+      line-height: 1.55;
+      background: rgba(255,255,255,.40);
+    }
+    @media (prefers-color-scheme: dark){
+      .out{ background: rgba(2,6,23,.35); }
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge.ok{ color: var(--ok); border-color: rgba(4,120,87,.35); background: rgba(4,120,87,.08); }
+    .badge.bad{ color: var(--bad); border-color: rgba(185,28,28,.35); background: rgba(185,28,28,.08); }
+    .badge.warn{ color: var(--warn); border-color: rgba(180,83,9,.35); background: rgba(180,83,9,.08); }
+
+    .spinner{
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(148,163,184,.35);
+      border-top-color: rgba(37,99,235,.95);
+      animation: spin 0.9s linear infinite;
+      flex: 0 0 auto;
+    }
+    @keyframes spin{ to { transform: rotate(360deg);} }
+
+    footer{
+      padding: 6px 2px 0 2px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    /* 手机优化：按钮更宽、更易点 */
+    @media (max-width: 520px){
+      button{ width:100%; }
+      input{ min-width: 0; width:100%; }
+      .row{ gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>质数判定器</h1>
+      <p class="subtitle">请输入一个正整数（不允许小数、负数和0）：</p>
+    </header>
+
+    <section class="card" aria-label="质数检测器输入区">
+      <label for="nInput">数字</label>
+      <div class="row">
+        <input id="nInput" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+               placeholder="例如：97 或 1e1000" />
+        <button id="checkBtn" type="button">检测</button>
+      </div>
+      <div class="help">
+        支持高精度整数与科学计数法（仅整数系数）：例如 <code>1e1000</code> 表示 <code>1×10^1000</code>。
+      </div>
+
+      <div id="out" class="out" role="status" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      提示：超大数使用 Miller-Rabin 概率算法（误判概率极低）。为避免手机卡顿，计算在 Worker 中进行。
+    </footer>
+  </main>
+
+  <script>
+    (function(){
+      "use strict";
+
+      const $ = (s) => document.querySelector(s);
+      const input = $("#nInput");
+      const btn = $("#checkBtn");
+      const out = $("#out");
+
+      function setOutput({state, text, note, loading=false}){
+        out.innerHTML = "";
+        if(loading){
+          const sp = document.createElement("div");
+          sp.className = "spinner";
+          out.appendChild(sp);
+        }
+
+        if(state){
+          const badge = document.createElement("span");
+          badge.className = "badge " + state;
+          badge.textContent =
+            state === "ok" ? "质数" :
+            state === "bad" ? "合数" : "提示";
+          out.appendChild(badge);
+        }
+
+        const msg = document.createElement("div");
+        msg.style.flex = "1 1 auto";
+        msg.textContent = text || "";
+        out.appendChild(msg);
+
+        if(note){
+          const extra = document.createElement("div");
+          extra.style.flex = "1 1 100%";
+          extra.style.color = "var(--muted)";
+          extra.style.fontSize = "13px";
+          extra.textContent = note;
+          out.appendChild(extra);
+        }
+      }
+
+      // 解析：支持纯整数与 1e1000（仅整数系数）
+      function parseHugeInt(raw){
+        const s = String(raw ?? "").trim();
+        if(!s) throw new Error("请输入一个正整数。");
+
+        if(/^[+]?\d+$/.test(s)){
+          const n = BigInt(s);
+          if(n <= 0n) throw new Error("请输入一个正整数（不允许小数、负数和0）。");
+          return n;
+        }
+
+        const m = s.match(/^([+]?\d+)[eE]([+]?\d+)$/);
+        if(m){
+          const coeff = BigInt(m[1]);
+          const exp = BigInt(m[2]);
+
+          if(coeff <= 0n) throw new Error("请输入一个正整数（不允许小数、负数和0）。");
+          if(exp < 0n) throw new Error("不支持负指数。");
+
+          // 防止极端输入把浏览器搞挂；你要求的是 1e1000，这里留足余量
+          if(exp > 20000n) throw new Error("指数过大（> 20000），为避免卡死已拒绝。");
+
+          const n = coeff * (10n ** exp);
+          if(n <= 0n) throw new Error("请输入一个正整数（不允许小数、负数和0）。");
+          return n;
+        }
+
+        throw new Error("格式错误：请输入正整数，支持如 1e1000 的科学计数法（仅整数系数）。");
+      }
+
+      // Worker：避免手机端主线程卡顿
+      let worker = null;
+      let msgId = 0;
+
+      function ensureWorker(){
+        if(worker) return worker;
+
+        const workerCode =
+`(() => {
+  'use strict';
+
+  function modPow(base, exp, mod){
+    let result = 1n;
+    let b = base % mod;
+    let e = exp;
+    while(e > 0n){
+      if(e & 1n) result = (result * b) % mod;
+      e >>= 1n;
+      b = (b * b) % mod;
+    }
+    return result;
+  }
+
+  function randBelow(max){
+    if(max <= 0n) return 0n;
+
+    const bitLen = max.toString(2).length;
+    const byteLen = Math.ceil(bitLen / 8);
+    const excess = byteLen * 8 - bitLen;
+
+    const bytes = new Uint8Array(byteLen);
+
+    const fillRandom = () => {
+      const c = (self.crypto || crypto);
+      if(c && c.getRandomValues){
+        c.getRandomValues(bytes);
+      }else{
+        for(let i=0;i<byteLen;i++) bytes[i] = (Math.random() * 256) | 0;
+      }
+      if(excess) bytes[0] &= (0xff >> excess);
+    };
+
+    while(true){
+      fillRandom();
+      let x = 0n;
+      for(const b of bytes) x = (x << 8n) + BigInt(b);
+      if(x < max) return x;
+    }
+  }
+
+  function isProbablePrime(n){
+    if(n < 2n) return false;
+
+    const small = [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n];
+    for(const p of small){
+      if(n === p) return true;
+      if(n % p === 0n) return false;
+    }
+
+    // n-1 = d * 2^s
+    let d = n - 1n;
+    let s = 0;
+    while((d & 1n) === 0n){
+      d >>= 1n;
+      s++;
+    }
+
+    const witness = (a) => {
+      let x = modPow(a, d, n);
+      if(x === 1n || x === (n - 1n)) return false;
+      for(let r=1; r<s; r++){
+        x = (x * x) % n;
+        if(x === (n - 1n)) return false;
+      }
+      return true;
+    };
+
+    // 64-bit 内确定性 bases（足够快且无误判）
+    if(n < 18446744073709551616n){
+      const bases = [2n, 325n, 9375n, 28178n, 450775n, 9780504n, 1795265022n];
+      for(const a0 of bases){
+        const a = (a0 % (n - 3n)) + 2n;
+        if(witness(a)) return false;
+      }
+      return true;
+    }
+
+    // 大整数：随机多轮（误判概率极低）
+    const rounds = 18;
+    for(let i=0;i<rounds;i++){
+      const a = randBelow(n - 3n) + 2n; // [2, n-2]
+      if(witness(a)) return false;
+    }
+    return true;
+  }
+
+  self.onmessage = (ev) => {
+    const data = ev.data || {};
+    const id = data.id;
+    try{
+      const n = BigInt(data.nStr);
+
+      if(n === 1n){
+        self.postMessage({ id, ok: true, prime: false, note: '1 既不是质数也不是合数。' });
+        return;
+      }
+      if(n <= 0n){
+        self.postMessage({ id, ok: false, error: '请输入一个正整数（不允许小数、负数和0）。' });
+        return;
+      }
+
+      const prime = isProbablePrime(n);
+      self.postMessage({ id, ok: true, prime, note: '' });
+    }catch(err){
+      self.postMessage({ id, ok: false, error: (err && err.message) ? err.message : String(err) });
+    }
+  };
+})();`;
+
+        worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:"text/javascript"})));
+        return worker;
+      }
+
+      function runCheck(){
+        let n;
+        try{
+          n = parseHugeInt(input.value);
+        }catch(e){
+          setOutput({state:"warn", text:e.message || String(e)});
+          return;
+        }
+
+        btn.disabled = true;
+        setOutput({state:"warn", text:"正在检测…", loading:true});
+
+        // Worker 计算
+        const w = ensureWorker();
+        const id = ++msgId;
+
+        const onMsg = (ev) => {
+          const msg = ev.data || {};
+          if(msg.id !== id) return;
+
+          w.removeEventListener("message", onMsg);
+          btn.disabled = false;
+
+          if(!msg.ok){
+            setOutput({state:"warn", text: msg.error || "发生错误"});
+            return;
+          }
+
+          if(msg.prime){
+            setOutput({state:"ok", text:"检测结果：是质数。", note: msg.note || ""});
+          }else{
+            setOutput({state:"bad", text:"检测结果：不是质数。", note: msg.note || ""});
+          }
+        };
+
+        w.addEventListener("message", onMsg);
+        w.postMessage({ id, nStr: n.toString() });
+      }
+
+      btn.addEventListener("click", runCheck);
+      input.addEventListener("keydown", (e) => {
+        if(e.key === "Enter") runCheck();
+      });
+
+      // 初始提示
+      setOutput({state:"warn", text:"请输入一个正整数后点击“检测”。"});
+    })();
+  </script>
+</body>
+</html>

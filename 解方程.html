@@ -1,0 +1,1954 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>解方程器</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe3ee;
+      --accent: #2563eb;
+      --accent-2: #1d4ed8;
+      --ok-bg: #ecfdf5;
+      --ok-bd: #bbf7d0;
+      --warn-bg: #fff7ed;
+      --warn-bd: #fed7aa;
+      --err-bg: #fef2f2;
+      --err-bd: #fecaca;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --radius: 18px;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    body {
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+    .container {
+      width: min(980px, 100%);
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .main-card {
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 3vw, 34px);
+      line-height: 1.2;
+    }
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.35fr 0.75fr 0.75fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .field label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+    }
+    textarea,
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 14px 14px;
+      outline: none;
+      font-size: 15px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    button {
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.2s ease, background 0.2s ease;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 13px 18px;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .primary:hover:not(:disabled) {
+      background: var(--accent-2);
+    }
+    .ghost {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .ghost:hover:not(:disabled) {
+      background: #dbeafe;
+    }
+    .status-inline {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .results-wrap {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .result-banner,
+    .result-card,
+    .markdown-card {
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 16px 18px;
+      min-width: 0;
+    }
+    .result-banner.ok {
+      background: var(--ok-bg);
+      border-color: var(--ok-bd);
+    }
+    .result-banner.warn {
+      background: var(--warn-bg);
+      border-color: var(--warn-bd);
+    }
+    .result-banner.err {
+      background: var(--err-bg);
+      border-color: var(--err-bd);
+    }
+    .result-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .notes {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      color: #475569;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    .solution-label {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .formula-list {
+      display: grid;
+      gap: 10px;
+    }
+    .math-line {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 0;
+      scrollbar-width: thin;
+    }
+    .math-line mjx-container {
+      max-width: 100%;
+    }
+    .math-line svg {
+      max-width: 100%;
+      height: auto !important;
+    }
+    .math-fallback {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.7;
+      font-size: 14px;
+      color: #334155;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .markdown-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .markdown-head h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+    .source-tip {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+    .markdown-box {
+      margin: 0;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      padding: 14px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.7;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      max-height: 420px;
+      user-select: text;
+    }
+    .footer-tip {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+    .markdown-rendered {
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .markdown-rendered h2 {
+      font-size: 22px;
+      margin: 0 0 16px;
+      font-weight: 800;
+    }
+    .markdown-rendered h3 {
+      font-size: 18px;
+      margin: 20px 0 12px;
+      font-weight: 700;
+    }
+    .markdown-rendered p {
+      margin: 0 0 12px;
+    }
+    .markdown-rendered ul {
+      margin: 0 0 12px;
+      padding-left: 24px;
+    }
+    .markdown-rendered li {
+      margin: 4px 0;
+    }
+    .markdown-rendered > * {
+      min-width: 0;
+    }
+    .markdown-rendered mjx-container {
+      max-width: 100%;
+    }
+    .markdown-rendered mjx-container[display="true"] {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 0;
+    }
+    .markdown-rendered mjx-container[display="true"] > svg {
+      max-width: none;
+      height: auto !important;
+    }
+    .markdown-rendered p,
+    .markdown-rendered li,
+    .markdown-rendered h2,
+    .markdown-rendered h3 {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .render-stage {
+      position: fixed;
+      left: -100000px;
+      top: 0;
+      width: min(980px, calc(100vw - 24px));
+      visibility: hidden;
+      pointer-events: none;
+      z-index: -1;
+    }
+    @media (max-width: 820px) {
+      body {
+        padding: 14px 12px 28px;
+      }
+      .main-card {
+        padding: 18px;
+      }
+      .grid,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      textarea {
+        min-height: 220px;
+      }
+      .actions {
+        align-items: stretch;
+      }
+      .actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card main-card">
+      <h1>解方程器</h1>
+      <p class="subtitle">
+        支持隐式乘法（如 <code>2x</code>、<code>xy</code>、<code>2(x+1)</code>）、Unicode 上标（如 <code>x²</code>）、有限小数按精确分数处理、
+        多元方程/方程组、一行一个方程。回车现在只负责换行，求解请点击下方按钮。
+      </p>
+      <div class="field">
+        <label for="equations">输入方程</label>
+        <textarea
+          id="equations"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+          autocomplete="off"
+          enterkeyhint="enter"
+          placeholder="示例：
+2x + 3 = 7
+x² - 2 = 0
+x + y = 3
+2x - y = 0
+x² + y² = 1
+x - y = 0"
+        ></textarea>
+        <p class="hint">
+          一行一个方程；不写 <code>=</code> 时默认按“表达式 = 0”处理。回车仅换行。若需要多字符变量名，请在下方“变量顺序”中明确写出。
+        </p>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label for="variables">变量顺序（可选）</label>
+          <input
+            id="variables"
+            type="text"
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+            autocomplete="off"
+            placeholder="例如：x y z 或 x,y,z"
+          />
+        </div>
+        <div class="field">
+          <label for="precision">计算精度</label>
+          <input id="precision" type="number" inputmode="numeric" min="20" max="300" step="1" value="80" />
+        </div>
+        <div class="field">
+          <label for="approxDigits">近似显示位数</label>
+          <input id="approxDigits" type="number" inputmode="numeric" min="8" max="120" step="1" value="24" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="solveBtn" class="primary" type="button">解方程</button>
+        <button id="copyBtn" class="ghost" type="button" disabled>复制 Markdown / LaTeX 源码</button>
+        <div id="statusInline" class="status-inline" aria-live="polite"></div>
+      </div>
+      <div id="results" class="results-wrap" aria-live="polite"></div>
+      <p class="footer-tip">
+        说明：上方是渲染后的完整 Markdown 结果；下方“Markdown / LaTeX 原文（源码）”区域是方便复制的源码。
+        默认仅返回实数解；线性多元方程优先走精确符号求解，复杂非线性情形会先尝试精确解，失败后再回退到高精度数值求解。
+        刷新页面后所有输入和结果将重置，不会自动恢复上次内容。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const PY_BOOTSTRAP = String.raw`
+import re
+import json
+import itertools
+import sympy as sp
+from sympy.parsing.sympy_parser import (
+    parse_expr, standard_transformations,
+    implicit_multiplication_application, convert_xor,
+    function_exponentiation, implicit_application,
+    rationalize,
+)
+from sympy.sets.conditionset import ConditionSet
+SUPERSCRIPT_MAP = str.maketrans({
+    '⁰': '^0', '¹': '^1', '²': '^2', '³': '^3', '⁴': '^4', '⁵': '^5',
+    '⁶': '^6', '⁷': '^7', '⁸': '^8', '⁹': '^9', '⁺': '^+', '⁻': '^-'
+})
+REPL = {
+    '，': ',', '；': ';', '：': ':', '（': '(', '）': ')', '【': '[', '】': ']',
+    '＝': '=', '×': '*', '÷': '/', '﹣': '-', '−': '-', '—': '-', '–': '-', '∶': ':',
+    'π': 'pi', '﹙': '(', '﹚': ')', '％': '%'
+}
+RESERVED = {
+    'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh',
+    'asinh', 'acosh', 'atanh', 'sqrt', 'log', 'ln', 'exp', 'abs', 'floor',
+    'ceil', 'pi', 'e', 'E', 'oo', 'inf', 'Infinity', 'I', 'mod'
+}
+TRANSFORMS = standard_transformations + (
+    implicit_multiplication_application,
+    convert_xor,
+    function_exponentiation,
+    implicit_application,
+    rationalize,
+)
+def normalize_text(text):
+    text = (text or '').replace('\r\n', '\n').replace('\r', '\n').strip()
+    for a, b in REPL.items():
+        text = text.replace(a, b)
+    text = re.sub(r'√\s*\(', 'sqrt(', text)
+    text = re.sub(r'√\s*([A-Za-z_][A-Za-z0-9_]*|\d+(?:\.\d+)?)', r'sqrt(\1)', text)
+    text = text.translate(SUPERSCRIPT_MAP)
+    text = text.replace('^+', '^')
+    return text
+def split_equation_lines(text):
+    text = normalize_text(text)
+    parts, buf, depth = [], [], 0
+    for ch in text:
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth = max(0, depth - 1)
+        if depth == 0 and ch in ';\n':
+            part = ''.join(buf).strip()
+            if part:
+                parts.append(part)
+            buf = []
+            continue
+        buf.append(ch)
+    tail = ''.join(buf).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+def extract_identifiers(text):
+    seen = []
+    for m in re.finditer(r'[A-Za-z_][A-Za-z0-9_]*', text):
+        name = m.group(0)
+        if name in RESERVED:
+            continue
+        if name not in seen:
+            seen.append(name)
+    return seen
+def expand_compound_tokens(lines, available_var_names=None, split_all_alpha=False):
+    token_re = re.compile(r'[A-Za-z_][A-Za-z0-9_]*')
+    single_vars = set()
+    if available_var_names:
+        single_vars = {name for name in available_var_names if len(name) == 1}
+    def repl(match):
+        token = match.group(0)
+        if token in RESERVED:
+            return token
+        if token.isalpha() and len(token) > 1:
+            if split_all_alpha:
+                return '*'.join(token)
+            if single_vars and all(ch in single_vars for ch in token):
+                return '*'.join(token)
+        return token
+    return [token_re.sub(repl, line) for line in lines]
+def make_symbols(var_names):
+    return {name: sp.Symbol(name, real=True) for name in var_names}
+def parse_user_expr(expr_text, symbols_map):
+    local_dict = {
+        **symbols_map,
+        'sin': sp.sin, 'cos': sp.cos, 'tan': sp.tan,
+        'asin': sp.asin, 'acos': sp.acos, 'atan': sp.atan,
+        'sinh': sp.sinh, 'cosh': sp.cosh, 'tanh': sp.tanh,
+        'asinh': sp.asinh, 'acosh': sp.acosh, 'atanh': sp.atanh,
+        'sqrt': sp.sqrt, 'log': sp.log, 'ln': sp.log, 'exp': sp.exp,
+        'abs': sp.Abs, 'Abs': sp.Abs, 'floor': sp.floor, 'ceil': sp.ceiling,
+        'pi': sp.pi, 'e': sp.E, 'E': sp.E,
+    }
+    expr_text = expr_text.strip()
+    expr_text = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'(\1/100)', expr_text)
+    return sp.simplify(parse_expr(expr_text, local_dict=local_dict, transformations=TRANSFORMS, evaluate=True))
+def parse_equations(text, var_names=None):
+    lines = split_equation_lines(text)
+    if not lines:
+        raise ValueError('请输入至少一个方程')
+    if var_names:
+        vars_ = [v for v in re.findall(r'[A-Za-z_][A-Za-z0-9_]*', normalize_text(var_names)) if v not in RESERVED]
+        lines = expand_compound_tokens(lines, vars_, split_all_alpha=False)
+    else:
+        lines = expand_compound_tokens(lines, None, split_all_alpha=True)
+        vars_ = []
+        for line in lines:
+            for v in extract_identifiers(line):
+                if v not in vars_:
+                    vars_.append(v)
+    syms = make_symbols(vars_)
+    parsed = []
+    for line in lines:
+        if '=' in line:
+            left, right = line.split('=', 1)
+        else:
+            left, right = line, '0'
+        lhs = parse_user_expr(left, syms)
+        rhs = parse_user_expr(right, syms)
+        expr = sp.simplify(lhs - rhs)
+        parsed.append({'raw': line, 'lhs': lhs, 'rhs': rhs, 'expr': expr})
+    return parsed, [syms[v] for v in vars_], var_names
+def filter_equations(parsed):
+    eqs = []
+    identities = 0
+    for item in parsed:
+        expr = sp.simplify(item['expr'])
+        if expr == 0:
+            identities += 1
+            continue
+        if not expr.free_symbols:
+            return 'contradiction', [], identities
+        eqs.append(expr)
+    return 'ok', eqs, identities
+def is_linear_expr(expr, vars_):
+    if not vars_:
+        return True
+    try:
+        poly = sp.Poly(expr, *vars_, extension=True)
+        return poly.total_degree() <= 1
+    except Exception:
+        return False
+def is_real_expr(expr):
+    expr = sp.simplify(expr)
+    if expr.is_real is True:
+        return True
+    if expr.is_real is False:
+        return False
+    try:
+        return sp.simplify(sp.im(expr)) == 0
+    except Exception:
+        return False
+def expr_sort_key(expr, prec=40):
+    try:
+        val = complex(sp.N(expr, min(prec, 60)))
+        return (0, float(val.real), float(val.imag))
+    except Exception:
+        return (1, str(expr))
+def finite_set_to_values(ss):
+    vals = []
+    for s in ss:
+        s = sp.simplify(s)
+        if is_real_expr(s):
+            vals.append(s)
+    return sorted(vals, key=expr_sort_key)
+def rational_has_finite_decimal(expr):
+    expr = sp.simplify(expr)
+    if not expr.is_Rational:
+        return False
+    d = abs(int(sp.denom(expr)))
+    while d % 2 == 0 and d:
+        d //= 2
+    while d % 5 == 0 and d:
+        d //= 5
+    return d == 1
+def rational_to_decimal_string(expr):
+    expr = sp.Rational(expr)
+    num = abs(int(sp.numer(expr)))
+    den = abs(int(sp.denom(expr)))
+    sign = '-' if expr < 0 else ''
+    a = b = 0
+    tmp = den
+    while tmp % 2 == 0 and tmp:
+        tmp //= 2
+        a += 1
+    while tmp % 5 == 0 and tmp:
+        tmp //= 5
+        b += 1
+    if tmp != 1:
+        raise ValueError('非有限小数')
+    scale = max(a, b)
+    scaled = num * (2 ** (scale - a)) * (5 ** (scale - b))
+    s = str(scaled)
+    if scale == 0:
+        return sign + s
+    if len(s) <= scale:
+        s = '0' * (scale - len(s) + 1) + s
+    return sign + s[:-scale] + '.' + s[-scale:]
+def approximate_text(expr, digits=20):
+    digits = max(6, int(digits))
+    try:
+        return str(sp.N(expr, digits))
+    except Exception:
+        return None
+def format_item(name, expr, approx_digits=20, numeric_only=False):
+    expr = sp.simplify(expr)
+    if numeric_only:
+        return {
+            'name': name,
+            'exact_latex': None,
+            'approx_kind': 'approx',
+            'approx_text': approximate_text(expr, approx_digits) or str(expr),
+        }
+    exact_latex = sp.latex(expr)
+    approx_kind = 'none'
+    approx_text = None
+    if expr.is_Integer:
+        pass
+    elif expr.is_Rational:
+        if rational_has_finite_decimal(expr):
+            approx_kind = 'equal'
+            approx_text = rational_to_decimal_string(expr)
+        else:
+            approx_kind = 'approx'
+            approx_text = approximate_text(expr, approx_digits)
+    elif expr.is_number:
+        approx_kind = 'approx'
+        approx_text = approximate_text(expr, approx_digits)
+    return {
+        'name': name,
+        'exact_latex': exact_latex,
+        'approx_kind': approx_kind,
+        'approx_text': approx_text,
+    }
+def tuple_has_internal_symbols(tup, vars_):
+    return any(sp.simplify(x).free_symbols & set(vars_) for x in tup)
+def format_tuple_solution(vars_, tup, approx_digits=20, numeric_only=False):
+    tup = tuple(sp.simplify(x) for x in tup)
+    if tuple_has_internal_symbols(tup, vars_):
+        return {
+            'type': 'tuple',
+            'tuple_latex': rf"\left({', '.join(sp.latex(v) for v in vars_)}\right)=\left({', '.join(sp.latex(x) for x in tup)}\right)",
+            'approx_tuple_latex': None,
+        }
+    items = [format_item(sp.latex(v), x, approx_digits, numeric_only=numeric_only) for v, x in zip(vars_, tup)]
+    return {'type': 'mapping', 'items': items}
+def residual_is_small(eqs, vars_, tup, precision):
+    subs = {v: x for v, x in zip(vars_, tup)}
+    threshold = 10 ** (-min(12, max(6, int(precision) // 3)))
+    for eq in eqs:
+        try:
+            val = complex(sp.N(eq.subs(subs), min(int(precision), 80)))
+        except Exception:
+            return False
+        if abs(val) > threshold:
+            return False
+    return True
+def exact_solve(eqs, vars_):
+    if not vars_:
+        return {'kind': 'boolean', 'truth': all(sp.simplify(eq) == 0 for eq in eqs)}
+    if len(vars_) == 1 and len(eqs) == 1:
+        var = vars_[0]
+        expr = sp.expand(eqs[0])
+        try:
+            ss = sp.solveset(sp.Eq(expr, 0), var, domain=sp.S.Reals)
+            if ss == sp.EmptySet:
+                return {'kind': 'empty'}
+            if isinstance(ss, sp.FiniteSet):
+                vals = finite_set_to_values(ss)
+                return {'kind': 'dict_list', 'solutions': [{var: v} for v in vals]}
+            if isinstance(ss, ConditionSet):
+                return {'kind': 'unknown'}
+            return {'kind': 'set_expr', 'set_latex': sp.latex(ss)}
+        except Exception:
+            pass
+    linear = all(is_linear_expr(eq, vars_) for eq in eqs)
+    if linear:
+        try:
+            solset = sp.linsolve(eqs, vars_)
+            if solset == sp.EmptySet:
+                return {'kind': 'empty'}
+            sols = list(solset)
+            if sols:
+                return {
+                    'kind': 'tuple_list',
+                    'solutions': sols,
+                    'parametric': any(tuple_has_internal_symbols(t, vars_) for t in sols),
+                }
+        except Exception:
+            pass
+    try:
+        solset = sp.nonlinsolve(eqs, vars_)
+        if solset == sp.EmptySet:
+            return {'kind': 'empty'}
+        raw = list(solset)
+        if raw:
+            sols = []
+            for tup in raw:
+                if len(tup) == len(vars_) and all(is_real_expr(x) for x in tup):
+                    sols.append(tuple(sp.simplify(x) for x in tup))
+            if sols:
+                return {
+                    'kind': 'tuple_list',
+                    'solutions': sols,
+                    'parametric': any(tuple_has_internal_symbols(t, vars_) for t in sols),
+                }
+            return {'kind': 'set_expr', 'set_latex': sp.latex(solset)}
+    except Exception:
+        pass
+    try:
+        sol = sp.solve(eqs, vars_, dict=True, simplify=True, rational=True)
+        if isinstance(sol, dict):
+            sol = [sol]
+        if isinstance(sol, list):
+            if not sol:
+                return {'kind': 'empty'}
+            out = []
+            for item in sol:
+                if isinstance(item, dict):
+                    data = {v: sp.simplify(item[v]) for v in vars_ if v in item}
+                    if data and all(is_real_expr(val) for val in data.values()):
+                        out.append(data)
+            if out:
+                return {'kind': 'dict_list', 'solutions': out}
+    except Exception:
+        pass
+    return {'kind': 'unknown'}
+def numeric_solve(eqs, vars_, precision=60):
+    mp_digits = max(30, int(precision))
+    tol = 10 ** (-min(20, mp_digits - 8))
+    if len(vars_) == 1 and len(eqs) == 1:
+        var = vars_[0]
+        expr = sp.expand(eqs[0])
+        try:
+            poly = sp.Poly(expr, var)
+            roots = []
+            for r in poly.nroots(n=mp_digits):
+                rr = complex(r)
+                candidate = sp.re(sp.N(r, mp_digits))
+                if abs(rr.imag) < 1e-12 and residual_is_small(eqs, vars_, (candidate,), mp_digits):
+                    roots.append(candidate)
+            uniq = []
+            for r in sorted(roots, key=lambda z: float(z)):
+                if not uniq or abs(float(r - uniq[-1])) > 1e-10:
+                    uniq.append(r)
+            if uniq:
+                return {'kind': 'tuple_list_numeric', 'solutions': [tuple([u]) for u in uniq]}
+        except Exception:
+            pass
+        seeds = [0, 1, -1, 2, -2, 5, -5, 10, -10, 20, -20, 50, -50, 100, -100]
+        intervals = [
+            (-100, -50), (-50, -20), (-20, -10), (-10, -5), (-5, -2), (-2, -1), (-1, -0.5), (-0.5, 0),
+            (0, 0.5), (0.5, 1), (1, 2), (2, 5), (5, 10), (10, 20), (20, 50), (50, 100)
+        ]
+        roots = []
+        def add_root(r):
+            r = sp.re(sp.N(r, mp_digits))
+            try:
+                float(r)
+            except Exception:
+                return
+            if not residual_is_small(eqs, vars_, (r,), mp_digits):
+                return
+            for old in roots:
+                if abs(float(old - r)) < 1e-10:
+                    return
+            roots.append(r)
+        for seed in seeds:
+            try:
+                r = sp.nsolve(expr, var, seed, prec=mp_digits, tol=tol, maxsteps=80, verify=False)
+                if is_real_expr(r):
+                    add_root(r)
+            except Exception:
+                pass
+        for a, b in intervals:
+            try:
+                r = sp.nsolve(expr, var, (a, b), prec=mp_digits, tol=tol, maxsteps=80, verify=False)
+                if is_real_expr(r):
+                    add_root(r)
+            except Exception:
+                pass
+        if roots:
+            roots = sorted(roots, key=lambda z: float(z))
+            return {'kind': 'tuple_list_numeric', 'solutions': [tuple([u]) for u in roots]}
+        return {'kind': 'unknown'}
+    if len(vars_) > 1 and len(eqs) >= len(vars_):
+        guesses = [0, 1, -1, 2, -2, 5, -5]
+        sols = []
+        def is_close_tuple(t1, t2):
+            return all(abs(float(a - b)) < 1e-9 for a, b in zip(t1, t2))
+        for seed in itertools.product(guesses, repeat=len(vars_)):
+            try:
+                sol = sp.nsolve(eqs[:len(vars_)], vars_, seed, prec=mp_digits, tol=tol, maxsteps=80, verify=False)
+                seq = list(sol) if hasattr(sol, '__iter__') else [sol]
+                tup = tuple(sp.re(sp.N(x, mp_digits)) for x in seq if is_real_expr(x))
+                if len(tup) != len(vars_):
+                    continue
+                if not residual_is_small(eqs, vars_, tup, mp_digits):
+                    continue
+                if not any(is_close_tuple(tup, old) for old in sols):
+                    sols.append(tup)
+            except Exception:
+                pass
+        if sols:
+            return {'kind': 'tuple_list_numeric', 'solutions': sols}
+    return {'kind': 'unknown'}
+def solve_payload(equations_text, variables_text='', precision=60, approx_digits=20):
+    precision = max(20, min(int(precision), 300))
+    approx_digits = max(8, min(int(approx_digits), 120))
+    parsed, vars_, var_names = parse_equations(equations_text, variables_text)
+    status, eqs, identities = filter_equations(parsed)
+    if status == 'contradiction':
+        return {
+            'status': 'no_solution',
+            'message': '无解',
+            'notes': ['至少有一个方程化简后成为非零常数。']
+        }
+    if not eqs:
+        return {
+            'status': 'infinite',
+            'message': '无数解',
+            'notes': ['所有输入方程化简后都恒成立。']
+        }
+    exact = exact_solve(eqs, vars_)
+    if exact['kind'] == 'empty':
+        return {
+            'status': 'no_solution',
+            'message': '无解',
+            'notes': ['方程组在实数范围内没有解。']
+        }
+    if exact['kind'] == 'boolean':
+        return {
+            'status': 'infinite' if exact['truth'] else 'no_solution',
+            'message': '无数解' if exact['truth'] else '无解',
+            'notes': []
+        }
+    if exact['kind'] in ('dict_list', 'tuple_list', 'set_expr'):
+        payload = {
+            'status': 'ok',
+            'engine': 'exact',
+            'message': '已求得精确解',
+            'notes': [],
+            'solutions': [],
+            'set_latex': None,
+        }
+        if exact['kind'] == 'dict_list':
+            sols = exact['solutions']
+            if len(sols) > 1:
+                sols = sorted(sols, key=lambda d: tuple(expr_sort_key(d[k]) for k in sorted(d, key=lambda s: s.name)))
+            parametric = False
+            for idx, sol in enumerate(sols, 1):
+                items = []
+                for var in vars_:
+                    if var in sol:
+                        items.append(format_item(sp.latex(var), sol[var], approx_digits))
+                if any(sp.simplify(sol[var]).free_symbols & set(vars_) for var in sol):
+                    parametric = True
+                payload['solutions'].append({'label': f'解 {idx}', 'type': 'mapping', 'items': items})
+            if parametric:
+                payload['notes'].append('该结果包含参数化表达，表示无穷多组实数解。')
+        elif exact['kind'] == 'tuple_list':
+            sols = exact['solutions']
+            if len(sols) > 1 and not exact.get('parametric'):
+                sols = sorted(sols, key=lambda t: tuple(expr_sort_key(x) for x in t))
+            for idx, tup in enumerate(sols, 1):
+                payload['solutions'].append({'label': f'解 {idx}', **format_tuple_solution(vars_, tup, approx_digits, numeric_only=False)})
+            if exact.get('parametric'):
+                payload['notes'].append('该结果是参数化形式，表示无穷多组实数解。')
+        else:
+            payload['set_latex'] = exact['set_latex']
+            payload['notes'].append('这是精确的实数解集合表示。')
+        return payload
+    numeric = numeric_solve(eqs, vars_, precision)
+    if numeric['kind'] == 'tuple_list_numeric':
+        payload = {
+            'status': 'ok',
+            'engine': 'numeric',
+            'message': '未找到可靠的闭式精确解，已给出高精度数值解',
+            'notes': ['数值解使用多组初值/区间搜索并校验残差后去重得到。'],
+            'solutions': [],
+            'set_latex': None,
+        }
+        sols = numeric['solutions']
+        if len(sols) > 1:
+            sols = sorted(sols, key=lambda t: tuple(float(sp.N(x, 20)) for x in t))
+        for idx, tup in enumerate(sols, 1):
+            payload['solutions'].append({'label': f'数值解 {idx}', **format_tuple_solution(vars_, tup, approx_digits, numeric_only=True)})
+        return payload
+    return {
+        'status': 'unsupported',
+        'message': '暂时无法稳定求解',
+        'notes': ['可尝试补充变量顺序、改写为一行一个方程，或把复杂函数拆开后重试。']
+    }
+def solve_to_json(equations_text, variables_text='', precision=60, approx_digits=20):
+    return json.dumps(solve_payload(equations_text, variables_text, precision, approx_digits), ensure_ascii=False)
+`;
+
+    const WORKER_SOURCE = String.raw`
+const DEFAULT_ASSET_CACHE_NAME = 'equation-solver-assets-v20260324-3';
+let pyodide = null;
+let initialized = false;
+let assetCacheName = DEFAULT_ASSET_CACHE_NAME;
+const nativeFetch = typeof self.fetch === 'function' ? self.fetch.bind(self) : null;
+function postProgress(text, id) {
+  self.postMessage({ type: 'progress', text, id: id || null });
+}
+async function openAssetCache() {
+  if (!nativeFetch || !('caches' in self) || !assetCacheName) return null;
+  try {
+    return await caches.open(assetCacheName);
+  } catch (err) {
+    return null;
+  }
+}
+async function cachedFetch(resource, init) {
+  if (!nativeFetch) {
+    throw new Error('当前环境不支持 fetch');
+  }
+  const url = typeof resource === 'string'
+    ? resource
+    : (resource && typeof resource.url === 'string' ? resource.url : String(resource));
+  const method = (
+    (init && init.method) ||
+    (resource && resource.method) ||
+    'GET'
+  ).toUpperCase();
+  if (method !== 'GET') {
+    return nativeFetch(resource, init);
+  }
+  const cache = await openAssetCache();
+  if (cache) {
+    try {
+      const cached = await cache.match(url);
+      if (cached) {
+        return cached.clone();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  const response = await nativeFetch(url, {
+    mode: 'cors',
+    credentials: 'omit',
+    cache: 'no-store',
+    signal: init && init.signal ? init.signal : undefined
+  });
+  if (!response || !response.ok) {
+    throw new Error('资源加载失败：' + url + (response ? '（HTTP ' + response.status + '）' : ''));
+  }
+  if (cache) {
+    cache.put(url, response.clone()).catch(() => {});
+  }
+  return response;
+}
+if (nativeFetch) {
+  self.fetch = function(resource, init) {
+    return cachedFetch(resource, init);
+  };
+}
+async function importScriptWithCache(url) {
+  const response = await cachedFetch(url);
+  const code = await response.text();
+  const blob = new Blob([code + '\n//# sourceURL=' + url], { type: 'application/javascript' });
+  const blobUrl = URL.createObjectURL(blob);
+  try {
+    importScripts(blobUrl);
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+self.onmessage = async (event) => {
+  const data = event.data || {};
+  if (data.type === 'init') {
+    try {
+      assetCacheName = data.assetCacheName || DEFAULT_ASSET_CACHE_NAME;
+      postProgress('正在检查本地内核缓存…');
+      await importScriptWithCache(data.scriptURL);
+      if (typeof self.loadPyodide !== 'function') {
+        throw new Error('Pyodide 脚本未正确加载');
+      }
+      postProgress('正在初始化 Python 运行时…');
+      pyodide = await self.loadPyodide({ indexURL: data.indexURL });
+      postProgress('正在加载 SymPy 数学库…');
+      await pyodide.loadPackage(['sympy']);
+      postProgress('正在初始化求解器…');
+      await pyodide.runPythonAsync(data.pythonBootstrap);
+      initialized = true;
+      self.postMessage({ type: 'ready' });
+      return;
+    } catch (err) {
+      self.postMessage({
+        type: 'init-error',
+        error: err && err.message ? err.message : String(err)
+      });
+      return;
+    }
+  }
+  if (data.type === 'solve') {
+    if (!initialized || !pyodide) {
+      self.postMessage({
+        type: 'solve-error',
+        id: data.id,
+        error: '求解内核尚未就绪'
+      });
+      return;
+    }
+    try {
+      postProgress('正在计算…', data.id);
+      pyodide.globals.set('EQUATIONS_INPUT', data.equations || '');
+      pyodide.globals.set('VARIABLES_INPUT', data.variables || '');
+      pyodide.globals.set('PRECISION_INPUT', Number(data.precision || 80));
+      pyodide.globals.set('APPROX_INPUT', Number(data.approxDigits || 24));
+      const jsonText = await pyodide.runPythonAsync('solve_to_json(EQUATIONS_INPUT, VARIABLES_INPUT, PRECISION_INPUT, APPROX_INPUT)');
+      self.postMessage({
+        type: 'solve-result',
+        id: data.id,
+        jsonText
+      });
+    } catch (err) {
+      self.postMessage({
+        type: 'solve-error',
+        id: data.id,
+        error: err && err.message ? err.message : String(err)
+      });
+    }
+  }
+};
+`;
+
+    const APP_VERSION = '20260324-3';
+    const ASSET_CACHE_NAME = `equation-solver-assets-${APP_VERSION}`;
+    const STORAGE_KEYS = {
+      preferredMathJaxSource: `equation-solver:preferred-mathjax:${APP_VERSION}`,
+      preferredMarkedSource: `equation-solver:preferred-marked:${APP_VERSION}`,
+      preferredSolverSource: `equation-solver:preferred-solver:${APP_VERSION}`
+    };
+
+    const MATHJAX_SCRIPT_URLS = [
+      'https://jsd.onmicrosoft.cn/npm/mathjax@3.2.2/es5/tex-svg.js',
+      'https://cdn.jsdmirror.cn/npm/mathjax@3.2.2/es5/tex-svg.js'
+    ];
+
+    const MARKED_SCRIPT_URLS = [
+      'https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js',
+      'https://fastly.jsdelivr.net/npm/marked@4.3.0/marked.min.js',
+      'https://cdn.bootcdn.net/ajax/libs/marked/4.3.0/marked.min.js'
+    ];
+
+    const SOLVER_SOURCES = [
+      {
+        label: '国内主节点',
+        scriptURL: 'https://jsd.onmicrosoft.cn/pyodide/v0.29.3/full/pyodide.js',
+        indexURL: 'https://jsd.onmicrosoft.cn/pyodide/v0.29.3/full/'
+      },
+      {
+        label: '国内备用节点',
+        scriptURL: 'https://cdn.jsdmirror.cn/pyodide/v0.29.3/full/pyodide.js',
+        indexURL: 'https://cdn.jsdmirror.cn/pyodide/v0.29.3/full/'
+      }
+    ];
+
+    const INIT_TIMEOUT_MS = 45000;
+    const SOLVE_TIMEOUT_MS = 120000;
+
+    const el = {
+      equations: document.getElementById('equations'),
+      variables: document.getElementById('variables'),
+      precision: document.getElementById('precision'),
+      approxDigits: document.getElementById('approxDigits'),
+      solveBtn: document.getElementById('solveBtn'),
+      copyBtn: document.getElementById('copyBtn'),
+      results: document.getElementById('results'),
+      statusInline: document.getElementById('statusInline')
+    };
+
+    let currentMarkdown = '';
+    let solveSequence = 0;
+    let solveTaskSequence = 0;
+    let mathJaxReadyPromise = null;
+    let markedReadyPromise = null;
+
+    const solverRuntime = {
+      workerUrl: null,
+      worker: null,
+      ready: false,
+      sourceLabel: '',
+      initPromise: null,
+      pending: new Map()
+    };
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeStorageGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function openAssetCache() {
+      if (!('caches' in window) || !ASSET_CACHE_NAME) {
+        return null;
+      }
+      try {
+        return await caches.open(ASSET_CACHE_NAME);
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function cleanupOldAssetCaches() {
+      if (!('caches' in window)) return;
+      try {
+        const names = await caches.keys();
+        await Promise.all(
+          names
+            .filter(name => name.startsWith('equation-solver-assets-') && name !== ASSET_CACHE_NAME)
+            .map(name => caches.delete(name))
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function hasCachedAsset(url) {
+      const cache = await openAssetCache();
+      if (!cache) return false;
+      try {
+        return !!(await cache.match(url));
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function fetchAssetResponse(url, timeoutMs = 45000) {
+      const cache = await openAssetCache();
+      if (cache) {
+        try {
+          const cached = await cache.match(url);
+          if (cached) {
+            return { response: cached.clone(), fromCache: true };
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = controller
+        ? setTimeout(() => {
+            try {
+              controller.abort();
+            } catch (err) {
+              console.error(err);
+            }
+          }, timeoutMs)
+        : null;
+
+      try {
+        const response = await fetch(url, {
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+          signal: controller ? controller.signal : undefined
+        });
+        if (!response || !response.ok) {
+          throw new Error(`资源加载失败：${url}${response ? `（HTTP ${response.status}）` : ''}`);
+        }
+        if (cache) {
+          cache.put(url, response.clone()).catch(() => {});
+        }
+        return { response, fromCache: false };
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      }
+    }
+
+    async function prioritizeUrls(urls, preferredKey) {
+      const preferred = safeStorageGet(preferredKey);
+      const rows = [];
+      for (const url of urls) {
+        rows.push({
+          url,
+          preferred: preferred === url,
+          cached: await hasCachedAsset(url)
+        });
+      }
+      rows.sort((a, b) => {
+        return Number(b.preferred) - Number(a.preferred) || Number(b.cached) - Number(a.cached);
+      });
+      return rows.map(item => item.url);
+    }
+
+    async function prioritizeSolverSources(sources) {
+      const preferred = safeStorageGet(STORAGE_KEYS.preferredSolverSource);
+      const rows = [];
+      for (const source of sources) {
+        rows.push({
+          source,
+          preferred: preferred === source.scriptURL,
+          cached: await hasCachedAsset(source.scriptURL)
+        });
+      }
+      rows.sort((a, b) => {
+        return Number(b.preferred) - Number(a.preferred) || Number(b.cached) - Number(a.cached);
+      });
+      return rows.map(item => item.source);
+    }
+
+    function numberTextToLatex(text) {
+      if (text == null) return '';
+      const s = String(text).trim();
+      const sci = s.match(/^([+-]?(?:\d+(?:\.\d+)?|\.\d+))(?:[eE]([+-]?\d+))$/);
+      if (sci) {
+        return `${sci[1]} \\times 10^{${sci[2]}}`;
+      }
+      return s.replace(/_/g, '\\_');
+    }
+
+    function setInlineStatus(text = '', busy = false) {
+      if (!text) {
+        el.statusInline.innerHTML = '';
+        return;
+      }
+      el.statusInline.innerHTML = `${busy ? '<span class="dot" aria-hidden="true"></span>' : ''}<span>${escapeHtml(text)}</span>`;
+    }
+
+    function waitFor(check, timeoutMs = 12000, intervalMs = 50) {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const tick = () => {
+          let ok = false;
+          try {
+            ok = Boolean(check());
+          } catch (err) {
+            ok = false;
+          }
+          if (ok) {
+            resolve();
+            return;
+          }
+          if (Date.now() - startedAt >= timeoutMs) {
+            reject(new Error('等待脚本就绪超时'));
+            return;
+          }
+          setTimeout(tick, intervalMs);
+        };
+        tick();
+      });
+    }
+
+    function injectScriptFromText(code, sourceURL) {
+      return new Promise((resolve, reject) => {
+        const blob = new Blob([`${code}\n//# sourceURL=${sourceURL}`], {
+          type: 'application/javascript'
+        });
+        const blobUrl = URL.createObjectURL(blob);
+        const script = document.createElement('script');
+        script.src = blobUrl;
+        script.async = true;
+        script.onload = () => {
+          URL.revokeObjectURL(blobUrl);
+          resolve(sourceURL);
+        };
+        script.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          script.remove();
+          reject(new Error(`加载失败：${sourceURL}`));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    async function loadScriptSequentially(urls, readyCheck, label, preferredKey) {
+      if (readyCheck()) {
+        return safeStorageGet(preferredKey) || urls[0] || '';
+      }
+      const orderedUrls = await prioritizeUrls(urls, preferredKey);
+      let lastError = null;
+      for (const url of orderedUrls) {
+        try {
+          const { response } = await fetchAssetResponse(url, 45000);
+          const code = await response.text();
+          await injectScriptFromText(code, url);
+          await waitFor(readyCheck, 8000, 50);
+          safeStorageSet(preferredKey, url);
+          return url;
+        } catch (err) {
+          lastError = err;
+          console.error(err);
+        }
+      }
+      throw lastError || new Error(`${label || '脚本'}加载失败`);
+    }
+
+    async function ensureMathJaxReady() {
+      if (window.MathJax?.startup?.promise && typeof window.MathJax.typesetPromise === 'function') {
+        await window.MathJax.startup.promise;
+        return window.MathJax;
+      }
+      if (!mathJaxReadyPromise) {
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+          },
+          svg: {
+            fontCache: 'global'
+          },
+          startup: {
+            typeset: false
+          }
+        };
+        mathJaxReadyPromise = (async () => {
+          await loadScriptSequentially(
+            MATHJAX_SCRIPT_URLS,
+            () => !!window.MathJax?.startup?.promise && typeof window.MathJax.typesetPromise === 'function',
+            'MathJax',
+            STORAGE_KEYS.preferredMathJaxSource
+          );
+          await window.MathJax.startup.promise;
+          return window.MathJax;
+        })().catch(err => {
+          mathJaxReadyPromise = null;
+          throw err;
+        });
+      }
+      return mathJaxReadyPromise;
+    }
+
+    async function ensureMarkedReady() {
+      if (window.marked && typeof window.marked.parse === 'function') {
+        return window.marked;
+      }
+      if (!markedReadyPromise) {
+        markedReadyPromise = (async () => {
+          await loadScriptSequentially(
+            MARKED_SCRIPT_URLS,
+            () => !!window.marked && typeof window.marked.parse === 'function',
+            'Marked',
+            STORAGE_KEYS.preferredMarkedSource
+          );
+          return window.marked;
+        })().catch(err => {
+          markedReadyPromise = null;
+          throw err;
+        });
+      }
+      return markedReadyPromise;
+    }
+
+    function escapeLatexInMarkdown(markdown) {
+      const blockLatex = [];
+      let processed = markdown.replace(/\$\$([\s\S]+?)\$\$/g, (match, content) => {
+        blockLatex.push(content);
+        return `%%BLOCK_LATEX_${blockLatex.length - 1}%%`;
+      });
+
+      const inlineLatex = [];
+      processed = processed.replace(/\$([^\n$]+?)\$/g, (match, content) => {
+        inlineLatex.push(content);
+        return `%%INLINE_LATEX_${inlineLatex.length - 1}%%`;
+      });
+
+      return { processed, blockLatex, inlineLatex };
+    }
+
+    function restoreLatexInHtml(html, blockLatex, inlineLatex) {
+      let restored = html.replace(/%%BLOCK_LATEX_(\d+)%%/g, (match, idx) => {
+        return `$$${blockLatex[Number(idx)]}$$`;
+      });
+      restored = restored.replace(/%%INLINE_LATEX_(\d+)%%/g, (match, idx) => {
+        return `$${inlineLatex[Number(idx)]}$`;
+      });
+      return restored;
+    }
+
+    async function renderMarkdownToHtml(markdown) {
+      const marked = await ensureMarkedReady();
+      const { processed, blockLatex, inlineLatex } = escapeLatexInMarkdown(markdown);
+      let html = marked.parse(processed);
+      html = restoreLatexInHtml(html, blockLatex, inlineLatex);
+      return html;
+    }
+
+    function ensureWorkerUrl() {
+      if (!solverRuntime.workerUrl) {
+        const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+        solverRuntime.workerUrl = URL.createObjectURL(blob);
+      }
+      return solverRuntime.workerUrl;
+    }
+
+    function clearPendingTasks(message) {
+      for (const [id, task] of solverRuntime.pending.entries()) {
+        clearTimeout(task.timer);
+        try {
+          task.reject(new Error(message || '求解内核已重置'));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      solverRuntime.pending.clear();
+    }
+
+    function terminateReadyWorker() {
+      if (solverRuntime.worker) {
+        try {
+          solverRuntime.worker.onmessage = null;
+          solverRuntime.worker.onerror = null;
+          solverRuntime.worker.onmessageerror = null;
+          solverRuntime.worker.terminate();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      solverRuntime.worker = null;
+      solverRuntime.ready = false;
+      solverRuntime.sourceLabel = '';
+    }
+
+    function resetSolverRuntime(reason = '') {
+      terminateReadyWorker();
+      solverRuntime.initPromise = null;
+      if (reason) {
+        clearPendingTasks(reason);
+      }
+    }
+
+    function handleReadyWorkerFailure(message) {
+      console.error('求解内核异常：', message);
+      resetSolverRuntime(message || '求解内核异常中断');
+    }
+
+    function bindReadyWorker(worker) {
+      worker.onmessage = (event) => {
+        const data = event.data || {};
+        if (data.type === 'progress') {
+          if (data.id && solverRuntime.pending.has(data.id)) {
+            setInlineStatus(data.text || '正在计算…', true);
+          } else if (!data.id) {
+            setInlineStatus(data.text || '正在准备求解内核…', true);
+          }
+          return;
+        }
+        if (data.type === 'solve-result') {
+          const task = solverRuntime.pending.get(data.id);
+          if (!task) return;
+          clearTimeout(task.timer);
+          solverRuntime.pending.delete(data.id);
+          task.resolve(data.jsonText);
+          return;
+        }
+        if (data.type === 'solve-error') {
+          const task = solverRuntime.pending.get(data.id);
+          if (!task) return;
+          clearTimeout(task.timer);
+          solverRuntime.pending.delete(data.id);
+          task.reject(new Error(data.error || '求解失败'));
+        }
+      };
+      worker.onerror = (event) => {
+        const message = event?.message || '求解内核异常中断';
+        handleReadyWorkerFailure(message);
+      };
+      worker.onmessageerror = () => {
+        handleReadyWorkerFailure('求解内核通信异常');
+      };
+    }
+
+    function createWorkerError(message, code) {
+      const err = new Error(message);
+      err.code = code;
+      return err;
+    }
+
+    function createWorkerAttempt(source, index, total) {
+      return new Promise((resolve, reject) => {
+        let worker = null;
+        let settled = false;
+
+        const fail = (error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (worker) {
+            try {
+              worker.onmessage = null;
+              worker.onerror = null;
+              worker.onmessageerror = null;
+              worker.terminate();
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          reject(error instanceof Error ? error : new Error(String(error)));
+        };
+
+        const succeed = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          solverRuntime.worker = worker;
+          solverRuntime.ready = true;
+          solverRuntime.sourceLabel = source.label;
+          bindReadyWorker(worker);
+          safeStorageSet(STORAGE_KEYS.preferredSolverSource, source.scriptURL);
+          resolve(worker);
+        };
+
+        const timer = setTimeout(() => {
+          fail(new Error(`${source.label} 初始化超时`));
+        }, INIT_TIMEOUT_MS);
+
+        try {
+          worker = new Worker(ensureWorkerUrl());
+        } catch (err) {
+          fail(createWorkerError('当前浏览器环境不支持后台求解内核', 'WORKER_UNAVAILABLE'));
+          return;
+        }
+
+        worker.onmessage = (event) => {
+          const data = event.data || {};
+          if (data.type === 'progress') {
+            setInlineStatus(`初始化 ${source.label}（${index + 1}/${total}）：${data.text || '进行中…'}`, true);
+            return;
+          }
+          if (data.type === 'ready') {
+            succeed();
+            return;
+          }
+          if (data.type === 'init-error') {
+            fail(new Error(data.error || `${source.label} 初始化失败`));
+          }
+        };
+
+        worker.onerror = (event) => {
+          fail(new Error(event?.message || `${source.label} 初始化失败`));
+        };
+
+        worker.onmessageerror = () => {
+          fail(new Error(`${source.label} 初始化通信失败`));
+        };
+
+        try {
+          worker.postMessage({
+            type: 'init',
+            scriptURL: source.scriptURL,
+            indexURL: source.indexURL,
+            pythonBootstrap: PY_BOOTSTRAP,
+            assetCacheName: ASSET_CACHE_NAME
+          });
+        } catch (err) {
+          fail(err);
+        }
+      });
+    }
+
+    async function ensureSolverReady() {
+      if (solverRuntime.ready && solverRuntime.worker) {
+        return solverRuntime.worker;
+      }
+      if (solverRuntime.initPromise) {
+        return solverRuntime.initPromise;
+      }
+
+      solverRuntime.initPromise = (async () => {
+        if (!(window.Worker && window.Blob && window.URL && URL.createObjectURL)) {
+          throw createWorkerError('当前浏览器环境不支持后台求解内核', 'WORKER_UNAVAILABLE');
+        }
+
+        let lastError = null;
+        const orderedSources = await prioritizeSolverSources(SOLVER_SOURCES);
+
+        for (let i = 0; i < orderedSources.length; i += 1) {
+          const source = orderedSources[i];
+          try {
+            return await createWorkerAttempt(source, i, orderedSources.length);
+          } catch (err) {
+            lastError = err;
+            console.error(`求解内核 ${source.label} 初始化失败：`, err);
+            if (err && err.code === 'WORKER_UNAVAILABLE') {
+              break;
+            }
+          }
+        }
+        throw lastError || new Error('求解内核初始化失败');
+      })();
+
+      try {
+        return await solverRuntime.initPromise;
+      } finally {
+        solverRuntime.initPromise = null;
+      }
+    }
+
+    function runSolveInWorker(payload) {
+      return new Promise((resolve, reject) => {
+        if (!(solverRuntime.ready && solverRuntime.worker)) {
+          reject(new Error('求解内核尚未就绪'));
+          return;
+        }
+
+        const id = ++solveTaskSequence;
+        const timer = setTimeout(() => {
+          if (!solverRuntime.pending.has(id)) {
+            return;
+          }
+          solverRuntime.pending.delete(id);
+          reject(new Error('求解超时，请重试，或适当降低精度/简化方程'));
+          resetSolverRuntime('求解超时，内核已自动重置');
+        }, SOLVE_TIMEOUT_MS);
+
+        solverRuntime.pending.set(id, { resolve, reject, timer });
+
+        try {
+          solverRuntime.worker.postMessage({
+            type: 'solve',
+            id,
+            equations: payload.equations,
+            variables: payload.variables,
+            precision: payload.precision,
+            approxDigits: payload.approxDigits
+          });
+        } catch (err) {
+          clearTimeout(timer);
+          solverRuntime.pending.delete(id);
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      });
+    }
+
+    function buildItemTex(item, aligned = false) {
+      if (item.exact_latex) {
+        if (item.approx_kind === 'equal' && item.approx_text) {
+          return aligned
+            ? `${item.name} &= ${item.exact_latex} = ${numberTextToLatex(item.approx_text)}`
+            : `${item.name} = ${item.exact_latex} = ${numberTextToLatex(item.approx_text)}`;
+        }
+        if (item.approx_kind === 'approx' && item.approx_text) {
+          return aligned
+            ? `${item.name} &= ${item.exact_latex} \\approx ${numberTextToLatex(item.approx_text)}`
+            : `${item.name} = ${item.exact_latex} \\approx ${numberTextToLatex(item.approx_text)}`;
+        }
+        return aligned
+          ? `${item.name} &= ${item.exact_latex}`
+          : `${item.name} = ${item.exact_latex}`;
+      }
+      return aligned
+        ? `${item.name} &\\approx ${numberTextToLatex(item.approx_text)}`
+        : `${item.name} \\approx ${numberTextToLatex(item.approx_text)}`;
+    }
+
+    function buildAlignedTex(items) {
+      const rows = (items || []).map(item => buildItemTex(item, true)).filter(Boolean);
+      if (!rows.length) return '';
+      return `\\begin{aligned}\n${rows.join(' \\\\\n')}\n\\end{aligned}`;
+    }
+
+    function buildSolutionTex(sol) {
+      if (!sol || typeof sol !== 'object') return '';
+      if (sol.type === 'mapping') return buildAlignedTex(sol.items || []);
+      if (sol.type === 'tuple') return sol.tuple_latex || '';
+      return '';
+    }
+
+    function buildMarkdown(payload) {
+      const lines = [];
+      lines.push(`## ${payload.message || '已求得结果'}`);
+      lines.push('');
+
+      if (payload.set_latex) {
+        lines.push('### 解集');
+        lines.push('');
+        lines.push('$$');
+        lines.push(payload.set_latex);
+        lines.push('$$');
+        lines.push('');
+      }
+
+      for (const sol of payload.solutions || []) {
+        const tex = buildSolutionTex(sol);
+        lines.push(`### ${sol.label}`);
+        lines.push('');
+        lines.push('$$');
+        lines.push(tex);
+        lines.push('$$');
+        lines.push('');
+      }
+
+      if (payload.notes?.length) {
+        for (const note of payload.notes) {
+          lines.push(`- ${note}`);
+        }
+      }
+
+      return lines.join('\n').trim();
+    }
+
+    function renderStatusBanner(type, title, notes = []) {
+      const cls = type === 'ok' ? 'ok' : type === 'warn' ? 'warn' : 'err';
+      return `
+        <div class="result-banner ${cls}">
+          <h2 class="result-title">${escapeHtml(title)}</h2>
+          ${notes.length ? `<ul class="notes">${notes.map(note => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+        </div>
+      `;
+    }
+
+    async function buildFinalResultsHtml(payload, renderedHtml) {
+      const blocks = [];
+
+      if (payload.status === 'no_solution') {
+        blocks.push(renderStatusBanner('err', payload.message || '无解', payload.notes || []));
+      } else if (payload.status === 'infinite') {
+        blocks.push(renderStatusBanner('warn', payload.message || '无数解', payload.notes || []));
+      } else if (payload.status === 'unsupported') {
+        blocks.push(renderStatusBanner('warn', payload.message || '暂时无法稳定求解', payload.notes || []));
+      } else {
+        blocks.push(renderStatusBanner('ok', payload.message || '已求得结果', payload.notes || []));
+      }
+
+      blocks.push(`
+        <section class="result-card markdown-rendered">
+          ${renderedHtml}
+        </section>
+      `);
+
+      blocks.push(`
+        <section class="markdown-card">
+          <div class="markdown-head">
+            <h3>Markdown / LaTeX 原文（源码）</h3>
+            <span class="hint">复制到支持数学公式的 Markdown 环境即可</span>
+          </div>
+          <p class="source-tip">这里显示的是源码，方便复制；上方只会在完整渲染结束后一次性显示最终效果。</p>
+          <pre class="markdown-box"><code>${escapeHtml(currentMarkdown)}</code></pre>
+        </section>
+      `);
+
+      const stage = document.createElement('div');
+      stage.className = 'render-stage';
+      stage.innerHTML = blocks.join('');
+      document.body.appendChild(stage);
+
+      try {
+        const renderedNode = stage.querySelector('.markdown-rendered');
+        if (renderedNode) {
+          try {
+            const MathJax = await ensureMathJaxReady();
+            await MathJax.typesetPromise([renderedNode]);
+          } catch (err) {
+            console.error('公式渲染失败：', err);
+          }
+        }
+        return stage.innerHTML;
+      } finally {
+        stage.remove();
+      }
+    }
+
+    async function renderPayload(payload, requestId) {
+      if (requestId !== solveSequence) return;
+
+      if (!payload || typeof payload !== 'object') {
+        el.results.innerHTML = renderStatusBanner('err', '结果解析失败');
+        currentMarkdown = '';
+        el.copyBtn.disabled = true;
+        return;
+      }
+
+      currentMarkdown = buildMarkdown(payload);
+
+      let renderedHtml = '';
+      try {
+        renderedHtml = await renderMarkdownToHtml(currentMarkdown);
+      } catch (err) {
+        console.error('Markdown 渲染失败：', err);
+        renderedHtml = '<p>Markdown 渲染失败，可查看下方源码</p>';
+      }
+
+      if (requestId !== solveSequence) return;
+
+      const finalHtml = await buildFinalResultsHtml(payload, renderedHtml);
+
+      if (requestId !== solveSequence) return;
+
+      el.results.innerHTML = finalHtml;
+      el.copyBtn.disabled = false;
+    }
+
+    function copyTextFallback(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.left = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy');
+      ta.remove();
+      if (!ok) {
+        throw new Error('浏览器不支持自动复制');
+      }
+    }
+
+    async function copyMarkdown() {
+      if (!currentMarkdown) return;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(currentMarkdown);
+        } else {
+          copyTextFallback(currentMarkdown);
+        }
+        setInlineStatus('Markdown / LaTeX 源码已复制');
+      } catch (err) {
+        setInlineStatus('复制失败，请手动复制');
+      }
+    }
+
+    async function solve() {
+      const equations = el.equations.value.trim();
+      const variables = el.variables.value.trim();
+      const precisionInput = Number(el.precision.value) || 80;
+      const approxInput = Number(el.approxDigits.value) || 24;
+      const approxDigits = Math.max(8, Math.min(120, Math.trunc(approxInput)));
+      const precision = Math.max(20, Math.min(300, Math.max(Math.trunc(precisionInput), approxDigits + 8)));
+      const requestId = ++solveSequence;
+
+      el.precision.value = String(precision);
+      el.approxDigits.value = String(approxDigits);
+
+      if (!equations) {
+        el.results.innerHTML = renderStatusBanner('warn', '请先输入方程', ['支持一行一个方程；不写等号时默认按“表达式 = 0”处理。']);
+        currentMarkdown = '## 请先输入方程';
+        el.copyBtn.disabled = false;
+        setInlineStatus('请先输入方程');
+        return;
+      }
+
+      el.solveBtn.disabled = true;
+      el.copyBtn.disabled = true;
+      currentMarkdown = '';
+      setInlineStatus('正在准备求解内核（优先从本地缓存恢复）…', true);
+      el.results.innerHTML = renderStatusBanner('warn', '正在求解', ['首次成功加载后会自动持久缓存资源到本机；后续刷新会重新开始。']);
+
+      try {
+        await ensureSolverReady();
+        if (requestId !== solveSequence) return;
+
+        setInlineStatus(`求解内核已就绪${solverRuntime.sourceLabel ? `（${solverRuntime.sourceLabel}）` : ''}，正在计算…`, true);
+
+        const jsonText = await runSolveInWorker({ equations, variables, precision, approxDigits });
+        if (requestId !== solveSequence) return;
+
+        const payload = JSON.parse(jsonText);
+        setInlineStatus('正在渲染结果（完成后再一次性显示）…', true);
+
+        await renderPayload(payload, requestId);
+        if (requestId !== solveSequence) return;
+
+        let finalStatusText = payload.message || '已完成';
+        if (payload.status === 'ok') {
+          finalStatusText = payload.engine === 'numeric' ? '已给出高精度数值解' : '已给出精确解';
+        }
+
+        setInlineStatus(finalStatusText);
+      } catch (err) {
+        if (requestId !== solveSequence) return;
+        console.error(err);
+        el.results.innerHTML = renderStatusBanner('err', '求解失败', [String(err?.message || err || '未知错误')]);
+        currentMarkdown = `## 求解失败\n\n- ${String(err?.message || err || '未知错误')}`;
+        el.copyBtn.disabled = false;
+        setInlineStatus('求解失败');
+      } finally {
+        if (requestId === solveSequence) {
+          el.solveBtn.disabled = false;
+        }
+      }
+    }
+
+    el.solveBtn.addEventListener('click', solve);
+    el.copyBtn.addEventListener('click', copyMarkdown);
+
+    cleanupOldAssetCaches().catch(() => {});
+
+    window.addEventListener('beforeunload', () => {
+      resetSolverRuntime();
+      if (solverRuntime.workerUrl) {
+        URL.revokeObjectURL(solverRuntime.workerUrl);
+        solverRuntime.workerUrl = null;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>黑白棋</title>
+<link
+  rel="icon"
+  href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+  type="image/png"
+/>
+<style>
+    :root {
+        --cell-size: min(10vw, 50px);
+        --board-padding: min(2vw, 10px);
+        --shadow: 0 4px 20px rgba(0,0,0,0.2);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: linear-gradient(135deg, #f0f0f0 0%, #d0d0d0 100%);
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    .game-container {
+        text-align: center;
+        background: white;
+        padding: clamp(12px, 4vw, 24px);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        max-width: 430px;
+        width: 100%;
+    }
+
+    h1 {
+        margin: 0 0 10px;
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        color: #333;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* ===== 顶部模式按钮区域 ===== */
+    .top-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 6px;
+        align-items: stretch;
+    }
+
+    .mode-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+        transition: opacity 0.25s ease;
+    }
+
+    .mode-group-label {
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        flex-wrap: nowrap;
+        width: 100%;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: linear-gradient(135deg, #f7f7f7, #eaeaea);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition);
+        font-weight: 500;
+        color: #444;
+    }
+
+    .toggle-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 0 0, rgba(255,255,255,0.9), transparent 55%);
+        opacity: 0;
+        transition: opacity 0.35s ease;
+        pointer-events: none;
+    }
+
+    .toggle-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+
+    .toggle-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+    }
+
+    .toggle-btn.active {
+        background: linear-gradient(135deg, #4CAF50, #2e9dff);
+        color: #fff;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.5), 0 6px 18px rgba(0,150,200,0.55);
+        transform: translateY(-1px) scale(1.02);
+    }
+
+    .toggle-btn.active::before {
+        opacity: 1;
+    }
+
+    .mode-group.disabled {
+        opacity: 0.3;
+    }
+
+    .mode-group.disabled .toggle-btn {
+        pointer-events: none;
+    }
+
+    .scores {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin: 4px 0;
+        font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    }
+
+    .score {
+        padding: 4px 8px;
+        border-radius: 5px;
+        background: rgba(0,0,0,0.05);
+        transition: var(--transition);
+    }
+
+    .black-score {
+        color: #000;
+        font-weight: bold;
+    }
+
+    .white-score {
+        color: #fff;
+        background: #000;
+        font-weight: bold;
+    }
+
+    .score.highlight {
+        box-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 26px rgba(255,215,0,0.8);
+        transform: scale(1.05);
+        animation: scoreGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes scoreGlow {
+        0% { filter: brightness(1); }
+        100% { filter: brightness(1.25); }
+    }
+
+    .status {
+        font-size: clamp(1rem, 3vw, 1.1rem);
+        margin: 6px 0;
+        color: #333;
+        font-weight: bold;
+        min-height: 1.2em;
+    }
+
+    .player {
+        color: #333;
+    }
+
+    .current {
+        color: #1e90ff;
+        text-shadow: 0 0 5px rgba(30,144,255,0.5);
+    }
+
+    .winner {
+        color: #ff4500;
+        font-size: clamp(1.1rem, 3.8vw, 1.3rem);
+        animation: celebrate 0.5s ease-in-out infinite alternate;
+    }
+
+    .winner-diff {
+        display: inline-block;
+        margin-left: 6px;
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    @keyframes celebrate {
+        0% { transform: scale(1); text-shadow: 0 0 5px rgba(255,69,0,0.5); }
+        100% { transform: scale(1.05); text-shadow: 0 0 15px rgba(255,69,0,0.8); }
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 0.2vmin;
+        background: linear-gradient(45deg, #228B22, #006400);
+        padding: var(--board-padding);
+        border-radius: 10px;
+        margin: 8px auto;
+        width: min(86vw, 400px);
+        aspect-ratio: 1;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.3), var(--shadow);
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .board::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 3px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 3px
+            );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .board.game-over .cell {
+        cursor: not-allowed;
+    }
+
+    .board.game-over {
+        filter: brightness(0.98);
+        box-shadow:
+          0 0 0 2px rgba(0,0,0,0.35),
+          0 10px 30px rgba(0,0,0,0.5),
+          inset 0 0 25px rgba(0,0,0,0.4);
+    }
+
+    .board.thinking {
+        box-shadow:
+            0 0 0 2px rgba(30,144,255,0.6),
+            0 0 25px rgba(30,144,255,0.8),
+            inset 0 0 20px rgba(0,0,0,0.3);
+        animation: boardGlow 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes boardGlow {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-2px); }
+    }
+
+    .cell {
+        width: 100%; height: 100%;
+        background: linear-gradient(145deg, #A0522D, #8B4513);
+        border-radius: 8px;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; position: relative; transition: var(--transition);
+        z-index: 2; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .cell:hover:not(.game-over):not(.valid) {
+        transform: scale(1.02) rotate(1deg);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .cell.valid {
+        background: linear-gradient(145deg, rgba(0,255,0,0.2), rgba(0,150,0,0.1));
+        border: 2px solid rgba(0,255,0,0.6);
+        box-shadow: 0 0 20px rgba(0,255,0,0.4), inset 0 0 10px rgba(0,255,0,0.1);
+        animation: glow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+        0% { box-shadow: 0 0 10px rgba(0,255,0,0.3), inset 0 0 5px rgba(0,255,0,0.05); }
+        100% { box-shadow: 0 0 30px rgba(0,255,0,0.6), inset 0 0 15px rgba(0,255,0,0.15); }
+    }
+
+    .piece {
+        width: 85%; height: 85%; border-radius: 50%;
+        position: absolute; transition: var(--transition);
+        box-shadow: var(--shadow), inset 0 2px 4px rgba(255,255,255,0.3);
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+
+    .piece.black {
+        background: linear-gradient(145deg, #000, #333);
+        box-shadow: var(--shadow), 0 0 10px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+    }
+
+    .piece.white {
+        background: linear-gradient(145deg, #fff, #f0f0f0);
+        box-shadow: var(--shadow), 0 0 10px rgba(255,255,255,0.5), inset 0 -2px 4px rgba(0,0,0,0.1);
+    }
+
+    .piece.flip { animation: flip 0.6s ease-in-out; }
+
+    @keyframes flip {
+        0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+        50% { transform: rotateY(90deg) scale(0.8); opacity: 0.5; }
+        100% { transform: rotateY(180deg) scale(1); opacity: 1; }
+    }
+
+    .piece.appear { animation: appear 0.4s ease-out; }
+
+    @keyframes appear {
+        0% { transform: scale(0) rotate(180deg); opacity: 0; }
+        50% { transform: scale(1.2) rotate(0deg); opacity: 0.7; }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .bottom-bar {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .btn-row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
+        background: linear-gradient(145deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 0;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    button:hover {
+        background: linear-gradient(145deg, #45a049, #3d8b40);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(76,175,80,0.4);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        filter: grayscale(0.2);
+    }
+
+    .foot { margin-top: 6px; opacity: 0.8; font-size: 12px; }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    @media (max-width: 480px) {
+        .game-container {
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .btn-group {
+            gap: 4px;
+        }
+        .toggle-btn {
+            padding: 5px 6px;
+            font-size: 12px;
+        }
+        .btn-row button {
+            padding: 7px 10px;
+            font-size: 13px;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="game-container">
+    <h1>黑白棋 (Reversi)</h1>
+
+    <!-- 模式与AI方选择：两排按钮，手机一屏可见 -->
+    <div class="top-controls">
+        <div class="mode-group" id="modeGroupWrapper">
+            <div class="mode-group-label">对手模式</div>
+            <div class="btn-group" id="modeGroup">
+                <button type="button" class="toggle-btn active" data-mode="ai">对 AI</button>
+                <button type="button" class="toggle-btn" data-mode="pvp">双人</button>
+            </div>
+        </div>
+        <div class="mode-group" id="aiSideGroupWrapper">
+            <div class="mode-group-label">AI 执棋</div>
+            <div class="btn-group" id="aiSideGroup">
+                <button type="button" class="toggle-btn" data-side="1">黑（先手）</button>
+                <button type="button" class="toggle-btn active" data-side="-1">白（后手）</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="scores" id="scores">
+        <span class="score black-score">黑: 2</span>
+        <span class="score white-score">白: 2</span>
+    </div>
+
+    <div class="status">
+        <span class="player current" id="currentPlayer">黑方</span> 的回合
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="bottom-bar">
+        <div class="btn-row">
+            <button id="undoBtn" title="悔棋">悔棋</button>
+            <button id="resetBtn" title="重新开始">重新开始</button>
+        </div>
+    </div>
+
+    <div class="foot">提示：重新开始会直接刷新页面。对 AI 时，悔棋会回到你上一次落子前（不能连续悔棋）；终局仍会自动切入精确求解。</div>
+</div>
+
+
+<script id="aiWorkerScript" type="text/plain">
+const BOARD_SIZE = 8;
+const EXACT_SOLVE_EMPTY_LIMIT = 12;
+const EXTENDED_SOLVE_EMPTY_LIMIT = 14;
+const MAX_TT_SIZE = 120000;
+const MAX_ITER_DEPTH = 18;
+const AI_TARGET_THINK_MS = 2000;
+const AI_MIN_THINK_MS = 1850;
+const AI_ACTIVE_SLICE_MS = 55;
+const AI_MAX_ACTIVE_SLICE_MS = 150;
+const AI_IDLE_SLICE_MS = 18;
+const AI_TIMEOUT_IDLE_MS = 28;
+
+const directions = [
+  [-1,-1], [-1,0], [-1,1],
+  [ 0,-1],         [ 0,1],
+  [ 1,-1], [ 1,0], [ 1,1]
+];
+
+const CORNERS = [[0,0],[0,7],[7,0],[7,7]];
+const X_SQUARES = {
+  '1,1': [0,0],
+  '1,6': [0,7],
+  '6,1': [7,0],
+  '6,6': [7,7]
+};
+const C_SQUARES = {
+  '0,1': [0,0], '1,0': [0,0],
+  '0,6': [0,7], '1,7': [0,7],
+  '6,0': [7,0], '7,1': [7,0],
+  '6,7': [7,7], '7,6': [7,7]
+};
+
+const PST = [
+  [120,-20, 20,  5,  5, 20,-20,120],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [120,-20, 20,  5,  5, 20,-20,120],
+];
+
+function deepCopyBoard(b) {
+  return b.map(row => row.slice());
+}
+
+function inBounds(r, c) {
+  return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+}
+
+function countPieces(b) {
+  let blackCount = 0;
+  let whiteCount = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 1) blackCount++;
+      else if (b[r][c] === -1) whiteCount++;
+    }
+  }
+  return { blackCount, whiteCount };
+}
+
+function countEmpties(b) {
+  let empty = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 0) empty++;
+    }
+  }
+  return empty;
+}
+
+function finalDiscDiff(b, player) {
+  const counts = countPieces(b);
+  return player === 1 ? counts.blackCount - counts.whiteCount : counts.whiteCount - counts.blackCount;
+}
+
+function normalizeDiff(a, b) {
+  const sum = a + b;
+  if (sum === 0) return 0;
+  return 100 * (a - b) / sum;
+}
+
+function isCornerCell(r, c) {
+  return (r === 0 || r === 7) && (c === 0 || c === 7);
+}
+
+function isEdgeCell(r, c) {
+  return (r === 0 || r === 7 || c === 0 || c === 7) && !isCornerCell(r, c);
+}
+
+function getRelatedCorner(r, c) {
+  return X_SQUARES[r + ',' + c] || C_SQUARES[r + ',' + c] || null;
+}
+
+function isRiskyXSquare(r, c, b) {
+  const corner = X_SQUARES[r + ',' + c];
+  return !!corner && b[corner[0]][corner[1]] === 0;
+}
+
+function isRiskyCSquare(r, c, b) {
+  const corner = C_SQUARES[r + ',' + c];
+  return !!corner && b[corner[0]][corner[1]] === 0;
+}
+
+function getFlips(row, col, player, b) {
+  if (b[row][col] !== 0) return [];
+  let all = [];
+
+  for (const dir of directions) {
+    const dr = dir[0];
+    const dc = dir[1];
+    let r = row + dr;
+    let c = col + dc;
+    const temp = [];
+
+    while (inBounds(r, c) && b[r][c] === -player) {
+      temp.push([r, c]);
+      r += dr;
+      c += dc;
+    }
+
+    if (temp.length > 0 && inBounds(r, c) && b[r][c] === player) {
+      all = all.concat(temp);
+    }
+  }
+
+  return all;
+}
+
+function listValidMoves(player, b) {
+  const list = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== 0) continue;
+      const flips = getFlips(r, c, player, b);
+      if (flips.length > 0) list.push({ row: r, col: c, flips });
+    }
+  }
+  return list;
+}
+
+function applyMoveOn(b, move, player) {
+  const nb = deepCopyBoard(b);
+  nb[move.row][move.col] = player;
+  for (const flip of move.flips) {
+    nb[flip[0]][flip[1]] = player;
+  }
+  return nb;
+}
+
+function boardKey(b, player) {
+  let out = player === 1 ? 'b' : 'w';
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const v = b[r][c];
+      out += v === 1 ? '1' : v === -1 ? '2' : '0';
+    }
+  }
+  return out;
+}
+
+function sameMove(a, b) {
+  return !!a && !!b && a.row === b.row && a.col === b.col;
+}
+
+function cloneMove(move) {
+  if (!move) return null;
+  return { row: move.row, col: move.col };
+}
+
+function frontierCount(b, player) {
+  let count = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== player) continue;
+      for (const dir of directions) {
+        const nr = r + dir[0];
+        const nc = c + dir[1];
+        if (inBounds(nr, nc) && b[nr][nc] === 0) {
+          count++;
+          break;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function potentialMobilityCount(b, player) {
+  let count = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== 0) continue;
+      for (const dir of directions) {
+        const nr = r + dir[0];
+        const nc = c + dir[1];
+        if (inBounds(nr, nc) && b[nr][nc] === -player) {
+          count++;
+          break;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function countStableApprox(b, player) {
+  const stable = new Set();
+
+  function mark(r, c) {
+    stable.add(r + ',' + c);
+  }
+
+  function scanFromCorner(cornerR, cornerC, stepR, stepC) {
+    if (b[cornerR][cornerC] !== player) return;
+
+    mark(cornerR, cornerC);
+
+    let r = cornerR + stepR;
+    let c = cornerC;
+    while (inBounds(r, c) && b[r][c] === player) {
+      mark(r, c);
+      r += stepR;
+    }
+
+    r = cornerR;
+    c = cornerC + stepC;
+    while (inBounds(r, c) && b[r][c] === player) {
+      mark(r, c);
+      c += stepC;
+    }
+  }
+
+  scanFromCorner(0, 0, 1, 1);
+  scanFromCorner(0, 7, 1, -1);
+  scanFromCorner(7, 0, -1, 1);
+  scanFromCorner(7, 7, -1, -1);
+
+  function markFullEdge(cells) {
+    const full = cells.every(cell => b[cell[0]][cell[1]] !== 0);
+    if (!full) return;
+    for (const cell of cells) {
+      if (b[cell[0]][cell[1]] === player) mark(cell[0], cell[1]);
+    }
+  }
+
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [0, i]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [7, i]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [i, 0]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [i, 7]));
+
+  return stable.size;
+}
+
+function dynamicPositionalScore(b, player) {
+  let score = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const v = b[r][c];
+      if (v === 0) continue;
+
+      let w = PST[r][c];
+      const corner = getRelatedCorner(r, c);
+      if (corner) {
+        const cornerValue = b[corner[0]][corner[1]];
+        if (X_SQUARES[r + ',' + c]) {
+          if (cornerValue === 0) w -= 80;
+          else if (cornerValue === v) w += 35;
+        } else {
+          if (cornerValue === 0) w -= 35;
+          else if (cornerValue === v) w += 20;
+        }
+      }
+
+      score += v === player ? w : -w;
+    }
+  }
+  return score;
+}
+
+function evaluate(b, player) {
+  const counts = countPieces(b);
+  const myDiscs = player === 1 ? counts.blackCount : counts.whiteCount;
+  const oppDiscs = player === 1 ? counts.whiteCount : counts.blackCount;
+  const empties = 64 - myDiscs - oppDiscs;
+
+  const myMoves = listValidMoves(player, b).length;
+  const oppMoves = listValidMoves(-player, b).length;
+  if (myMoves === 0 && oppMoves === 0) {
+    return finalDiscDiff(b, player) * 100000;
+  }
+
+  let myCorners = 0;
+  let oppCorners = 0;
+  for (const corner of CORNERS) {
+    const r = corner[0];
+    const c = corner[1];
+    if (b[r][c] === player) myCorners++;
+    else if (b[r][c] === -player) oppCorners++;
+  }
+
+  let myCornerAdj = 0;
+  let oppCornerAdj = 0;
+  for (const key of Object.keys(X_SQUARES)) {
+    const parts = key.split(',').map(Number);
+    const r = parts[0];
+    const c = parts[1];
+    const corner = X_SQUARES[key];
+    if (b[corner[0]][corner[1]] !== 0) continue;
+    if (b[r][c] === player) myCornerAdj++;
+    else if (b[r][c] === -player) oppCornerAdj++;
+  }
+  for (const key of Object.keys(C_SQUARES)) {
+    const parts = key.split(',').map(Number);
+    const r = parts[0];
+    const c = parts[1];
+    const corner = C_SQUARES[key];
+    if (b[corner[0]][corner[1]] !== 0) continue;
+    if (b[r][c] === player) myCornerAdj++;
+    else if (b[r][c] === -player) oppCornerAdj++;
+  }
+
+  const myFrontier = frontierCount(b, player);
+  const oppFrontier = frontierCount(b, -player);
+  const myPotential = potentialMobilityCount(b, player);
+  const oppPotential = potentialMobilityCount(b, -player);
+  const myStable = countStableApprox(b, player);
+  const oppStable = countStableApprox(b, -player);
+  const positional = dynamicPositionalScore(b, player);
+
+  const discParity = normalizeDiff(myDiscs, oppDiscs);
+  const mobility = normalizeDiff(myMoves, oppMoves);
+  const potentialMobility = normalizeDiff(myPotential, oppPotential);
+  const frontierAdv = normalizeDiff(oppFrontier, myFrontier);
+  const stableDiff = myStable - oppStable;
+  const cornerDiff = myCorners - oppCorners;
+  const cornerAdjDiff = oppCornerAdj - myCornerAdj;
+  const parity = empties % 2 === 1 ? 6 : -6;
+
+  if (empties > 44) {
+    return (
+      650 * cornerDiff +
+      40 * cornerAdjDiff +
+      22 * stableDiff +
+      12 * mobility +
+      8 * potentialMobility +
+      7 * frontierAdv +
+      2 * discParity +
+      1.6 * positional
+    );
+  }
+
+  if (empties > 20) {
+    return (
+      780 * cornerDiff +
+      45 * cornerAdjDiff +
+      28 * stableDiff +
+      13 * mobility +
+      7 * potentialMobility +
+      8 * frontierAdv +
+      6 * discParity +
+      1.35 * positional +
+      parity
+    );
+  }
+
+  return (
+    900 * cornerDiff +
+    55 * cornerAdjDiff +
+    36 * stableDiff +
+    10 * mobility +
+    4 * potentialMobility +
+    4 * frontierAdv +
+    18 * discParity +
+    1.05 * positional +
+    2 * parity
+  );
+}
+
+function storeTT(tt, key, depth, value, bestMove, flag) {
+  if (tt.size > MAX_TT_SIZE) tt.clear();
+  tt.set(key, {
+    depth,
+    value,
+    best: cloneMove(bestMove),
+    flag
+  });
+}
+
+function storeKiller(killers, ply, move) {
+  if (!killers[ply]) killers[ply] = [null, null];
+  if (sameMove(killers[ply][0], move)) return;
+  killers[ply][1] = killers[ply][0];
+  killers[ply][0] = cloneMove(move);
+}
+
+function addHistory(historyTable, move, depth) {
+  historyTable[move.row][move.col] += depth * depth;
+  if (historyTable[move.row][move.col] > 1000000) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        historyTable[r][c] = Math.floor(historyTable[r][c] / 2);
+      }
+    }
+  }
+}
+
+function scoreMoveForOrdering(b, move, player, options = {}) {
+  const ttMove = options.ttMove || null;
+  const killers = options.killers || null;
+  const historyTable = options.historyTable || null;
+  const ply = options.ply || 0;
+  const exact = !!options.exact;
+  let score = 0;
+
+  if (sameMove(move, ttMove)) score += 10000000;
+  if (killers && killers[ply]) {
+    if (sameMove(move, killers[ply][0])) score += 5000000;
+    else if (sameMove(move, killers[ply][1])) score += 4000000;
+  }
+
+  if (isCornerCell(move.row, move.col)) score += 2000000;
+  if (isEdgeCell(move.row, move.col)) score += 60000;
+  if (isRiskyXSquare(move.row, move.col, b)) score -= 700000;
+  if (isRiskyCSquare(move.row, move.col, b)) score -= 250000;
+
+  score += PST[move.row][move.col] * 800;
+  score += move.flips.length * 120;
+  if (historyTable) score += historyTable[move.row][move.col];
+
+  const nb = applyMoveOn(b, move, player);
+  const oppMoves = listValidMoves(-player, nb).length;
+  const myMoves = listValidMoves(player, nb).length;
+  score -= oppMoves * (exact ? 260 : 180);
+  score += myMoves * 25;
+
+  if (countEmpties(b) <= 18) {
+    const stableBonus = countStableApprox(nb, player) - countStableApprox(nb, -player);
+    score += stableBonus * 160;
+  }
+
+  return score;
+}
+
+function orderMovesAdvanced(b, moves, player, options = {}) {
+  return moves
+    .map(move => ({ move, score: scoreMoveForOrdering(b, move, player, options) }))
+    .sort((a, bItem) => bItem.score - a.score)
+    .map(item => item.move);
+}
+
+function exactSearch(b, player, alpha, beta, tt) {
+  const key = boardKey(b, player);
+  const entry = tt.get(key);
+  const alphaOrig = alpha;
+  const betaOrig = beta;
+
+  if (entry) {
+    if (entry.flag === 'EXACT') return { value: entry.value, move: entry.best };
+    if (entry.flag === 'LOWER') alpha = Math.max(alpha, entry.value);
+    else if (entry.flag === 'UPPER') beta = Math.min(beta, entry.value);
+    if (alpha >= beta) return { value: entry.value, move: entry.best };
+  }
+
+  const myMoves = listValidMoves(player, b);
+  if (myMoves.length === 0) {
+    const oppMoves = listValidMoves(-player, b);
+    if (oppMoves.length === 0) {
+      const terminal = finalDiscDiff(b, player);
+      return { value: terminal, move: null };
+    }
+    const passResult = exactSearch(b, -player, -beta, -alpha, tt);
+    return { value: -passResult.value, move: null };
+  }
+
+  let bestMove = null;
+  let bestVal = -Infinity;
+  const ttMove = entry ? entry.best : null;
+  const ordered = orderMovesAdvanced(b, myMoves, player, { ttMove, exact: true });
+
+  for (const move of ordered) {
+    const nb = applyMoveOn(b, move, player);
+    const result = exactSearch(nb, -player, -beta, -alpha, tt);
+    const value = -result.value;
+
+    if (value > bestVal) {
+      bestVal = value;
+      bestMove = move;
+    }
+
+    if (value > alpha) alpha = value;
+    if (alpha >= beta) break;
+  }
+
+  let flag = 'EXACT';
+  if (bestVal <= alphaOrig) flag = 'UPPER';
+  else if (bestVal >= betaOrig) flag = 'LOWER';
+  storeTT(tt, key, Infinity, bestVal, bestMove, flag);
+
+  return { value: bestVal, move: bestMove };
+}
+
+function negamaxSearch(b, player, depth, alpha, beta, deadline, tt, killers, historyTable, ply = 0) {
+  if (Date.now() >= deadline) {
+    return { timeout: true, value: 0, move: null };
+  }
+
+  const key = boardKey(b, player);
+  const entry = tt.get(key);
+  const alphaOrig = alpha;
+  const betaOrig = beta;
+
+  if (entry && entry.depth >= depth) {
+    if (entry.flag === 'EXACT') return { timeout: false, value: entry.value, move: entry.best };
+    if (entry.flag === 'LOWER') alpha = Math.max(alpha, entry.value);
+    else if (entry.flag === 'UPPER') beta = Math.min(beta, entry.value);
+    if (alpha >= beta) return { timeout: false, value: entry.value, move: entry.best };
+  }
+
+  const myMoves = listValidMoves(player, b);
+  if (myMoves.length === 0) {
+    const oppMoves = listValidMoves(-player, b);
+    if (oppMoves.length === 0) {
+      return { timeout: false, value: finalDiscDiff(b, player) * 100000, move: null };
+    }
+    const passResult = negamaxSearch(b, -player, depth, -beta, -alpha, deadline, tt, killers, historyTable, ply + 1);
+    if (passResult.timeout) return passResult;
+    return { timeout: false, value: -passResult.value, move: null };
+  }
+
+  if (depth <= 0) {
+    return { timeout: false, value: evaluate(b, player), move: null };
+  }
+
+  let bestMove = null;
+  let bestVal = -Infinity;
+  const ttMove = entry ? entry.best : null;
+  const ordered = orderMovesAdvanced(b, myMoves, player, { ttMove, killers, historyTable, ply });
+
+  let firstChild = true;
+  for (const move of ordered) {
+    const nb = applyMoveOn(b, move, player);
+    let childResult;
+    let value;
+
+    if (firstChild) {
+      childResult = negamaxSearch(nb, -player, depth - 1, -beta, -alpha, deadline, tt, killers, historyTable, ply + 1);
+      if (childResult.timeout) return childResult;
+      value = -childResult.value;
+      firstChild = false;
+    } else {
+      childResult = negamaxSearch(nb, -player, depth - 1, -alpha - 1, -alpha, deadline, tt, killers, historyTable, ply + 1);
+      if (childResult.timeout) return childResult;
+      value = -childResult.value;
+
+      if (value > alpha && value < beta) {
+        childResult = negamaxSearch(nb, -player, depth - 1, -beta, -value, deadline, tt, killers, historyTable, ply + 1);
+        if (childResult.timeout) return childResult;
+        value = -childResult.value;
+      }
+    }
+
+    if (value > bestVal) {
+      bestVal = value;
+      bestMove = move;
+    }
+
+    if (value > alpha) alpha = value;
+    if (alpha >= beta) {
+      storeKiller(killers, ply, move);
+      addHistory(historyTable, move, depth);
+      break;
+    }
+  }
+
+  let flag = 'EXACT';
+  if (bestVal <= alphaOrig) flag = 'UPPER';
+  else if (bestVal >= betaOrig) flag = 'LOWER';
+  storeTT(tt, key, depth, bestVal, bestMove, flag);
+
+  return { timeout: false, value: bestVal, move: bestMove };
+}
+
+function shouldUseExactSolver(b, player) {
+  const empties = countEmpties(b);
+  if (empties <= EXACT_SOLVE_EMPTY_LIMIT) return true;
+  if (empties <= EXTENDED_SOLVE_EMPTY_LIMIT) {
+    return listValidMoves(player, b).length <= 6;
+  }
+  return false;
+}
+
+function getAdaptiveMaxDepth(empties) {
+  if (empties >= 50) return 5;
+  if (empties >= 40) return 6;
+  if (empties >= 28) return 7;
+  if (empties >= 20) return 9;
+  if (empties >= 16) return 11;
+  return MAX_ITER_DEPTH;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function findBestMovePaced(b, player) {
+  const start = Date.now();
+  const openingMoves = listValidMoves(player, b);
+  if (openingMoves.length === 0) {
+    return { move: null, elapsed: 0, mode: 'pass' };
+  }
+
+  let bestMove = orderMovesAdvanced(b, openingMoves, player)[0];
+  let bestValue = 0;
+
+  if (shouldUseExactSolver(b, player)) {
+    const exactTT = new Map();
+    const exactResult = exactSearch(b, player, -Infinity, Infinity, exactTT);
+    if (exactResult.move) bestMove = exactResult.move;
+    const spent = Date.now() - start;
+    if (spent < AI_MIN_THINK_MS) await sleep(AI_MIN_THINK_MS - spent);
+    return {
+      move: bestMove,
+      elapsed: Date.now() - start,
+      mode: 'exact'
+    };
+  }
+
+  const tt = new Map();
+  const killers = Array.from({ length: 80 }, () => [null, null]);
+  const historyTable = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+  const empties = countEmpties(b);
+  const maxDepth = getAdaptiveMaxDepth(empties);
+
+  let nextDepth = 1;
+  let sliceBudget = AI_ACTIVE_SLICE_MS;
+
+  while (nextDepth <= maxDepth) {
+    const elapsed = Date.now() - start;
+    const remaining = AI_TARGET_THINK_MS - elapsed;
+    if (remaining <= 8) break;
+
+    const depth = nextDepth;
+    const searchBudget = Math.max(18, Math.min(sliceBudget, remaining));
+
+    let alpha = -Infinity;
+    let beta = Infinity;
+    if (depth >= 3) {
+      const window = 45 + depth * 8;
+      alpha = bestValue - window;
+      beta = bestValue + window;
+    }
+
+    let result = negamaxSearch(
+      b,
+      player,
+      depth,
+      alpha,
+      beta,
+      Date.now() + searchBudget,
+      tt,
+      killers,
+      historyTable,
+      0
+    );
+
+    if (!result.timeout && depth >= 3 && (result.value <= alpha || result.value >= beta)) {
+      const remainingAfterFirst = AI_TARGET_THINK_MS - (Date.now() - start);
+      const refreshBudget = Math.max(20, Math.min(sliceBudget + 15, AI_MAX_ACTIVE_SLICE_MS, remainingAfterFirst));
+      result = negamaxSearch(
+        b,
+        player,
+        depth,
+        -Infinity,
+        Infinity,
+        Date.now() + refreshBudget,
+        tt,
+        killers,
+        historyTable,
+        0
+      );
+    }
+
+    if (!result.timeout && result.move) {
+      bestMove = result.move;
+      bestValue = result.value;
+      nextDepth += 1;
+      sliceBudget = Math.max(AI_ACTIVE_SLICE_MS, Math.min(110, Math.round(sliceBudget * 0.92)));
+    } else {
+      sliceBudget = Math.min(AI_MAX_ACTIVE_SLICE_MS, Math.round(sliceBudget * 1.4) + 10);
+    }
+
+    const afterElapsed = Date.now() - start;
+    if (afterElapsed >= AI_TARGET_THINK_MS) break;
+
+    const restMs = result.timeout
+      ? Math.min(AI_TIMEOUT_IDLE_MS, AI_TARGET_THINK_MS - afterElapsed)
+      : Math.min(AI_IDLE_SLICE_MS, AI_TARGET_THINK_MS - afterElapsed);
+
+    if (restMs > 0) await sleep(restMs);
+  }
+
+  const spent = Date.now() - start;
+  if (spent < AI_MIN_THINK_MS) {
+    await sleep(AI_MIN_THINK_MS - spent);
+  }
+
+  return {
+    move: bestMove,
+    elapsed: Date.now() - start,
+    depth: nextDepth - 1,
+    value: bestValue,
+    mode: 'paced'
+  };
+}
+
+self.onmessage = async function(event) {
+  const data = event.data || {};
+  if (data.type !== 'think') return;
+
+  try {
+    const result = await findBestMovePaced(data.board, data.player);
+    self.postMessage({
+      type: 'result',
+      requestId: data.requestId,
+      result
+    });
+  } catch (error) {
+    self.postMessage({
+      type: 'error',
+      requestId: data.requestId,
+      error: error && error.message ? error.message : String(error)
+    });
+  }
+};
+</script>
+
+<script>
+/** ====== 基础与状态 ====== */
+const BOARD_SIZE = 8;
+const EXACT_SOLVE_EMPTY_LIMIT = 12;
+const EXTENDED_SOLVE_EMPTY_LIMIT = 14;
+const MAX_TT_SIZE = 120000;
+const MAX_ITER_DEPTH = 18;
+const AI_TARGET_THINK_MS = 2000;
+const AI_MIN_THINK_MS = 1850;
+let aiWorker = null;
+let aiWorkerUrl = null;
+let aiRequestId = 0;
+
+let board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+let currentPlayer = 1; // 1: black, -1: white
+let gameOver = false;
+let isProcessingMove = false;
+let aiThinking = false;
+let undoLocked = false;
+let history = [];
+
+let mode = 'ai';
+let aiPlays = -1;
+let modeLocked = false;
+
+const undoBtn = document.getElementById('undoBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+const modeGroupWrapper = document.getElementById('modeGroupWrapper');
+const aiSideGroupWrapper = document.getElementById('aiSideGroupWrapper');
+const modeButtons = document.querySelectorAll('#modeGroup .toggle-btn');
+const aiSideButtons = document.querySelectorAll('#aiSideGroup .toggle-btn');
+
+const directions = [
+  [-1,-1], [-1,0], [-1,1],
+  [ 0,-1],         [ 0,1],
+  [ 1,-1], [ 1,0], [ 1,1]
+];
+
+const CORNERS = [[0,0],[0,7],[7,0],[7,7]];
+const X_SQUARES = {
+  '1,1': [0,0],
+  '1,6': [0,7],
+  '6,1': [7,0],
+  '6,6': [7,7]
+};
+const C_SQUARES = {
+  '0,1': [0,0], '1,0': [0,0],
+  '0,6': [0,7], '1,7': [0,7],
+  '6,0': [7,0], '7,1': [7,0],
+  '6,7': [7,7], '7,6': [7,7]
+};
+
+const PST = [
+  [120,-20, 20,  5,  5, 20,-20,120],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [  5, -5,  3,  3,  3,  3, -5,  5],
+  [ 20, -5, 15,  3,  3, 15, -5, 20],
+  [-20,-40, -5, -5, -5, -5,-40,-20],
+  [120,-20, 20,  5,  5, 20,-20,120],
+];
+
+/** ====== 工具函数 ====== */
+function deepCopyBoard(b) {
+  return b.map(row => row.slice());
+}
+
+function inBounds(r, c) {
+  return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+}
+
+function countPieces(b = board) {
+  let blackCount = 0;
+  let whiteCount = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 1) blackCount++;
+      else if (b[r][c] === -1) whiteCount++;
+    }
+  }
+  return { blackCount, whiteCount };
+}
+
+function countEmpties(b = board) {
+  let empty = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 0) empty++;
+    }
+  }
+  return empty;
+}
+
+function finalDiscDiff(b, player) {
+  const { blackCount, whiteCount } = countPieces(b);
+  return player === 1 ? blackCount - whiteCount : whiteCount - blackCount;
+}
+
+function normalizeDiff(a, b) {
+  const sum = a + b;
+  if (sum === 0) return 0;
+  return 100 * (a - b) / sum;
+}
+
+function isCornerCell(r, c) {
+  return (r === 0 || r === 7) && (c === 0 || c === 7);
+}
+
+function isEdgeCell(r, c) {
+  return (r === 0 || r === 7 || c === 0 || c === 7) && !isCornerCell(r, c);
+}
+
+function getRelatedCorner(r, c) {
+  return X_SQUARES[`${r},${c}`] || C_SQUARES[`${r},${c}`] || null;
+}
+
+function isRiskyXSquare(r, c, b) {
+  const corner = X_SQUARES[`${r},${c}`];
+  return !!corner && b[corner[0]][corner[1]] === 0;
+}
+
+function isRiskyCSquare(r, c, b) {
+  const corner = C_SQUARES[`${r},${c}`];
+  return !!corner && b[corner[0]][corner[1]] === 0;
+}
+
+function getFlips(row, col, player, b = board) {
+  if (b[row][col] !== 0) return [];
+  let all = [];
+
+  for (const [dr, dc] of directions) {
+    let r = row + dr;
+    let c = col + dc;
+    const temp = [];
+
+    while (inBounds(r, c) && b[r][c] === -player) {
+      temp.push([r, c]);
+      r += dr;
+      c += dc;
+    }
+
+    if (temp.length > 0 && inBounds(r, c) && b[r][c] === player) {
+      all = all.concat(temp);
+    }
+  }
+
+  return all;
+}
+
+function isValidMoveOn(row, col, player, b = board) {
+  return b[row][col] === 0 && getFlips(row, col, player, b).length > 0;
+}
+
+function hasValidMoves(player, b = board) {
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] === 0 && getFlips(r, c, player, b).length > 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function listValidMoves(player, b = board) {
+  const list = [];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== 0) continue;
+      const flips = getFlips(r, c, player, b);
+      if (flips.length > 0) list.push({ row: r, col: c, flips });
+    }
+  }
+  return list;
+}
+
+function applyMoveOn(b, move, player) {
+  const nb = deepCopyBoard(b);
+  nb[move.row][move.col] = player;
+  for (const [fr, fc] of move.flips) {
+    nb[fr][fc] = player;
+  }
+  return nb;
+}
+
+function boardKey(b, player) {
+  let out = player === 1 ? 'b' : 'w';
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const v = b[r][c];
+      out += v === 1 ? '1' : v === -1 ? '2' : '0';
+    }
+  }
+  return out;
+}
+
+function sameMove(a, b) {
+  return !!a && !!b && a.row === b.row && a.col === b.col;
+}
+
+function cloneMove(move) {
+  if (!move) return null;
+  return { row: move.row, col: move.col };
+}
+
+function cancelPendingAIActions() {
+  aiRequestId += 1;
+  if (aiWorker) {
+    destroyAIWorker();
+  }
+  aiThinking = false;
+}
+
+function pushHistory() {
+  history.push({
+    board: deepCopyBoard(board),
+    currentPlayer,
+    gameOver
+  });
+}
+
+function restoreState(state) {
+  cancelPendingAIActions();
+  board = deepCopyBoard(state.board);
+  currentPlayer = state.currentPlayer;
+  gameOver = state.gameOver;
+  isProcessingMove = false;
+  renderBoard();
+  highlightValidMoves();
+  updateStatus();
+}
+
+function refreshModeUIState() {
+  if (modeLocked) {
+    modeGroupWrapper.classList.add('disabled');
+    aiSideGroupWrapper.classList.add('disabled');
+  } else {
+    modeGroupWrapper.classList.remove('disabled');
+    if (mode === 'ai') aiSideGroupWrapper.classList.remove('disabled');
+    else aiSideGroupWrapper.classList.add('disabled');
+  }
+}
+
+function setUIBusy(busy) {
+  const toggleBtns = document.querySelectorAll('.toggle-btn');
+  toggleBtns.forEach(btn => { btn.disabled = busy; });
+
+  undoBtn.disabled = busy || (mode === 'ai' && undoLocked);
+  resetBtn.disabled = false;
+
+  const boardEl = document.getElementById('board');
+  if (aiThinking) boardEl.classList.add('thinking');
+  else boardEl.classList.remove('thinking');
+}
+
+/** ====== 渲染与状态 ====== */
+function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+
+      if (!gameOver) {
+        cell.onclick = () => makeMove(row, col);
+      }
+
+      const piece = document.createElement('div');
+      piece.className = 'piece';
+      if (board[row][col] === 1) piece.classList.add('black');
+      else if (board[row][col] === -1) piece.classList.add('white');
+
+      cell.appendChild(piece);
+      boardEl.appendChild(cell);
+    }
+  }
+
+  if (gameOver) boardEl.classList.add('game-over');
+  else boardEl.classList.remove('game-over');
+}
+
+function highlightValidMoves() {
+  document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('valid'));
+  if (gameOver) return;
+
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (board[r][c] === 0 && isValidMoveOn(r, c, currentPlayer, board)) {
+        const cellEl = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+        if (cellEl) cellEl.classList.add('valid');
+      }
+    }
+  }
+}
+
+function updateStatus(extraText = '') {
+  const status = document.querySelector('.status');
+  if (!gameOver) {
+    const playerText = currentPlayer === 1 ? '黑方' : '白方';
+    let prefix = `<span class="player current">${playerText}</span> 的回合`;
+    if (aiThinking) prefix = '🤖 AI 思考中…';
+    status.innerHTML = extraText ? `${prefix} · ${extraText}` : prefix;
+  }
+
+  const { blackCount, whiteCount } = countPieces();
+  const scoresEl = document.getElementById('scores');
+  scoresEl.innerHTML =
+    `<span class="score black-score">黑: ${blackCount}</span>` +
+    `<span class="score white-score">白: ${whiteCount}</span>`;
+
+  setUIBusy(isProcessingMove || aiThinking);
+}
+
+/** ====== 核心：落子 ====== */
+function makeMove(row, col, opts = { force: false }) {
+  if (gameOver) return;
+  if (!opts.force && (isProcessingMove || aiThinking)) return;
+  if (mode === 'ai' && !opts.force && currentPlayer === aiPlays) return;
+  if (!isValidMoveOn(row, col, currentPlayer, board)) return;
+
+  if (!modeLocked) {
+    modeLocked = true;
+    refreshModeUIState();
+  }
+
+  pushHistory();
+  isProcessingMove = true;
+
+  board[row][col] = currentPlayer;
+  const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .piece`);
+  if (piece) {
+    piece.classList.add(currentPlayer === 1 ? 'black' : 'white', 'appear');
+  }
+
+  for (const [dr, dc] of directions) {
+    const toFlip = [];
+    let r = row + dr;
+    let c = col + dc;
+
+    while (inBounds(r, c) && board[r][c] === -currentPlayer) {
+      toFlip.push([r, c]);
+      r += dr;
+      c += dc;
+    }
+
+    if (toFlip.length > 0 && inBounds(r, c) && board[r][c] === currentPlayer) {
+      for (const [fr, fc] of toFlip) {
+        board[fr][fc] = currentPlayer;
+        const flipPiece = document.querySelector(`[data-row="${fr}"][data-col="${fc}"] .piece`);
+        if (!flipPiece) continue;
+
+        const oldColor = flipPiece.classList.contains('black') ? 'black' : 'white';
+        const newColor = currentPlayer === 1 ? 'black' : 'white';
+
+        flipPiece.classList.add('flip');
+        setTimeout(() => {
+          flipPiece.classList.remove(oldColor);
+          flipPiece.classList.add(newColor);
+        }, 300);
+        setTimeout(() => flipPiece.classList.remove('flip'), 600);
+      }
+    }
+  }
+
+  setTimeout(() => {
+    if (mode === 'ai' && currentPlayer !== aiPlays) {
+      undoLocked = false;
+    }
+    currentPlayer = -currentPlayer;
+    nextTurn();
+  }, 600);
+}
+
+function nextTurn(skipInfo = '') {
+  if (gameOver) {
+    isProcessingMove = false;
+    aiThinking = false;
+    setUIBusy(false);
+    updateStatus();
+    return;
+  }
+
+  let notice = skipInfo;
+  if (!hasValidMoves(currentPlayer, board)) {
+    const skippedPlayer = currentPlayer === 1 ? '黑方' : '白方';
+    currentPlayer = -currentPlayer;
+    if (!hasValidMoves(currentPlayer, board)) {
+      isProcessingMove = false;
+      endGame();
+      return;
+    }
+    notice = `${skippedPlayer} 无子可下，已自动跳过`;
+  }
+
+  renderBoard();
+  highlightValidMoves();
+  isProcessingMove = false;
+
+  if (mode === 'ai' && currentPlayer === aiPlays && !gameOver) {
+    aiMove(notice);
+    return;
+  }
+
+  updateStatus(notice);
+}
+
+function endGame() {
+  gameOver = true;
+
+  const { blackCount, whiteCount } = countPieces();
+  const status = document.querySelector('.status');
+  const boardEl = document.getElementById('board');
+
+  aiThinking = false;
+  isProcessingMove = false;
+  setUIBusy(false);
+  undoBtn.disabled = true;
+
+  document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('valid'));
+
+  const scoresEl = document.getElementById('scores');
+  let blackClass = 'score black-score';
+  let whiteClass = 'score white-score';
+  let resultHtml = '';
+
+  if (blackCount === whiteCount) {
+    resultHtml = `<span class="winner">平局</span> 黑: ${blackCount} 白: ${whiteCount}`;
+  } else {
+    const winner = blackCount > whiteCount ? '黑方' : '白方';
+    const diff = Math.abs(blackCount - whiteCount);
+    if (blackCount > whiteCount) blackClass += ' highlight';
+    else whiteClass += ' highlight';
+
+    resultHtml =
+      `<span class="winner">${winner} 获胜！</span> ` +
+      `黑: ${blackCount} 白: ${whiteCount}` +
+      `<span class="winner-diff">领先 ${diff} 子</span>`;
+  }
+
+  scoresEl.innerHTML =
+    `<span class="${blackClass}">黑: ${blackCount}</span>` +
+    `<span class="${whiteClass}">白: ${whiteCount}</span>`;
+
+  status.innerHTML = resultHtml;
+  renderBoard();
+
+  boardEl.style.animation = 'shake 0.5s ease-in-out';
+  setTimeout(() => { boardEl.style.animation = ''; }, 500);
+}
+
+/** ====== 初始化与重置 ====== */
+function initBoard() {
+  cancelPendingAIActions();
+  board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+  board[3][3] = -1;
+  board[3][4] = 1;
+  board[4][3] = 1;
+  board[4][4] = -1;
+
+  currentPlayer = 1;
+  gameOver = false;
+  isProcessingMove = false;
+  aiThinking = false;
+  undoLocked = false;
+  history = [];
+  modeLocked = false;
+
+  refreshModeUIState();
+  renderBoard();
+  highlightValidMoves();
+  updateStatus();
+
+  if (mode === 'ai' && currentPlayer === aiPlays) {
+    aiMove();
+  }
+}
+
+function refreshPage() {
+  window.location.reload();
+}
+
+/** ====== 悔棋逻辑 ====== */
+function restoreHistoryAt(index) {
+  if (index < 0 || index >= history.length) return false;
+  const state = history[index];
+  history = history.slice(0, index);
+  restoreState(state);
+  return true;
+}
+
+function findLastHumanTurnHistoryIndex() {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].currentPlayer !== aiPlays) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function undoMove() {
+  if (gameOver || isProcessingMove || aiThinking) return;
+
+  if (mode === 'pvp') {
+    if (restoreHistoryAt(history.length - 1)) {
+      updateStatus('已悔棋一步');
+      highlightValidMoves();
+    }
+    return;
+  }
+
+  if (undoLocked) return;
+
+  const targetIndex = findLastHumanTurnHistoryIndex();
+  if (targetIndex === -1) return;
+
+  if (restoreHistoryAt(targetIndex)) {
+    undoLocked = true;
+    updateStatus('已回到你上一次落子前');
+    highlightValidMoves();
+  }
+}
+
+
+function destroyAIWorker() {
+  if (aiWorker) {
+    aiWorker.terminate();
+    aiWorker = null;
+  }
+  if (aiWorkerUrl) {
+    URL.revokeObjectURL(aiWorkerUrl);
+    aiWorkerUrl = null;
+  }
+}
+
+function ensureAIWorker() {
+  if (aiWorker) return aiWorker;
+  const workerSource = document.getElementById('aiWorkerScript').textContent;
+  aiWorkerUrl = URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' }));
+  aiWorker = new Worker(aiWorkerUrl);
+
+  aiWorker.addEventListener('message', handleAIWorkerMessage);
+  aiWorker.addEventListener('error', handleAIWorkerError);
+  return aiWorker;
+}
+
+function handleAIWorkerMessage(event) {
+  const data = event.data || {};
+  if (!data.type || data.requestId !== aiRequestId) return;
+
+  if (data.type === 'error') {
+    handleAIWorkerError(data.error || '未知错误');
+    return;
+  }
+
+  if (data.type !== 'result') return;
+  if (gameOver || mode !== 'ai' || currentPlayer !== aiPlays) return;
+
+  const move = data.result ? data.result.move : null;
+  if (!move) {
+    aiThinking = false;
+    currentPlayer = -currentPlayer;
+    nextTurn('AI 无子可下，已自动跳过');
+    return;
+  }
+
+  aiThinking = false;
+  makeMove(move.row, move.col, { force: true });
+}
+
+function handleAIWorkerError(error) {
+  console.error('AI worker error:', error);
+  destroyAIWorker();
+
+  if (gameOver || mode !== 'ai' || currentPlayer !== aiPlays) return;
+
+  aiThinking = false;
+  updateStatus('AI 计算模式不可用，已切回兼容模式');
+
+  requestAnimationFrame(() => {
+    const move = findBestMoveStrong(board, currentPlayer);
+    if (!move) {
+      currentPlayer = -currentPlayer;
+      nextTurn('AI 无子可下，已自动跳过');
+      return;
+    }
+    makeMove(move.row, move.col, { force: true });
+  });
+}
+
+window.addEventListener('beforeunload', destroyAIWorker);
+
+/** ====== AI 评估 ====== */
+function frontierCount(b, player) {
+  let count = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== player) continue;
+      for (const [dr, dc] of directions) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (inBounds(nr, nc) && b[nr][nc] === 0) {
+          count++;
+          break;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function potentialMobilityCount(b, player) {
+  let count = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (b[r][c] !== 0) continue;
+      for (const [dr, dc] of directions) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (inBounds(nr, nc) && b[nr][nc] === -player) {
+          count++;
+          break;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function countStableApprox(b, player) {
+  const stable = new Set();
+
+  function mark(r, c) {
+    stable.add(`${r},${c}`);
+  }
+
+  function scanFromCorner(cornerR, cornerC, stepR, stepC) {
+    if (b[cornerR][cornerC] !== player) return;
+
+    mark(cornerR, cornerC);
+
+    let r = cornerR + stepR;
+    let c = cornerC;
+    while (inBounds(r, c) && b[r][c] === player) {
+      mark(r, c);
+      r += stepR;
+    }
+
+    r = cornerR;
+    c = cornerC + stepC;
+    while (inBounds(r, c) && b[r][c] === player) {
+      mark(r, c);
+      c += stepC;
+    }
+  }
+
+  scanFromCorner(0, 0, 1, 1);
+  scanFromCorner(0, 7, 1, -1);
+  scanFromCorner(7, 0, -1, 1);
+  scanFromCorner(7, 7, -1, -1);
+
+  function markFullEdge(cells) {
+    const full = cells.every(([r, c]) => b[r][c] !== 0);
+    if (!full) return;
+    for (const [r, c] of cells) {
+      if (b[r][c] === player) mark(r, c);
+    }
+  }
+
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [0, i]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [7, i]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [i, 0]));
+  markFullEdge(Array.from({ length: 8 }, (_, i) => [i, 7]));
+
+  return stable.size;
+}
+
+function dynamicPositionalScore(b, player) {
+  let score = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const v = b[r][c];
+      if (v === 0) continue;
+
+      let w = PST[r][c];
+      const corner = getRelatedCorner(r, c);
+      if (corner) {
+        const cornerValue = b[corner[0]][corner[1]];
+        if (X_SQUARES[`${r},${c}`]) {
+          if (cornerValue === 0) w -= 80;
+          else if (cornerValue === v) w += 35;
+        } else {
+          if (cornerValue === 0) w -= 35;
+          else if (cornerValue === v) w += 20;
+        }
+      }
+
+      score += v === player ? w : -w;
+    }
+  }
+  return score;
+}
+
+function evaluate(b, player) {
+  const { blackCount, whiteCount } = countPieces(b);
+  const myDiscs = player === 1 ? blackCount : whiteCount;
+  const oppDiscs = player === 1 ? whiteCount : blackCount;
+  const empties = 64 - myDiscs - oppDiscs;
+
+  const myMoves = listValidMoves(player, b).length;
+  const oppMoves = listValidMoves(-player, b).length;
+  if (myMoves === 0 && oppMoves === 0) {
+    return finalDiscDiff(b, player) * 100000;
+  }
+
+  let myCorners = 0;
+  let oppCorners = 0;
+  for (const [r, c] of CORNERS) {
+    if (b[r][c] === player) myCorners++;
+    else if (b[r][c] === -player) oppCorners++;
+  }
+
+  let myCornerAdj = 0;
+  let oppCornerAdj = 0;
+  for (const key of Object.keys(X_SQUARES)) {
+    const [r, c] = key.split(',').map(Number);
+    const [cr, cc] = X_SQUARES[key];
+    if (b[cr][cc] !== 0) continue;
+    if (b[r][c] === player) myCornerAdj++;
+    else if (b[r][c] === -player) oppCornerAdj++;
+  }
+  for (const key of Object.keys(C_SQUARES)) {
+    const [r, c] = key.split(',').map(Number);
+    const [cr, cc] = C_SQUARES[key];
+    if (b[cr][cc] !== 0) continue;
+    if (b[r][c] === player) myCornerAdj++;
+    else if (b[r][c] === -player) oppCornerAdj++;
+  }
+
+  const myFrontier = frontierCount(b, player);
+  const oppFrontier = frontierCount(b, -player);
+  const myPotential = potentialMobilityCount(b, player);
+  const oppPotential = potentialMobilityCount(b, -player);
+  const myStable = countStableApprox(b, player);
+  const oppStable = countStableApprox(b, -player);
+  const positional = dynamicPositionalScore(b, player);
+
+  const discParity = normalizeDiff(myDiscs, oppDiscs);
+  const mobility = normalizeDiff(myMoves, oppMoves);
+  const potentialMobility = normalizeDiff(myPotential, oppPotential);
+  const frontierAdv = normalizeDiff(oppFrontier, myFrontier); // 自己前沿子越少越好
+  const stableDiff = myStable - oppStable;
+  const cornerDiff = myCorners - oppCorners;
+  const cornerAdjDiff = oppCornerAdj - myCornerAdj; // 靠近空角越少越好
+  const parity = empties % 2 === 1 ? 6 : -6;
+
+  if (empties > 44) {
+    return (
+      650 * cornerDiff +
+      40 * cornerAdjDiff +
+      22 * stableDiff +
+      12 * mobility +
+      8 * potentialMobility +
+      7 * frontierAdv +
+      2 * discParity +
+      1.6 * positional
+    );
+  }
+
+  if (empties > 20) {
+    return (
+      780 * cornerDiff +
+      45 * cornerAdjDiff +
+      28 * stableDiff +
+      13 * mobility +
+      7 * potentialMobility +
+      8 * frontierAdv +
+      6 * discParity +
+      1.35 * positional +
+      parity
+    );
+  }
+
+  return (
+    900 * cornerDiff +
+    55 * cornerAdjDiff +
+    36 * stableDiff +
+    10 * mobility +
+    4 * potentialMobility +
+    4 * frontierAdv +
+    18 * discParity +
+    1.05 * positional +
+    2 * parity
+  );
+}
+
+/** ====== AI 搜索 ====== */
+function storeTT(tt, key, depth, value, bestMove, flag) {
+  if (tt.size > MAX_TT_SIZE) tt.clear();
+  tt.set(key, {
+    depth,
+    value,
+    best: cloneMove(bestMove),
+    flag
+  });
+}
+
+function storeKiller(killers, ply, move) {
+  if (!killers[ply]) killers[ply] = [null, null];
+  if (sameMove(killers[ply][0], move)) return;
+  killers[ply][1] = killers[ply][0];
+  killers[ply][0] = cloneMove(move);
+}
+
+function addHistory(historyTable, move, depth) {
+  historyTable[move.row][move.col] += depth * depth;
+  if (historyTable[move.row][move.col] > 1000000) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        historyTable[r][c] = Math.floor(historyTable[r][c] / 2);
+      }
+    }
+  }
+}
+
+function scoreMoveForOrdering(b, move, player, options = {}) {
+  const { ttMove = null, killers = null, historyTable = null, ply = 0, exact = false } = options;
+  let score = 0;
+
+  if (sameMove(move, ttMove)) score += 10000000;
+  if (killers && killers[ply]) {
+    if (sameMove(move, killers[ply][0])) score += 5000000;
+    else if (sameMove(move, killers[ply][1])) score += 4000000;
+  }
+
+  if (isCornerCell(move.row, move.col)) score += 2000000;
+  if (isEdgeCell(move.row, move.col)) score += 60000;
+  if (isRiskyXSquare(move.row, move.col, b)) score -= 700000;
+  if (isRiskyCSquare(move.row, move.col, b)) score -= 250000;
+
+  score += PST[move.row][move.col] * 800;
+  score += move.flips.length * 120;
+  if (historyTable) score += historyTable[move.row][move.col];
+
+  const nb = applyMoveOn(b, move, player);
+  const oppMoves = listValidMoves(-player, nb).length;
+  const myMoves = listValidMoves(player, nb).length;
+  score -= oppMoves * (exact ? 260 : 180);
+  score += myMoves * 25;
+
+  if (countEmpties(b) <= 18) {
+    const stableBonus = countStableApprox(nb, player) - countStableApprox(nb, -player);
+    score += stableBonus * 160;
+  }
+
+  return score;
+}
+
+function orderMovesAdvanced(b, moves, player, options = {}) {
+  return moves
+    .map(move => ({ move, score: scoreMoveForOrdering(b, move, player, options) }))
+    .sort((a, bItem) => bItem.score - a.score)
+    .map(item => item.move);
+}
+
+function exactSearch(b, player, alpha, beta, tt) {
+  const key = boardKey(b, player);
+  const entry = tt.get(key);
+  const alphaOrig = alpha;
+  const betaOrig = beta;
+
+  if (entry) {
+    if (entry.flag === 'EXACT') return { value: entry.value, move: entry.best };
+    if (entry.flag === 'LOWER') alpha = Math.max(alpha, entry.value);
+    else if (entry.flag === 'UPPER') beta = Math.min(beta, entry.value);
+    if (alpha >= beta) return { value: entry.value, move: entry.best };
+  }
+
+  const myMoves = listValidMoves(player, b);
+  if (myMoves.length === 0) {
+    const oppMoves = listValidMoves(-player, b);
+    if (oppMoves.length === 0) {
+      const terminal = finalDiscDiff(b, player);
+      return { value: terminal, move: null };
+    }
+    const passResult = exactSearch(b, -player, -beta, -alpha, tt);
+    return { value: -passResult.value, move: null };
+  }
+
+  let bestMove = null;
+  let bestVal = -Infinity;
+  const ttMove = entry ? entry.best : null;
+  const ordered = orderMovesAdvanced(b, myMoves, player, { ttMove, exact: true });
+
+  for (const move of ordered) {
+    const nb = applyMoveOn(b, move, player);
+    const result = exactSearch(nb, -player, -beta, -alpha, tt);
+    const value = -result.value;
+
+    if (value > bestVal) {
+      bestVal = value;
+      bestMove = move;
+    }
+
+    if (value > alpha) alpha = value;
+    if (alpha >= beta) break;
+  }
+
+  let flag = 'EXACT';
+  if (bestVal <= alphaOrig) flag = 'UPPER';
+  else if (bestVal >= betaOrig) flag = 'LOWER';
+  storeTT(tt, key, Infinity, bestVal, bestMove, flag);
+
+  return { value: bestVal, move: bestMove };
+}
+
+function negamaxSearch(b, player, depth, alpha, beta, deadline, tt, killers, historyTable, ply = 0) {
+  if (Date.now() >= deadline) {
+    return { timeout: true, value: 0, move: null };
+  }
+
+  const key = boardKey(b, player);
+  const entry = tt.get(key);
+  const alphaOrig = alpha;
+  const betaOrig = beta;
+
+  if (entry && entry.depth >= depth) {
+    if (entry.flag === 'EXACT') return { timeout: false, value: entry.value, move: entry.best };
+    if (entry.flag === 'LOWER') alpha = Math.max(alpha, entry.value);
+    else if (entry.flag === 'UPPER') beta = Math.min(beta, entry.value);
+    if (alpha >= beta) return { timeout: false, value: entry.value, move: entry.best };
+  }
+
+  const myMoves = listValidMoves(player, b);
+  if (myMoves.length === 0) {
+    const oppMoves = listValidMoves(-player, b);
+    if (oppMoves.length === 0) {
+      return { timeout: false, value: finalDiscDiff(b, player) * 100000, move: null };
+    }
+    const passResult = negamaxSearch(b, -player, depth, -beta, -alpha, deadline, tt, killers, historyTable, ply + 1);
+    if (passResult.timeout) return passResult;
+    return { timeout: false, value: -passResult.value, move: null };
+  }
+
+  if (depth <= 0) {
+    return { timeout: false, value: evaluate(b, player), move: null };
+  }
+
+  let bestMove = null;
+  let bestVal = -Infinity;
+  const ttMove = entry ? entry.best : null;
+  const ordered = orderMovesAdvanced(b, myMoves, player, { ttMove, killers, historyTable, ply });
+
+  let firstChild = true;
+  for (const move of ordered) {
+    const nb = applyMoveOn(b, move, player);
+    let childResult;
+    let value;
+
+    if (firstChild) {
+      childResult = negamaxSearch(nb, -player, depth - 1, -beta, -alpha, deadline, tt, killers, historyTable, ply + 1);
+      if (childResult.timeout) return childResult;
+      value = -childResult.value;
+      firstChild = false;
+    } else {
+      childResult = negamaxSearch(nb, -player, depth - 1, -alpha - 1, -alpha, deadline, tt, killers, historyTable, ply + 1);
+      if (childResult.timeout) return childResult;
+      value = -childResult.value;
+
+      if (value > alpha && value < beta) {
+        childResult = negamaxSearch(nb, -player, depth - 1, -beta, -value, deadline, tt, killers, historyTable, ply + 1);
+        if (childResult.timeout) return childResult;
+        value = -childResult.value;
+      }
+    }
+
+    if (value > bestVal) {
+      bestVal = value;
+      bestMove = move;
+    }
+
+    if (value > alpha) alpha = value;
+    if (alpha >= beta) {
+      storeKiller(killers, ply, move);
+      addHistory(historyTable, move, depth);
+      break;
+    }
+  }
+
+  let flag = 'EXACT';
+  if (bestVal <= alphaOrig) flag = 'UPPER';
+  else if (bestVal >= betaOrig) flag = 'LOWER';
+  storeTT(tt, key, depth, bestVal, bestMove, flag);
+
+  return { timeout: false, value: bestVal, move: bestMove };
+}
+
+function shouldUseExactSolver(b, player) {
+  const empties = countEmpties(b);
+  if (empties <= EXACT_SOLVE_EMPTY_LIMIT) return true;
+  if (empties <= EXTENDED_SOLVE_EMPTY_LIMIT) {
+    return listValidMoves(player, b).length <= 6;
+  }
+  return false;
+}
+
+function getAdaptiveThinkBudget(b, player) {
+  const empties = countEmpties(b);
+  const moveCount = listValidMoves(player, b).length;
+
+  if (empties >= 50) return 160;
+  if (empties >= 42) return 240;
+  if (empties >= 32) return 340;
+  if (empties >= 24) return 500;
+  if (empties >= 18) return moveCount <= 5 ? 720 : 620;
+  if (empties >= 14) return moveCount <= 5 ? 980 : 820;
+  return 1100;
+}
+
+function getAdaptiveMaxDepth(empties) {
+  if (empties >= 50) return 5;
+  if (empties >= 40) return 6;
+  if (empties >= 28) return 7;
+  if (empties >= 20) return 9;
+  if (empties >= 16) return 11;
+  return MAX_ITER_DEPTH;
+}
+
+function findBestMoveIterative(b, player, msBudget) {
+  const deadline = Date.now() + msBudget;
+  const tt = new Map();
+  const killers = Array.from({ length: 80 }, () => [null, null]);
+  const historyTable = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+  const empties = countEmpties(b);
+  const maxDepth = getAdaptiveMaxDepth(empties);
+
+  let bestMove = null;
+  let bestValue = 0;
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    if (Date.now() >= deadline) break;
+
+    let alpha = -Infinity;
+    let beta = Infinity;
+    if (depth >= 3) {
+      const window = 45 + depth * 8;
+      alpha = bestValue - window;
+      beta = bestValue + window;
+    }
+
+    let result = negamaxSearch(b, player, depth, alpha, beta, deadline, tt, killers, historyTable, 0);
+    if (result.timeout) break;
+
+    if (depth >= 3 && (result.value <= alpha || result.value >= beta)) {
+      result = negamaxSearch(b, player, depth, -Infinity, Infinity, deadline, tt, killers, historyTable, 0);
+      if (result.timeout) break;
+    }
+
+    if (result.move) {
+      bestMove = result.move;
+      bestValue = result.value;
+    }
+
+    if (Math.abs(bestValue) >= 9000000) break;
+  }
+
+  if (!bestMove) {
+    const moves = listValidMoves(player, b);
+    if (moves.length > 0) {
+      bestMove = orderMovesAdvanced(b, moves, player)[0];
+    }
+  }
+
+  return bestMove;
+}
+
+function findBestMoveStrong(b, player) {
+  if (shouldUseExactSolver(b, player)) {
+    const exactTT = new Map();
+    const result = exactSearch(b, player, -Infinity, Infinity, exactTT);
+    if (result.move) return result.move;
+  }
+
+  const budget = getAdaptiveThinkBudget(b, player);
+  return findBestMoveIterative(b, player, budget);
+}
+
+function aiMove(extraText = '') {
+  aiThinking = true;
+  setUIBusy(true);
+  updateStatus(extraText);
+
+  let worker;
+  try {
+    worker = ensureAIWorker();
+  } catch (error) {
+    handleAIWorkerError(error);
+    return;
+  }
+
+  const requestId = ++aiRequestId;
+  worker.postMessage({
+    type: 'think',
+    requestId,
+    board: deepCopyBoard(board),
+    player: currentPlayer,
+    targetMs: AI_TARGET_THINK_MS
+  });
+}
+
+/** ====== 事件绑定 ====== */
+undoBtn.addEventListener('click', undoMove);
+resetBtn.addEventListener('click', refreshPage);
+
+modeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isProcessingMove || aiThinking || modeLocked) return;
+    mode = btn.dataset.mode;
+
+    modeButtons.forEach(b => b.classList.toggle('active', b === btn));
+    refreshModeUIState();
+    initBoard();
+  });
+});
+
+aiSideButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isProcessingMove || aiThinking || modeLocked || mode !== 'ai') return;
+    aiPlays = parseInt(btn.dataset.side, 10);
+
+    aiSideButtons.forEach(b => b.classList.toggle('active', b === btn));
+    refreshModeUIState();
+    initBoard();
+  });
+});
+
+initBoard();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"714420ba517c46f1a8fc9efa6e860813","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
