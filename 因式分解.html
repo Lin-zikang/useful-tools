@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><script>document.addEventListener("DOMContentLoaded",function(){var e=document.body;if(e&&(e.textContent.includes("Something went wrong")||e.textContent.includes("help.openai.com"))){e.innerHTML="<div style="text-align:center;padding:60px 20px;font-family:sans-serif;"><h2 style="color:#e74c3c;margin-bottom:16px;">该车辆已达到使用次数上限</h2><p style="color:#666;font-size:16px;line-height:1.8;">请更换其他车辆或稍后再试。</p></div>"}});</script></head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="referrer" content="no-referrer" />
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <title>因式分解</title>
+  <style>
+    :root {
+      --bg: #f4fbf6;
+      --bg-2: #fbfefc;
+      --panel: rgba(255, 255, 255, .94);
+      --panel-solid: #ffffff;
+      --text: #183126;
+      --text-strong: #0f2419;
+      --muted: #607267;
+      --muted-2: #7d8e83;
+      --line: #dcebe0;
+      --line-soft: #eaf4ed;
+      --green-900: #14532d;
+      --green-800: #166534;
+      --green-700: #15803d;
+      --green-600: #16a34a;
+      --green-500: #22c55e;
+      --green-100: #dcfce7;
+      --green-50: #f0fdf4;
+      --danger: #b42318;
+      --danger-soft: #fff4f2;
+      --warning: #9a6700;
+      --warning-soft: #fffbeb;
+      --shadow: 0 22px 56px rgba(20, 83, 45, .09);
+      --shadow-soft: 0 10px 28px rgba(20, 83, 45, .07);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max-width: 1320px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--bg);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(34, 197, 94, .11), transparent 29rem),
+        radial-gradient(circle at 96% 22%, rgba(134, 239, 172, .13), transparent 30rem),
+        linear-gradient(180deg, #fbfefc 0%, var(--bg) 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, textarea, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .page {
+      width: min(calc(100% - 40px), var(--max-width));
+      margin: 0 auto;
+      padding: 34px 0 28px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 26px;
+      padding: 30px 32px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(187, 224, 197, .82);
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.98), rgba(241,253,245,.96)),
+        var(--panel-solid);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 310px;
+      height: 310px;
+      right: -120px;
+      top: -165px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,197,94,.18), rgba(34,197,94,0) 70%);
+      pointer-events: none;
+    }
+
+    .hero-main {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    .logo {
+      flex: 0 0 auto;
+      width: 66px;
+      height: 66px;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      color: #fff;
+      background: linear-gradient(145deg, var(--green-500), var(--green-700));
+      box-shadow: 0 13px 30px rgba(22, 163, 74, .26);
+    }
+
+    .logo svg { width: 34px; height: 34px; }
+
+    .hero h1 {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: clamp(29px, 4vw, 44px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .status-stack {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 9px;
+      flex: 0 0 auto;
+      min-width: 220px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #496055;
+      background: rgba(255,255,255,.82);
+      font-size: 12px;
+      font-weight: 650;
+      box-shadow: 0 7px 20px rgba(20, 83, 45, .05);
+    }
+
+    .status-dot {
+      flex: 0 0 auto;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #d1d5db;
+      box-shadow: 0 0 0 5px rgba(209, 213, 219, .2);
+    }
+
+    .status-pill[data-state="loading"] .status-dot {
+      background: #f59e0b;
+      box-shadow: 0 0 0 5px rgba(245, 158, 11, .14);
+      animation: pulse 1.3s ease-in-out infinite;
+    }
+
+    .status-pill[data-state="ready"] .status-dot {
+      background: var(--green-500);
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, .14);
+    }
+
+    .status-pill[data-state="error"] .status-dot {
+      background: #ef4444;
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, .13);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(.82); opacity: .68; }
+      50% { transform: scale(1.14); opacity: 1; }
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(360px, .86fr) minmax(0, 1.14fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid rgba(210, 231, 216, .92);
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 69px;
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,253,250,.95));
+    }
+
+    .head-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .head-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 12px;
+      color: var(--green-700);
+      background: var(--green-50);
+      border: 1px solid #cff0d8;
+    }
+
+    .head-icon svg { width: 19px; height: 19px; }
+
+    .card h2 {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: 16px;
+      letter-spacing: -.01em;
+    }
+
+    .head-sub {
+      margin-top: 3px;
+      color: var(--muted-2);
+      font-size: 12px;
+    }
+
+    .input-body { padding: 20px; }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+      color: #334b3e;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #charCount {
+      color: var(--muted-2);
+      font-weight: 500;
+    }
+
+    .textarea-shell {
+      position: relative;
+      border: 1.5px solid #cfe4d5;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: inset 0 1px 0 rgba(20, 83, 45, .02);
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .textarea-shell:focus-within {
+      border-color: var(--green-500);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, .11);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 208px;
+      display: block;
+      resize: vertical;
+      border: 0;
+      outline: 0;
+      padding: 18px 18px 47px;
+      color: #12291b;
+      background: transparent;
+      font: 600 17px/1.75 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: .01em;
+      tab-size: 2;
+    }
+
+    textarea::placeholder { color: #9aaba0; font-weight: 500; }
+
+    .input-tip {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 12px;
+      color: #7b8d82;
+      font-size: 11px;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .examples {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .example-chip {
+      appearance: none;
+      border: 1px solid #d9eadf;
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: #3c5848;
+      background: #fbfefc;
+      cursor: pointer;
+      font: 600 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      transition: .18s ease;
+    }
+
+    .example-chip:hover {
+      color: var(--green-800);
+      border-color: #a9d9b7;
+      background: var(--green-50);
+      transform: translateY(-1px);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px 15px;
+      color: #2c4336;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .btn svg { width: 17px; height: 17px; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); border-color: #bddcc6; box-shadow: 0 8px 18px rgba(20,83,45,.08); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { cursor: not-allowed; opacity: .5; }
+
+    .btn-primary {
+      flex: 1 1 auto;
+      color: #fff;
+      border-color: var(--green-600);
+      background: linear-gradient(135deg, var(--green-500), var(--green-700));
+      box-shadow: 0 12px 24px rgba(22, 163, 74, .22);
+    }
+
+    .btn-primary:hover:not(:disabled) { border-color: var(--green-700); box-shadow: 0 14px 28px rgba(22, 163, 74, .27); }
+    .btn-danger { color: var(--danger); border-color: #f2c7c2; background: var(--danger-soft); }
+    .btn-soft { color: var(--green-800); border-color: #cfe8d6; background: var(--green-50); }
+
+    .shortcut {
+      margin-top: 11px;
+      color: var(--muted-2);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    kbd {
+      display: inline-block;
+      min-width: 22px;
+      padding: 2px 6px;
+      border: 1px solid #d7e5da;
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      color: #52665a;
+      background: #fff;
+      font: 600 10px/1.3 ui-monospace, monospace;
+    }
+
+    .rules {
+      margin-top: 18px;
+      padding: 15px 16px;
+      border: 1px solid #def0e3;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #fbfefc, #f3fcf6);
+    }
+
+    .rules-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+      color: #2c543a;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .rules ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #667a6e;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .rules code, .footer code {
+      padding: .14em .42em;
+      border: 1px solid #dbeadf;
+      border-radius: 6px;
+      color: #285b38;
+      background: #fff;
+      font: 600 .92em/1.4 ui-monospace, monospace;
+    }
+
+    .result-card { min-height: 620px; display: flex; flex-direction: column; }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .result-actions .btn { min-height: 36px; padding: 7px 11px; font-size: 12px; }
+
+    .result-shell {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 550px;
+      overflow: auto;
+      background:
+        linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)),
+        linear-gradient(90deg, rgba(22,163,74,.035) 1px, transparent 1px),
+        linear-gradient(rgba(22,163,74,.035) 1px, transparent 1px);
+      background-size: auto, 28px 28px, 28px 28px;
+    }
+
+    .result-content {
+      width: min(100%, 920px);
+      min-height: 100%;
+      margin: 0 auto;
+      padding: 27px 30px 40px;
+    }
+
+    .empty-state {
+      min-height: 490px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 34px;
+    }
+
+    .empty-state-inner { max-width: 410px; }
+
+    .empty-icon {
+      width: 72px;
+      height: 72px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 17px;
+      border: 1px solid #d4ebda;
+      border-radius: 24px;
+      color: var(--green-600);
+      background: linear-gradient(145deg, #fff, var(--green-50));
+      box-shadow: 0 14px 30px rgba(20,83,45,.08);
+    }
+
+    .empty-icon svg { width: 34px; height: 34px; }
+    .empty-state h3 { margin: 0 0 9px; color: #294334; font-size: 17px; }
+    .empty-state p { margin: 0; color: #7a8d81; font-size: 13px; line-height: 1.8; }
+
+    .loader {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 16px;
+      border: 3px solid #dff2e4;
+      border-top-color: var(--green-600);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .markdown-body {
+      color: #233a2c;
+      font-size: 15px;
+      line-height: 1.82;
+      overflow-wrap: anywhere;
+    }
+
+    .markdown-body > :first-child { margin-top: 0; }
+    .markdown-body > :last-child { margin-bottom: 0; }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3 {
+      color: #173523;
+      line-height: 1.35;
+      letter-spacing: -.018em;
+    }
+
+    .markdown-body h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #dfeee3;
+      font-size: 22px;
+    }
+
+    .markdown-body h2::before {
+      content: "";
+      width: 8px;
+      height: 25px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: linear-gradient(var(--green-500), var(--green-700));
+    }
+
+    .markdown-body p { margin: 14px 0; }
+    .markdown-body strong { color: #1c4c2d; }
+
+    .markdown-body blockquote {
+      margin: 18px 0;
+      padding: 12px 15px;
+      border: 1px solid #d7ecdd;
+      border-left: 4px solid var(--green-500);
+      border-radius: 0 13px 13px 0;
+      color: #50675a;
+      background: #f7fcf8;
+    }
+
+    .markdown-body blockquote p { margin: 0; }
+    .markdown-body hr { border: 0; border-top: 1px solid #deede2; margin: 25px 0; }
+
+    .markdown-body code {
+      padding: .18em .42em;
+      border-radius: 7px;
+      color: #1c6536;
+      background: #edf9f0;
+      font: .92em ui-monospace, monospace;
+    }
+
+    .markdown-body .katex-display {
+      margin: 16px 0;
+      padding: 15px 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border: 1px solid #e0eee4;
+      border-radius: 15px;
+      background: rgba(255,255,255,.82);
+      text-align: center;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .markdown-body .katex-display > .katex { min-width: max-content; }
+    .markdown-body .katex { color: #142c1d; }
+
+    .error-panel {
+      padding: 20px;
+      border: 1px solid #f3c7c2;
+      border-radius: 17px;
+      color: #7a271a;
+      background: var(--danger-soft);
+    }
+
+    .error-panel h3 { margin: 0 0 9px; color: var(--danger); font-size: 16px; }
+    .error-panel p { margin: 0; line-height: 1.75; font-size: 13px; }
+
+    .result-meta {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 20px;
+      border-top: 1px solid var(--line-soft);
+      color: #718479;
+      background: #fbfefc;
+      font-size: 11px;
+    }
+
+    .result-meta.show { display: flex; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .info-card {
+      display: flex;
+      gap: 13px;
+      align-items: flex-start;
+      padding: 17px 18px;
+      border: 1px solid rgba(211, 232, 217, .9);
+      border-radius: 19px;
+      background: rgba(255,255,255,.79);
+      box-shadow: 0 8px 22px rgba(20,83,45,.045);
+    }
+
+    .info-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 10px;
+      color: var(--green-800);
+      background: var(--green-100);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .info-card h3 { margin: 1px 0 5px; color: #23422f; font-size: 13px; }
+    .info-card p { margin: 0; color: #728378; font-size: 11px; line-height: 1.7; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      padding: 0 4px;
+      color: #75877c;
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 50;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      transform: translate(-50%, 18px);
+      max-width: min(420px, calc(100vw - 32px));
+      padding: 11px 15px;
+      border: 1px solid #cde5d3;
+      border-radius: 12px;
+      color: #244a31;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 14px 38px rgba(20,83,45,.16);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: .22s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1040px) {
+      .page { width: min(calc(100% - 28px), var(--max-width)); padding-top: 20px; }
+      .hero { align-items: flex-start; padding: 25px; }
+      .status-stack { min-width: 205px; }
+      .workspace { grid-template-columns: 1fr; }
+      .result-card { min-height: 560px; }
+      .result-shell { min-height: 490px; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .page { width: min(calc(100% - 20px), var(--max-width)); padding: 10px 0 22px; }
+      .hero { display: block; padding: 21px 18px; border-radius: 22px; }
+      .hero-main { align-items: flex-start; gap: 14px; }
+      .logo { width: 52px; height: 52px; border-radius: 17px; }
+      .logo svg { width: 28px; height: 28px; }
+      .hero p { font-size: 13px; line-height: 1.7; }
+      .status-stack { grid-template-columns: 1fr; min-width: 0; margin-top: 18px; }
+      .status-pill { min-height: 38px; }
+      .card { border-radius: 22px; }
+      .card-head { align-items: flex-start; min-height: 64px; padding: 14px 15px; }
+      .input-body { padding: 15px; }
+      textarea { min-height: 185px; padding: 15px 14px 46px; font-size: 15px; }
+      .action-row { flex-wrap: wrap; }
+      .btn-primary { flex-basis: 100%; }
+      .result-card { min-height: 510px; }
+      .result-actions { width: 100%; justify-content: flex-start; }
+      .result-actions .btn { flex: 1 1 120px; }
+      .result-content { padding: 21px 14px 32px; }
+      .result-shell { min-height: 445px; }
+      .empty-state { min-height: 405px; padding: 24px 15px; }
+      .markdown-body { font-size: 14px; }
+      .markdown-body h2 { font-size: 19px; }
+      .markdown-body .katex-display { margin: 13px 0; padding: 12px 8px; text-align: left; }
+      .result-meta { align-items: flex-start; flex-direction: column; padding: 9px 14px; }
+      .info-grid { margin-top: 14px; }
+      .footer { padding: 0 3px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-main">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 5h16M6.5 9.5h11M8.5 14h7M10.5 18.5h3" />
+            <path d="M5 3.5v3M19 3.5v3" />
+          </svg>
+        </div>
+        <div>
+          <h1>因式分解</h1>
+          <p>支持未化简表达式、多个未知数、分数、有限小数与根式系数。计算在浏览器本地完成，结果以 Markdown + LaTeX 精确渲染。</p>
+        </div>
+      </div>
+      <div class="status-stack" aria-live="polite">
+        <div class="status-pill" id="engineStatus" data-state="loading">
+          <span class="status-dot"></span><span>正在准备精确计算核心</span>
+        </div>
+        <div class="status-pill" id="renderStatus" data-state="loading">
+          <span class="status-dot"></span><span>正在加载公式渲染库</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="card input-card" aria-labelledby="inputTitle">
+        <div class="card-head">
+          <div class="head-title">
+            <div class="head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5h16M6.5 16l3.3-8 3.3 8M7.7 13h4.2M15.5 8h3M17 6.5v3" />
+              </svg>
+            </div>
+            <div>
+              <h2 id="inputTitle">输入多项式</h2>
+              <div class="head-sub">自动化简后再分解</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-body">
+          <label class="field-label" for="polynomial">
+            <span>表达式</span><span id="charCount">0 / 1200</span>
+          </label>
+          <div class="textarea-shell">
+            <textarea id="polynomial" maxlength="1200" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="例如：x^4 - 5x^2 + 6"></textarea>
+            <div class="input-tip">支持 2x、xy、(x+1)(x-1)、sqrt(2)、x^2=2</div>
+          </div>
+
+          <div class="examples" aria-label="示例表达式">
+            <button class="example-chip" type="button" data-example="x^2 - 2">x² − 2</button>
+            <button class="example-chip" type="button" data-example="x^4 + 1">x⁴ + 1</button>
+            <button class="example-chip" type="button" data-example="x^4 + y^4">x⁴ + y⁴</button>
+            <button class="example-chip" type="button" data-example="(x+y)^2 - 2(z+w)^2">多元根式</button>
+            <button class="example-chip" type="button" data-example="(x^2-1)/(x-1)">可约分原式</button>
+            <button class="example-chip" type="button" data-example="x^5 - x - 1">高次精确根</button>
+          </div>
+
+          <div class="action-row">
+            <button class="btn btn-primary" type="button" id="factorBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <span id="factorBtnText">正在准备计算核心</span>
+            </button>
+            <button class="btn btn-danger" type="button" id="stopBtn" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+              停止
+            </button>
+            <button class="btn" type="button" id="clearBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+              清空
+            </button>
+          </div>
+          <div class="shortcut"><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd> 开始分解</div>
+
+          <div class="rules">
+            <div class="rules-title">输入与精确值规则</div>
+            <ul>
+              <li>未知数默认是实数；相邻单字母按乘法理解，例如 <code>xy=x*y</code>。</li>
+              <li>有限小数会精确转为分数；允许 <code>sqrt(2)</code>、<code>root(2,3)</code>。</li>
+              <li>不允许复数、三角函数或未知数的非整数幂；可完全约分的分式可以输入。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card result-card" aria-labelledby="resultTitle">
+        <div class="card-head">
+          <div class="head-title">
+            <div class="head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 4h14v16H5zM8 8h8M8 12h5M8 16h8" />
+              </svg>
+            </div>
+            <div>
+              <h2 id="resultTitle">精确结果</h2>
+              <div class="head-sub">Markdown + LaTeX 渲染</div>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button class="btn btn-soft" id="copyLatexBtn" type="button" disabled>复制 LaTeX</button>
+            <button class="btn" id="copyMarkdownBtn" type="button" disabled>复制 Markdown</button>
+          </div>
+        </div>
+
+        <div class="result-shell" id="resultShell">
+          <article class="result-content markdown-body" id="result" aria-live="polite">
+            <div class="empty-state">
+              <div class="empty-state-inner">
+                <div class="empty-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 5h16M7 10h10M9 15h6M11 20h2" />
+                  </svg>
+                </div>
+                <h3>等待输入</h3>
+                <p>输入多项式并点击“精确因式分解”，这里会显示化简过程、因式、重数与精确恒等关系。</p>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="result-meta" id="resultMeta">
+          <span id="resultSummary"></span><span id="resultTiming"></span>
+        </div>
+      </section>
+    </main>
+
+    <section class="info-grid" aria-label="功能说明">
+      <div class="info-card"><div class="info-number">01</div><div><h3>精确而非近似</h3><p>整数、分数、根式和代数根均保留为符号形式，不用浮点小数代替。</p></div></div>
+      <div class="info-card"><div class="info-number">02</div><div><h3>多元与未化简输入</h3><p>先约分、展开并验证多项式，再进行多变量因式分解和实数根式细化。</p></div></div>
+      <div class="info-card"><div class="info-number">03</div><div><h3>本地渲染缓存</h3><p>Markdown、净化与 KaTeX 库优先从国内 BootCDN 加载，并保存至浏览器本地缓存。</p></div></div>
+    </section>
+
+    <footer class="footer">
+      <span>符号计算：Pyodide + SymPy；渲染：Marked + DOMPurify + KaTeX。</span>
+      <span>版本化资源会使用浏览器缓存；输入内容仅保存在本机 <code>localStorage</code>。</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    'use strict';
+
+    const PYTHON_SOURCE = "import json\nimport re\nimport time\nimport unicodedata\nfrom collections import defaultdict\n\nimport sympy as sp\nfrom sympy.parsing.sympy_parser import (\n    parse_expr,\n    standard_transformations,\n    convert_xor,\n    implicit_multiplication_application,\n    rationalize,\n)\n\nMAX_INPUT_LENGTH = 1200\nMAX_VARIABLES = 12\nMAX_EXPANDED_TERMS = 8000\nMAX_TOTAL_DEGREE = 200\nMAX_OPS_FOR_REFINEMENT = 2600\nMAX_RECURSION_DEPTH = 5\n\nTRANSFORMS = standard_transformations + (\n    convert_xor,\n    implicit_multiplication_application,\n    rationalize,\n)\n\nGLOBAL_DICT = {\n    \"__builtins__\": {},\n    \"Symbol\": sp.Symbol,\n    \"Integer\": sp.Integer,\n    \"Rational\": sp.Rational,\n    \"Float\": sp.Float,\n    \"Number\": sp.Number,\n}\n\nRESERVED_FUNCTIONS = {\"sqrt\", \"root\", \"cbrt\"}\nFORBIDDEN_NAMES = {\n    \"I\", \"i\", \"j\", \"oo\", \"inf\", \"nan\", \"zoo\", \"Infinity\",\n    \"NaN\", \"ComplexInfinity\", \"True\", \"False\", \"None\",\n}\n\n\ndef _normalize_text(source: str) -> str:\n    text = unicodedata.normalize(\"NFKC\", str(source or \"\"))\n    replacements = {\n        \"×\": \"*\", \"·\": \"*\", \"∙\": \"*\", \"⋅\": \"*\", \"÷\": \"/\",\n        \"−\": \"-\", \"–\": \"-\", \"—\": \"-\", \"﹣\": \"-\",\n        \"（\": \"(\", \"）\": \")\", \"，\": \",\", \"＝\": \"=\",\n    }\n    for old, new in replacements.items():\n        text = text.replace(old, new)\n    return text.strip()\n\n\ndef _build_local_dict(text: str):\n    local_dict = {\n        \"sqrt\": sp.sqrt,\n        \"root\": sp.real_root,\n        \"cbrt\": lambda value: sp.real_root(value, 3),\n    }\n    identifiers = re.findall(r\"[A-Za-z_][A-Za-z0-9_]*\", text)\n    for token in identifiers:\n        if token in RESERVED_FUNCTIONS:\n            continue\n        if token in FORBIDDEN_NAMES:\n            raise ValueError(f\"不允许使用复数或非有限常量：{token}\")\n        if token.startswith(\"_\") or \"__\" in token:\n            raise ValueError(\"变量名不能以下划线开头，也不能包含双下划线。\")\n        if len(token) > 32:\n            raise ValueError(f\"变量名过长：{token}\")\n\n        # 纯字母连续书写按单字母变量乘积理解：xy -> x*y。\n        # 含数字或下划线的名称作为一个完整变量：x1、speed_1。\n        if any(ch.isdigit() or ch == \"_\" for ch in token):\n            local_dict[token] = sp.Symbol(token, real=True)\n        elif len(token) == 1:\n            local_dict[token] = sp.Symbol(token, real=True)\n        else:\n            if any(ch in {\"i\", \"j\", \"I\"} for ch in token):\n                raise ValueError(\"为避免与虚数单位混淆，不允许使用 i、j 或 I 作为单字母未知数。\")\n            for ch in token:\n                local_dict.setdefault(ch, sp.Symbol(ch, real=True))\n    return local_dict\n\n\ndef _parse_side(text: str, local_dict):\n    return parse_expr(\n        text,\n        local_dict=local_dict,\n        global_dict=GLOBAL_DICT,\n        transformations=TRANSFORMS,\n        evaluate=True,\n    )\n\n\ndef parse_polynomial(source: str):\n    text = _normalize_text(source)\n    if not text:\n        raise ValueError(\"请输入一个多项式。\")\n    if len(text) > MAX_INPUT_LENGTH:\n        raise ValueError(f\"输入过长，最多允许 {MAX_INPUT_LENGTH} 个字符。\")\n    if not re.fullmatch(r\"[A-Za-z0-9_+\\-*/^().,=\\s]+\", text):\n        raise ValueError(\"仅支持实数、英文字母变量、括号及 + - * / ^ ** 运算符。\")\n    if text.count(\"=\") > 1:\n        raise ValueError(\"等号最多只能出现一次。\")\n\n    for function_match in re.finditer(r\"([A-Za-z_][A-Za-z0-9_]*)\\s*\\(\", text):\n        name = function_match.group(1)\n        if name not in RESERVED_FUNCTIONS and len(name) > 1:\n            raise ValueError(f\"不支持函数 {name}(...)；仅允许 sqrt、root、cbrt，变量与括号之间请写乘号 *。\")\n\n    local_dict = _build_local_dict(text)\n    try:\n        if \"=\" in text:\n            left, right = text.split(\"=\", 1)\n            if not left.strip() or not right.strip():\n                raise ValueError(\"等号两侧都必须有表达式。\")\n            expr = _parse_side(left, local_dict) - _parse_side(right, local_dict)\n        else:\n            expr = _parse_side(text, local_dict)\n    except ValueError:\n        raise\n    except Exception as exc:\n        raise ValueError(f\"表达式无法解析：{exc}\") from None\n\n    if expr.has(sp.I, sp.oo, -sp.oo, sp.zoo, sp.nan):\n        raise ValueError(\"输入必须完全位于实数范围内，不能包含复数或无穷量。\")\n\n    # 允许输入形式不是最简式，也允许可完全约掉的分式。\n    try:\n        reduced = sp.cancel(sp.together(expr))\n    except Exception:\n        reduced = sp.simplify(expr)\n\n    num, den = reduced.as_numer_denom()\n    all_symbols = sorted(reduced.free_symbols, key=lambda s: s.name)\n    if len(all_symbols) > MAX_VARIABLES:\n        raise ValueError(f\"未知数过多，最多支持 {MAX_VARIABLES} 个。\")\n\n    if all_symbols and any(symbol in den.free_symbols for symbol in all_symbols):\n        raise ValueError(\"约分后分母仍含未知数，因此输入不是多项式。\")\n    if den == 0:\n        raise ValueError(\"分母不能为 0。\")\n\n    expanded = sp.expand(num / den)\n    symbols = sorted(expanded.free_symbols, key=lambda s: s.name)\n\n    if not symbols:\n        # 常数也视为零元多项式。\n        if expanded.is_real is not True:\n            raise ValueError(\"常数必须是精确实数。\")\n        if expanded.has(sp.Float):\n            expanded = sp.nsimplify(expanded, rational=True)\n        return text, expr, expanded, symbols, None\n\n    if not expanded.is_polynomial(*symbols):\n        raise ValueError(\"化简后仍不是多项式；未知数的指数必须为非负整数。\")\n\n    try:\n        poly = sp.Poly(expanded, *symbols, extension=True)\n    except Exception as exc:\n        raise ValueError(f\"无法建立精确多项式：{exc}\") from None\n\n    for coeff in poly.coeffs():\n        if coeff.has(sp.I, sp.Float, sp.oo, -sp.oo, sp.zoo, sp.nan):\n            raise ValueError(\"系数必须是精确实数；有限小数会自动转为分数。\")\n        real_flag = coeff.is_real\n        if real_flag is False or (real_flag is None and sp.simplify(sp.im(coeff)) != 0):\n            raise ValueError(f\"检测到非实数系数：{coeff}\")\n        if coeff.is_algebraic is not True:\n            raise ValueError(\"系数仅支持精确实代数数，例如整数、分数、有限小数和 sqrt(2)。\")\n\n    degree = int(poly.total_degree())\n    if degree > MAX_TOTAL_DEGREE:\n        raise ValueError(f\"总次数过高，当前页面最多处理 {MAX_TOTAL_DEGREE} 次多项式。\")\n    term_count = len(sp.Add.make_args(expanded))\n    if term_count > MAX_EXPANDED_TERMS:\n        raise ValueError(f\"展开后项数过多（{term_count} 项），上限为 {MAX_EXPANDED_TERMS} 项。\")\n\n    return text, expr, expanded, symbols, poly\n\n\ndef _safe_factor_list(expr, gens):\n    try:\n        return sp.factor_list(expr, *gens, extension=True)\n    except Exception:\n        try:\n            return sp.factor_list(expr, *gens)\n        except Exception:\n            factored = sp.factor(expr, extension=True)\n            if isinstance(factored, sp.Mul):\n                coeff, factors = factored.as_coeff_mul()\n                counter = defaultdict(int)\n                for f in factors:\n                    if isinstance(f, sp.Pow) and f.exp.is_Integer and f.exp > 0:\n                        counter[f.base] += int(f.exp)\n                    else:\n                        counter[f] += 1\n                return coeff, list(counter.items())\n            return sp.Integer(1), [(factored, 1)]\n\n\ndef _same_expr(a, b):\n    try:\n        return sp.simplify(sp.expand(a - b)) == 0\n    except Exception:\n        return a == b\n\n\ndef _is_real_expr(expr):\n    if expr.has(sp.I):\n        return False\n    if expr.is_real is True:\n        return True\n    try:\n        return sp.simplify(sp.conjugate(expr) - expr) == 0\n    except Exception:\n        return False\n\n\ndef _normalize_factor(expr):\n    try:\n        return sp.factor_terms(sp.collect(sp.expand(expr), sorted(expr.free_symbols, key=lambda s: s.name)))\n    except Exception:\n        return sp.factor_terms(expr)\n\n\ndef _pair_explicit_roots(expr, variable, all_gens):\n    \"\"\"Try a complete root formula and pair conjugates into real factors.\"\"\"\n    try:\n        poly = sp.Poly(expr, variable, domain=\"EX\")\n        degree = int(poly.degree())\n    except Exception:\n        return None\n    if degree < 2 or degree > 12:\n        return None\n    if sp.count_ops(expr) > MAX_OPS_FOR_REFINEMENT:\n        return None\n\n    try:\n        roots_map = sp.roots(expr, variable)\n    except Exception:\n        return None\n    if not roots_map or sum(int(m) for m in roots_map.values()) != degree:\n        return None\n\n    records = [{\"root\": r, \"mult\": int(m), \"used\": 0} for r, m in roots_map.items()]\n    factors = []\n\n    for idx, rec in enumerate(records):\n        remaining = rec[\"mult\"] - rec[\"used\"]\n        if remaining <= 0:\n            continue\n        r = rec[\"root\"]\n        real = _is_real_expr(r)\n        if real:\n            lin = _normalize_factor(variable - r)\n            if not lin.is_polynomial(*all_gens) or not _is_real_expr(lin):\n                return None\n            factors.append((lin, remaining))\n            rec[\"used\"] += remaining\n            continue\n\n        target = sp.conjugate(r)\n        partner_index = None\n        for j, other in enumerate(records):\n            if j == idx or other[\"used\"] >= other[\"mult\"]:\n                continue\n            try:\n                if sp.simplify(other[\"root\"] - target) == 0:\n                    partner_index = j\n                    break\n            except Exception:\n                pass\n        if partner_index is None:\n            return None\n\n        other = records[partner_index]\n        pair_mult = min(remaining, other[\"mult\"] - other[\"used\"])\n        if pair_mult <= 0:\n            return None\n        q = sp.expand((variable - r) * (variable - other[\"root\"]))\n        try:\n            q = sp.simplify(sp.expand_complex(q))\n        except Exception:\n            q = sp.simplify(q)\n        q = _normalize_factor(q)\n        if q.has(sp.I) or not q.is_polynomial(*all_gens) or not _is_real_expr(q):\n            return None\n        factors.append((q, pair_mult))\n        rec[\"used\"] += pair_mult\n        other[\"used\"] += pair_mult\n\n    leading = _normalize_factor(poly.LC())\n    candidate_items = []\n    if leading != 1:\n        candidate_items.append((leading, 1))\n    candidate_items.extend(factors)\n\n    nonconstant_count = sum(m for f, m in candidate_items if f.free_symbols)\n    if nonconstant_count <= 1:\n        return None\n\n    candidate_expr = leading\n    for f, m in factors:\n        candidate_expr *= f ** m\n    try:\n        if not _same_expr(candidate_expr, expr):\n            return None\n    except Exception:\n        return None\n    return candidate_items\n\n\ndef _synthetic_divide(expr, variable, root):\n    poly = sp.Poly(expr, variable, domain=\"EX\")\n    coeffs = poly.all_coeffs()\n    if len(coeffs) <= 1:\n        return sp.Integer(1)\n    built = [coeffs[0]]\n    for coeff in coeffs[1:-1]:\n        built.append(sp.expand(coeff + root * built[-1]))\n    degree = len(built) - 1\n    quotient = sp.Add(*[\n        built[i] * variable ** (degree - i) for i in range(len(built))\n    ])\n    return _normalize_factor(quotient)\n\n\ndef _extract_exact_real_roots(expr, variable, all_gens):\n    \"\"\"For a truly univariate factor, extract exact real RootOf values when radicals are unavailable.\"\"\"\n    if expr.free_symbols - {variable}:\n        return None\n    try:\n        poly = sp.Poly(expr, variable, extension=True)\n        degree = int(poly.degree())\n    except Exception:\n        return None\n    if degree < 2 or degree > 40 or sp.count_ops(expr) > MAX_OPS_FOR_REFINEMENT:\n        return None\n\n    try:\n        roots_info = sp.real_roots(poly, multiple=False, extension=True)\n    except Exception:\n        return None\n    if not roots_info:\n        return None\n\n    # Explicit radical roots should already have been handled by _pair_explicit_roots.\n    # This branch is valuable when at least one exact CRootOf is needed.\n    if not any(root.has(sp.polys.rootoftools.ComplexRootOf) for root, _ in roots_info):\n        return None\n\n    quotient = expr\n    items = []\n    extracted = 0\n    for root, multiplicity in roots_info:\n        if root.is_real is not True:\n            continue\n        multiplicity = int(multiplicity)\n        lin = _normalize_factor(variable - root)\n        if lin.has(sp.I) or not _is_real_expr(lin):\n            continue\n        items.append((lin, multiplicity))\n        for _ in range(multiplicity):\n            quotient = _synthetic_divide(quotient, variable, root)\n        extracted += multiplicity\n\n    if extracted == 0:\n        return None\n    try:\n        q_degree = int(sp.Poly(quotient, variable, domain=\"EX\").degree())\n    except Exception:\n        q_degree = 0\n    if q_degree > 0:\n        if quotient.has(sp.I) or not _is_real_expr(quotient):\n            return None\n        items.append((_normalize_factor(quotient), 1))\n    elif quotient != 1:\n        items.insert(0, (_normalize_factor(quotient), 1))\n\n    nonconstant_count = sum(m for f, m in items if f.free_symbols)\n    return items if nonconstant_count > 1 else None\n\n\ndef _choose_root_refinement(expr, gens):\n    candidates = []\n    for variable in gens:\n        if variable not in expr.free_symbols:\n            continue\n        explicit = _pair_explicit_roots(expr, variable, gens)\n        if explicit:\n            candidates.append(explicit)\n\n    # Exact RootOf extraction only applies to genuinely univariate factors.\n    free = sorted(expr.free_symbols, key=lambda s: s.name)\n    if len(free) == 1:\n        exact = _extract_exact_real_roots(expr, free[0], gens)\n        if exact:\n            candidates.append(exact)\n\n    if not candidates:\n        return None\n\n    def score(items):\n        count = sum(m for f, m in items if f.free_symbols)\n        max_degree = 0\n        complexity = 0\n        for f, _ in items:\n            complexity += int(sp.count_ops(f))\n            if f.free_symbols:\n                try:\n                    max_degree = max(max_degree, int(sp.Poly(f, *sorted(f.free_symbols, key=lambda s: s.name), extension=True).total_degree()))\n                except Exception:\n                    max_degree = max(max_degree, 999)\n        return (count, -max_degree, -complexity)\n\n    return max(candidates, key=score)\n\n\ndef _merge_items(items):\n    merged = []\n    constant = sp.Integer(1)\n    for factor, multiplicity in items:\n        if multiplicity == 0:\n            continue\n        factor = _normalize_factor(factor)\n        if not factor.free_symbols:\n            constant = sp.simplify(constant * factor ** int(multiplicity))\n            continue\n        matched = False\n        for idx, (existing, old_mult) in enumerate(merged):\n            if factor == existing:\n                merged[idx] = (existing, old_mult + multiplicity)\n                matched = True\n                break\n        if not matched:\n            merged.append((factor, multiplicity))\n    if constant != 1:\n        merged.insert(0, (constant, 1))\n    return merged\n\n\ndef _refine_factor(expr, gens, depth=0, seen=None):\n    if seen is None:\n        seen = set()\n    key = sp.srepr(expr)\n    has_rootof = expr.has(sp.polys.rootoftools.ComplexRootOf)\n    if has_rootof:\n        return [(expr, 1)], False, True\n    if depth >= MAX_RECURSION_DEPTH or key in seen or sp.count_ops(expr) > MAX_OPS_FOR_REFINEMENT:\n        return [(expr, 1)], False, False\n    seen = set(seen)\n    seen.add(key)\n\n    # Re-run the complete algebraic-coefficient factorizer after any root split.\n    try:\n        coeff, base_items = _safe_factor_list(expr, gens)\n    except Exception:\n        coeff, base_items = sp.Integer(1), [(expr, 1)]\n\n    nontrivial_base = False\n    if len(base_items) > 1:\n        nontrivial_base = True\n    elif len(base_items) == 1:\n        f0, m0 = base_items[0]\n        if m0 > 1 or not _same_expr(coeff * f0, expr):\n            nontrivial_base = True\n\n    if nontrivial_base:\n        output = []\n        used_rootof = False\n        changed = True\n        if coeff != 1:\n            if coeff.free_symbols:\n                refined, sub_changed, sub_rootof = _refine_factor(coeff, gens, depth + 1, seen)\n                output.extend(refined)\n                changed = changed or sub_changed\n                used_rootof = used_rootof or sub_rootof\n            else:\n                output.append((coeff, 1))\n        for factor, mult in base_items:\n            refined, sub_changed, sub_rootof = _refine_factor(factor, gens, depth + 1, seen)\n            output.extend((subfactor, submult * int(mult)) for subfactor, submult in refined)\n            changed = changed or sub_changed or int(mult) > 1\n            used_rootof = used_rootof or sub_rootof\n        return _merge_items(output), changed, used_rootof\n\n    refinement = _choose_root_refinement(expr, gens)\n    if not refinement:\n        return [(expr, 1)], False, False\n\n    output = []\n    used_rootof = any(f.has(sp.polys.rootoftools.ComplexRootOf) for f, _ in refinement)\n    for factor, mult in refinement:\n        if factor.free_symbols and not _same_expr(factor, expr):\n            refined, _, sub_rootof = _refine_factor(factor, gens, depth + 1, seen)\n            output.extend((subfactor, submult * int(mult)) for subfactor, submult in refined)\n            used_rootof = used_rootof or sub_rootof\n        else:\n            output.append((factor, int(mult)))\n    return _merge_items(output), True, used_rootof\n\n\ndef factor_exact_real(expanded, symbols):\n    if not symbols or expanded == 0:\n        return expanded, [], False, False, \"constant\"\n\n    coeff, base_items = _safe_factor_list(expanded, symbols)\n    items = []\n    changed = False\n    used_rootof = False\n\n    if coeff != 1:\n        items.append((coeff, 1))\n    for factor, multiplicity in base_items:\n        refined, sub_changed, sub_rootof = _refine_factor(factor, symbols)\n        items.extend((subfactor, submult * int(multiplicity)) for subfactor, submult in refined)\n        changed = changed or sub_changed or int(multiplicity) > 1\n        used_rootof = used_rootof or sub_rootof\n\n    items = _merge_items(items)\n    mul_parts = []\n    for factor, multiplicity in items:\n        if multiplicity == 1:\n            mul_parts.append(factor)\n        else:\n            mul_parts.append(sp.Pow(factor, multiplicity, evaluate=False))\n    factored = sp.Mul(*mul_parts, evaluate=False) if mul_parts else sp.Integer(1)\n\n    if factored.has(sp.I):\n        # Absolute safety fallback: never expose a complex-valued result.\n        coeff, base_items = _safe_factor_list(expanded, symbols)\n        mul_parts = ([coeff] if coeff != 1 else []) + [\n            sp.Pow(f, m, evaluate=False) if m != 1 else f for f, m in base_items\n        ]\n        factored = sp.Mul(*mul_parts, evaluate=False) if mul_parts else expanded\n        used_rootof = False\n\n    structural_changed = sp.sstr(factored) != sp.sstr(expanded)\n    changed = changed or structural_changed\n\n    method = \"multivariate_exact\"\n    if used_rootof:\n        method = \"multivariate_exact_rootof\"\n    return factored, items, changed, used_rootof, method\n\n\ndef _latex(expr):\n    return sp.latex(expr, fold_short_frac=False, fold_frac_powers=False, root_notation=True)\n\n\ndef _factor_list_latex(items):\n    rows = []\n    for factor, multiplicity in items:\n        if factor.free_symbols:\n            rows.append((factor, multiplicity))\n    if not rows:\n        return \"\"\n    rendered = []\n    for idx, (factor, multiplicity) in enumerate(rows, 1):\n        rendered.append(\n            rf\"F_{{{idx}}} &= {_latex(factor)}, & m_{{{idx}}} &= {multiplicity}\"\n        )\n    return r\"\\\\\".join(rendered)\n\n\ndef factor_payload(source: str) -> str:\n    started = time.perf_counter()\n    try:\n        normalized, parsed, expanded, symbols, poly = parse_polynomial(source)\n        factored, items, changed, used_rootof, method = factor_exact_real(expanded, symbols)\n\n        parsed_latex = _latex(parsed)\n        expanded_latex = _latex(expanded)\n        factored_latex = _latex(factored)\n        variables_latex = r\",\\;\".join(_latex(s) for s in symbols) if symbols else r\"\\varnothing\"\n        degree = int(poly.total_degree()) if poly is not None else 0\n        term_count = len(sp.Add.make_args(expanded))\n        factor_rows = _factor_list_latex(items)\n\n        elapsed_ms = round((time.perf_counter() - started) * 1000)\n        if changed:\n            conclusion = \"已得到非平凡的精确因式分解。\"\n        else:\n            conclusion = \"未找到更短的非平凡实数因式，按要求返回化简后的原多项式。\"\n\n        root_note = \"\"\n        if used_rootof:\n            root_note = (\n                \"\\n\\n> 结果中的 $\\\\operatorname{CRootOf}$ 表示指定多项式的**精确实代数根**，\"\n                \"不是小数近似，因此结果仍是精确值且不含复数近似。\"\n            )\n\n        factor_section = \"\"\n        if factor_rows:\n            factor_section = (\n                \"\\n\\n**因子与重数**\\n\\n\"\n                \"$$\\n\\\\begin{aligned}\\n\"\n                + factor_rows\n                + \"\\n\\\\end{aligned}\\n$$\"\n            )\n\n        markdown = (\n            \"## 因式分解结果\\n\\n\"\n            \"**输入表达式**\\n\\n\"\n            f\"$$\\nP = {parsed_latex}\\n$$\\n\\n\"\n            \"**化简后的多项式**\\n\\n\"\n            f\"$$\\nP = {expanded_latex}\\n$$\\n\\n\"\n            \"**精确实数因式分解**\\n\\n\"\n            f\"$$\\n\\\\boxed{{P = {factored_latex}}}\\n$$\"\n            + factor_section\n            + \"\\n\\n**精确恒等关系**\\n\\n\"\n            f\"$$\\n\\\\operatorname{{expand}}\\\\left({factored_latex}\\\\right) = {expanded_latex}\\n$$\\n\\n\"\n            f\"> {conclusion}\"\n            + root_note\n            + \"\\n\\n---\\n\\n\"\n            \"$$\\n\"\n            f\"\\\\text{{未知数}}:\\\\; {variables_latex}\"\n            f\"\\\\qquad \\\\deg P = {degree}\"\n            f\"\\\\qquad \\\\text{{项数}} = {term_count}\"\n            \"\\n$$\"\n        )\n\n        payload = {\n            \"ok\": True,\n            \"normalized\": normalized,\n            \"inputLatex\": parsed_latex,\n            \"expandedLatex\": expanded_latex,\n            \"factoredLatex\": factored_latex,\n            \"markdown\": markdown,\n            \"changed\": bool(changed),\n            \"usedRootOf\": bool(used_rootof),\n            \"method\": method,\n            \"variables\": [s.name for s in symbols],\n            \"degree\": degree,\n            \"terms\": term_count,\n            \"elapsedMs\": elapsed_ms,\n        }\n    except Exception as exc:\n        payload = {\n            \"ok\": False,\n            \"error\": str(exc),\n            \"elapsedMs\": round((time.perf_counter() - started) * 1000),\n        }\n    return json.dumps(payload, ensure_ascii=False)\n";
+    const STORAGE_INPUT = 'exact-factorizer.input.v1';
+    const ASSET_CACHE_PREFIX = 'exact-factorizer.asset.v2.';
+    const DEFAULT_INPUT = 'x^4 - 5x^2 + 6';
+
+    const ASSETS = {
+      // KaTeX 样式表采用 BootCDN，加载失败时再由 loadExternalAsset 处理
+      katexCss: {
+        name: 'katex-css-0.16.9',
+        type: 'style',
+        url: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css',
+        minLength: 10000,
+        baseUrl: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/'
+        ,
+        // 当 BootCDN 不可用时，备用节点指向 jsdelivr 的国内加速域名
+        backupUrl: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css'
+      },
+      // Markdown 渲染库标记为不缓存，以始终遵循当前的 CDN 行为
+      marked: {
+        name: 'marked-12.0.2',
+        type: 'script',
+        url: 'https://cdn.bootcdn.net/ajax/libs/marked/12.0.2/marked.min.js',
+        minLength: 20000,
+        global: 'marked',
+        // 不缓存 Marked，使其始终从网络加载
+        noCache: true
+      },
+      // DOMPurify 库使用 BootCDN，支持缓存到本地
+      purify: {
+        name: 'dompurify-3.1.6',
+        type: 'script',
+        url: 'https://cdn.bootcdn.net/ajax/libs/dompurify/3.1.6/purify.min.js',
+        minLength: 10000,
+        global: 'DOMPurify'
+        ,
+        backupUrl: 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js'
+      },
+      // KaTeX 主脚本使用 BootCDN，支持缓存到本地
+      katex: {
+        name: 'katex-js-0.16.9',
+        type: 'script',
+        url: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.js',
+        minLength: 100000,
+        global: 'katex'
+        ,
+        backupUrl: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js'
+      }
+    };
+
+    const PYODIDE_BASES = [
+      'https://cdn.jsdelivr.net.cn/pyodide/v0.28.3/full/',
+      'https://cdn.bootcdn.net/ajax/libs/pyodide/0.28.3/'
+    ];
+
+    const polynomial = document.getElementById('polynomial');
+    const charCount = document.getElementById('charCount');
+    const factorBtn = document.getElementById('factorBtn');
+    const factorBtnText = document.getElementById('factorBtnText');
+    const stopBtn = document.getElementById('stopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const result = document.getElementById('result');
+    const resultShell = document.getElementById('resultShell');
+    const engineStatus = document.getElementById('engineStatus');
+    const renderStatus = document.getElementById('renderStatus');
+    const copyLatexBtn = document.getElementById('copyLatexBtn');
+    const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+    const resultMeta = document.getElementById('resultMeta');
+    const resultSummary = document.getElementById('resultSummary');
+    const resultTiming = document.getElementById('resultTiming');
+    const toast = document.getElementById('toast');
+
+    let worker = null;
+    let engineReady = false;
+    let renderReady = false;
+    let calculating = false;
+    let requestCounter = 0;
+    let activeRequest = 0;
+    let lastMarkdown = '';
+    let lastLatex = '';
+    let saveTimer = null;
+    let toastTimer = null;
+
+    function safeStorageGet(key) {
+      try { return localStorage.getItem(key); } catch (_) { return null; }
+    }
+
+    function safeStorageSet(key, value) {
+      try { localStorage.setItem(key, value); return true; } catch (_) { return false; }
+    }
+
+    function safeStorageRemove(key) {
+      try { localStorage.removeItem(key); } catch (_) {}
+    }
+
+    function setStatus(element, state, text) {
+      element.dataset.state = state;
+      const span = element.querySelector('span:last-child');
+      if (span) span.textContent = text;
+    }
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function rewriteKatexCss(css, baseUrl) {
+      return css.replace(/url\((['"]?)(fonts\/[^)'"\s]+)\1\)/g, (_m, _q, path) => `url("${baseUrl}${path}")`);
+    }
+
+    function injectAsset(asset, content) {
+      if (asset.type === 'style') {
+        const style = document.createElement('style');
+        style.dataset.asset = asset.name;
+        style.textContent = rewriteKatexCss(content, asset.baseUrl || '');
+        document.head.appendChild(style);
+        return;
+      }
+      const script = document.createElement('script');
+      script.dataset.asset = asset.name;
+      script.text = `${content}\n//# sourceURL=${asset.url}`;
+      document.head.appendChild(script);
+      if (asset.global && !window[asset.global]) {
+        throw new Error(`${asset.global} 未正确初始化`);
+      }
+    }
+
+    function loadExternalAsset(asset) {
+      return new Promise((resolve, reject) => {
+        // 当 primary 地址加载失败时，尝试 backupUrl
+        if (asset.type === 'style') {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = asset.url;
+          link.onload = () => resolve('browser-cache');
+          link.onerror = () => {
+            // 如果存在备用节点则尝试一次
+            if (asset.backupUrl && link.href !== asset.backupUrl) {
+              link.onerror = () => reject(new Error(`样式加载失败：${asset.name}`));
+              link.href = asset.backupUrl;
+            } else {
+              reject(new Error(`样式加载失败：${asset.name}`));
+            }
+          };
+          document.head.appendChild(link);
+        } else {
+          const script = document.createElement('script');
+          script.defer = false;
+          script.src = asset.url;
+          script.onload = () => {
+            if (asset.global && !window[asset.global]) {
+              reject(new Error(`${asset.global} 未正确初始化`));
+            } else {
+              resolve('browser-cache');
+            }
+          };
+          script.onerror = () => {
+            // 若指定备用源，则尝试加载一次备用源
+            if (asset.backupUrl && script.src !== asset.backupUrl) {
+              script.onerror = () => reject(new Error(`脚本加载失败：${asset.name}`));
+              script.src = asset.backupUrl;
+            } else {
+              reject(new Error(`脚本加载失败：${asset.name}`));
+            }
+          };
+          document.head.appendChild(script);
+        }
+      });
+    }
+
+    async function loadCachedAsset(asset) {
+      // 如果该资源声明了 noCache，则始终从网络加载，成功后不存入本地缓存
+      if (asset.noCache) {
+        try {
+          const response = await fetch(asset.url, { cache: 'force-cache', mode: 'cors' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const content = await response.text();
+          if (content.length < asset.minLength) throw new Error('资源内容不完整');
+          injectAsset(asset, content);
+          return 'network';
+        } catch (_) {
+          // 直接使用外部引入方式加载资源
+          return loadExternalAsset(asset);
+        }
+      }
+
+      const key = ASSET_CACHE_PREFIX + asset.name;
+      const cached = safeStorageGet(key);
+      if (cached && cached.length >= asset.minLength) {
+        try {
+          injectAsset(asset, cached);
+          return 'local';
+        } catch (_) {
+          safeStorageRemove(key);
+        }
+      }
+
+      try {
+        const response = await fetch(asset.url, { cache: 'force-cache', mode: 'cors' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const content = await response.text();
+        if (content.length < asset.minLength) throw new Error('资源内容不完整');
+        injectAsset(asset, content);
+        // 对于需要缓存的资源，保存到本地
+        safeStorageSet(key, content);
+        return 'network';
+      } catch (_) {
+        return loadExternalAsset(asset);
+      }
+    }
+
+    async function initializeRenderer() {
+      setStatus(renderStatus, 'loading', '正在加载公式渲染库');
+      try {
+        const cssSource = await loadCachedAsset(ASSETS.katexCss);
+        const scriptSources = [];
+        scriptSources.push(await loadCachedAsset(ASSETS.marked));
+        scriptSources.push(await loadCachedAsset(ASSETS.purify));
+        scriptSources.push(await loadCachedAsset(ASSETS.katex));
+
+        window.marked.setOptions({ gfm: true, breaks: true, async: false });
+        renderReady = true;
+        const allLocal = cssSource === 'local' && scriptSources.every(s => s === 'local');
+        setStatus(renderStatus, 'ready', allLocal ? '渲染库已从本地缓存加载' : '渲染库已加载并缓存到本地');
+      } catch (error) {
+        renderReady = false;
+        setStatus(renderStatus, 'error', '公式渲染库加载失败');
+        console.error(error);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderMarkdown(markdown) {
+      if (!renderReady || !window.marked || !window.DOMPurify || !window.katex) {
+        result.innerHTML = `<pre style="white-space:pre-wrap">${escapeHtml(markdown)}</pre>`;
+        return;
+      }
+
+      const math = [];
+      let protectedMarkdown = markdown.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (_m, expression) => {
+        const index = math.push({ expression: expression.trim(), display: true }) - 1;
+        return `\n<div class="math-placeholder" data-math-index="${index}"></div>\n`;
+      });
+      protectedMarkdown = protectedMarkdown.replace(/\$([^$\n]+?)\$/g, (_m, expression) => {
+        const index = math.push({ expression: expression.trim(), display: false }) - 1;
+        return `<span class="math-placeholder" data-math-index="${index}"></span>`;
+      });
+
+      const rawHtml = window.marked.parse(protectedMarkdown);
+      result.innerHTML = window.DOMPurify.sanitize(rawHtml, {
+        USE_PROFILES: { html: true },
+        ADD_ATTR: ['data-math-index']
+      });
+
+      result.querySelectorAll('.math-placeholder').forEach((element) => {
+        const entry = math[Number(element.dataset.mathIndex)];
+        if (!entry) return;
+        try {
+          window.katex.render(entry.expression, element, {
+            displayMode: entry.display,
+            throwOnError: false,
+            strict: 'ignore',
+            trust: false,
+            output: 'htmlAndMathml'
+          });
+        } catch (error) {
+          element.textContent = entry.expression;
+          element.title = String(error && error.message ? error.message : error);
+        }
+      });
+    }
+
+    function showLoadingResult(message) {
+      result.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-inner">
+            <div class="loader" aria-hidden="true"></div>
+            <h3>正在进行精确符号计算</h3>
+            <p>${escapeHtml(message || '正在化简、识别变量并寻找精确实数因子。')}</p>
+          </div>
+        </div>`;
+      resultMeta.classList.remove('show');
+    }
+
+    function showError(message) {
+      result.innerHTML = `
+        <div class="error-panel">
+          <h3>无法完成因式分解</h3>
+          <p>${escapeHtml(message)}</p>
+        </div>`;
+      resultMeta.classList.remove('show');
+      lastMarkdown = '';
+      lastLatex = '';
+      copyLatexBtn.disabled = true;
+      copyMarkdownBtn.disabled = true;
+    }
+
+    const WORKER_SOURCE = `
+      'use strict';
+      let pyodide = null;
+      let readyPromise = null;
+      let pythonInstalled = false;
+
+      function status(text) { self.postMessage({ type: 'status', text }); }
+
+      async function boot(pythonSource, bases) {
+        let lastError = null;
+        for (const base of bases) {
+          try {
+            status('正在加载浏览器计算运行时');
+            if (typeof self.loadPyodide !== 'function') {
+              importScripts(base + 'pyodide.js');
+            }
+            pyodide = await self.loadPyodide({ indexURL: base });
+            status('正在加载精确代数库 SymPy');
+            await pyodide.loadPackage('sympy');
+            status('正在初始化因式分解算法');
+            await pyodide.runPythonAsync(pythonSource);
+            pythonInstalled = true;
+            const version = pyodide.runPython('sp.__version__');
+            self.postMessage({ type: 'ready', version: String(version) });
+            return true;
+          } catch (error) {
+            lastError = error;
+            pyodide = null;
+          }
+        }
+        throw lastError || new Error('计算核心加载失败');
+      }
+
+      self.onmessage = async (event) => {
+        const data = event.data || {};
+        if (data.type === 'init') {
+          if (!readyPromise) {
+            readyPromise = boot(data.pythonSource, data.bases).catch((error) => {
+              self.postMessage({ type: 'fatal', error: String(error && error.message ? error.message : error) });
+              throw error;
+            });
+          }
+          return;
+        }
+        if (data.type === 'factor') {
+          try {
+            if (!readyPromise) throw new Error('计算核心尚未初始化');
+            await readyPromise;
+            if (!pythonInstalled || !pyodide) throw new Error('计算核心不可用');
+            pyodide.globals.set('__factor_input__', String(data.source || ''));
+            const payload = pyodide.runPython('factor_payload(__factor_input__)');
+            pyodide.globals.delete('__factor_input__');
+            self.postMessage({ type: 'result', id: data.id, payload: String(payload) });
+          } catch (error) {
+            self.postMessage({ type: 'compute-error', id: data.id, error: String(error && error.message ? error.message : error) });
+          }
+        }
+      };
+    `;
+
+    function createWorker() {
+      if (worker) worker.terminate();
+      engineReady = false;
+      updateFactorButton();
+      setStatus(engineStatus, 'loading', '正在准备精确计算核心');
+
+      const blobUrl = URL.createObjectURL(new Blob([WORKER_SOURCE], { type: 'text/javascript' }));
+      worker = new Worker(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+
+      worker.onmessage = (event) => {
+        const data = event.data || {};
+        if (data.type === 'status') {
+          setStatus(engineStatus, 'loading', data.text || '正在准备精确计算核心');
+          return;
+        }
+        if (data.type === 'ready') {
+          engineReady = true;
+          setStatus(engineStatus, 'ready', `计算核心已就绪 · SymPy ${data.version}`);
+          updateFactorButton();
+          return;
+        }
+        if (data.type === 'fatal') {
+          engineReady = false;
+          setStatus(engineStatus, 'error', '精确计算核心加载失败');
+          updateFactorButton();
+          if (!calculating) showError(`计算核心加载失败：${data.error}`);
+          return;
+        }
+        if (data.type === 'result' && data.id === activeRequest) {
+          handleResult(data.payload);
+          return;
+        }
+        if (data.type === 'compute-error' && data.id === activeRequest) {
+          setBusy(false);
+          showError(`计算过程发生错误：${data.error}`);
+        }
+      };
+
+      worker.onerror = (event) => {
+        engineReady = false;
+        setStatus(engineStatus, 'error', '计算线程发生错误');
+        updateFactorButton();
+        if (calculating) {
+          setBusy(false);
+          showError(event.message || '计算线程发生未知错误。');
+        }
+      };
+
+      worker.postMessage({ type: 'init', pythonSource: PYTHON_SOURCE, bases: PYODIDE_BASES });
+    }
+
+    function updateFactorButton() {
+      factorBtn.disabled = !engineReady || calculating;
+      factorBtnText.textContent = calculating
+        ? '正在精确分解'
+        : engineReady
+          ? '精确因式分解'
+          : '正在准备计算核心';
+    }
+
+    function setBusy(value) {
+      calculating = value;
+      stopBtn.hidden = !value;
+      clearBtn.disabled = value;
+      document.querySelectorAll('.example-chip').forEach(btn => btn.disabled = value);
+      updateFactorButton();
+    }
+
+    function handleResult(payloadText) {
+      setBusy(false);
+      let payload;
+      try {
+        payload = JSON.parse(payloadText);
+      } catch (_) {
+        showError('计算核心返回了无法识别的数据。');
+        return;
+      }
+
+      if (!payload.ok) {
+        showError(payload.error || '输入无法处理。');
+        return;
+      }
+
+      lastMarkdown = payload.markdown || '';
+      lastLatex = payload.factoredLatex || '';
+      renderMarkdown(lastMarkdown);
+      copyLatexBtn.disabled = !lastLatex;
+      copyMarkdownBtn.disabled = !lastMarkdown;
+      resultSummary.textContent = payload.changed ? '已得到精确因式' : '未找到非平凡因式，已返回原多项式';
+      resultTiming.textContent = `变量 ${payload.variables.length} 个 · 总次数 ${payload.degree} · ${payload.elapsedMs} ms`;
+      resultMeta.classList.add('show');
+
+      if (window.innerWidth <= 1040) {
+        resultShell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        resultShell.scrollTop = 0;
+      }
+    }
+
+    function factorNow() {
+      const source = polynomial.value.trim();
+      if (!source) {
+        showError('请输入一个多项式。');
+        polynomial.focus();
+        return;
+      }
+      if (!engineReady || calculating) return;
+
+      activeRequest = ++requestCounter;
+      setBusy(true);
+      copyLatexBtn.disabled = true;
+      copyMarkdownBtn.disabled = true;
+      showLoadingResult('正在进行约分、展开、多元分解与精确实数因子细化。');
+      worker.postMessage({ type: 'factor', id: activeRequest, source });
+      safeStorageSet(STORAGE_INPUT, source);
+    }
+
+    function stopCalculation() {
+      if (!calculating) return;
+      activeRequest = ++requestCounter;
+      setBusy(false);
+      showError('本次计算已停止。计算核心正在重新初始化。');
+      createWorker();
+    }
+
+    async function copyText(text, message) {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (_) {
+        const helper = document.createElement('textarea');
+        helper.value = text;
+        helper.style.position = 'fixed';
+        helper.style.opacity = '0';
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand('copy');
+        helper.remove();
+      }
+      showToast(message);
+    }
+
+    function updateInputMeta() {
+      charCount.textContent = `${polynomial.value.length} / 1200`;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => safeStorageSet(STORAGE_INPUT, polynomial.value), 180);
+    }
+
+    factorBtn.addEventListener('click', factorNow);
+    stopBtn.addEventListener('click', stopCalculation);
+    clearBtn.addEventListener('click', () => {
+      polynomial.value = '';
+      updateInputMeta();
+      polynomial.focus();
+    });
+    polynomial.addEventListener('input', updateInputMeta);
+    polynomial.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        factorNow();
+      }
+    });
+    document.querySelectorAll('.example-chip').forEach((button) => {
+      button.addEventListener('click', () => {
+        polynomial.value = button.dataset.example || '';
+        updateInputMeta();
+        polynomial.focus();
+      });
+    });
+    copyLatexBtn.addEventListener('click', () => copyText(`$$\n${lastLatex}\n$$`, 'LaTeX 已复制'));
+    copyMarkdownBtn.addEventListener('click', () => copyText(lastMarkdown, 'Markdown 已复制'));
+
+    async function start() {
+      const saved = safeStorageGet(STORAGE_INPUT);
+      polynomial.value = saved && saved.trim() ? saved : DEFAULT_INPUT;
+      updateInputMeta();
+      createWorker();
+      await initializeRenderer();
+    }
+
+    start();
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"714420ba517c46f1a8fc9efa6e860813","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
