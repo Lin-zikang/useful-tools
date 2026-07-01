@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><script>document.addEventListener("DOMContentLoaded",function(){var e=document.body;if(e&&(e.textContent.includes("Something went wrong")||e.textContent.includes("help.openai.com"))){e.innerHTML="<div style="text-align:center;padding:60px 20px;font-family:sans-serif;"><h2 style="color:#e74c3c;margin-bottom:16px;">该车辆已达到使用次数上限</h2><p style="color:#666;font-size:16px;line-height:1.8;">请更换其他车辆或稍后再试。</p></div>"}});</script></head>
+<head><script>document.addEventListener("DOMContentLoaded",function(){var e=document.body;if(e&&(e.textContent.includes("Something went wrong")||e.textContent.includes("help.openai.com"))){e.innerHTML="<div style="text-align:center;padding:60px 20px;font-family:sans-serif;"><h2 style="color:#e74c3c;margin-bottom:16px;">该车辆已达到使用次数上限</h2><p style="color:#666;font-size:16px;line-height:1.8;">请更换其他车辆或稍后再试。</p></div>"}});</script></head><script>document.addEventListener("DOMContentLoaded",function(){var e=document.body;if(e&&(e.textContent.includes("Something went wrong")||e.textContent.includes("help.openai.com"))){e.innerHTML="<div style="text-align:center;padding:60px 20px;font-family:sans-serif;"><h2 style="color:#e74c3c;margin-bottom:16px;">该车辆已达到使用次数上限</h2><p style="color:#666;font-size:16px;line-height:1.8;">请更换其他车辆或稍后再试。</p></div>"}});</script></head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="color-scheme" content="light only" />
@@ -570,7 +570,8 @@
       font: .92em ui-monospace, monospace;
     }
 
-    .markdown-body .katex-display {
+    .markdown-body .katex-display,
+    .markdown-body mjx-container[display="true"] {
       margin: 16px 0;
       padding: 15px 10px;
       overflow-x: auto;
@@ -582,8 +583,10 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    .markdown-body .katex-display > .katex { min-width: max-content; }
-    .markdown-body .katex { color: #142c1d; }
+    .markdown-body .katex-display > .katex,
+    .markdown-body mjx-container[display="true"] > svg { min-width: max-content; }
+    .markdown-body .katex,
+    .markdown-body mjx-container { color: #142c1d; }
 
     .error-panel {
       padding: 20px;
@@ -711,7 +714,7 @@
       .empty-state { min-height: 405px; padding: 24px 15px; }
       .markdown-body { font-size: 14px; }
       .markdown-body h2 { font-size: 19px; }
-      .markdown-body .katex-display { margin: 13px 0; padding: 12px 8px; text-align: left; }
+      .markdown-body .katex-display, .markdown-body mjx-container[display="true"] { margin: 13px 0; padding: 12px 8px; text-align: left; }
       .result-meta { align-items: flex-start; flex-direction: column; padding: 9px 14px; }
       .info-grid { margin-top: 14px; }
       .footer { padding: 0 3px; }
@@ -851,11 +854,11 @@
     <section class="info-grid" aria-label="功能说明">
       <div class="info-card"><div class="info-number">01</div><div><h3>精确而非近似</h3><p>整数、分数、根式和代数根均保留为符号形式，不用浮点小数代替。</p></div></div>
       <div class="info-card"><div class="info-number">02</div><div><h3>多元与未化简输入</h3><p>先约分、展开并验证多项式，再进行多变量因式分解和实数根式细化。</p></div></div>
-      <div class="info-card"><div class="info-number">03</div><div><h3>本地渲染缓存</h3><p>Markdown、净化与 KaTeX 库优先从国内 BootCDN 加载，并保存至浏览器本地缓存。</p></div></div>
+      <div class="info-card"><div class="info-number">03</div><div><h3>本地渲染缓存</h3><p>Markdown 与 MathJax 库按配置节点加载，并保存至浏览器本地缓存。</p></div></div>
     </section>
 
     <footer class="footer">
-      <span>符号计算：Pyodide + SymPy；渲染：Marked + DOMPurify + KaTeX。</span>
+      <span>符号计算：Pyodide + SymPy；渲染：Marked + MathJax。</span>
       <span>版本化资源会使用浏览器缓存；输入内容仅保存在本机 <code>localStorage</code>。</span>
     </footer>
   </div>
@@ -871,18 +874,7 @@
     const DEFAULT_INPUT = 'x^4 - 5x^2 + 6';
 
     const ASSETS = {
-      // KaTeX 样式表采用 BootCDN，加载失败时再由 loadExternalAsset 处理
-      katexCss: {
-        name: 'katex-css-0.16.9',
-        type: 'style',
-        url: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css',
-        minLength: 10000,
-        baseUrl: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/'
-        ,
-        // 当 BootCDN 不可用时，备用节点指向 jsdelivr 的国内加速域名
-        backupUrl: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css'
-      },
-      // Markdown 渲染库标记为不缓存，以始终遵循当前的 CDN 行为
+      // Markdown 渲染库保持原配置，不随解方程器的 Marked 版本调整
       marked: {
         name: 'marked-12.0.2',
         type: 'script',
@@ -892,31 +884,20 @@
         // 不缓存 Marked，使其始终从网络加载
         noCache: true
       },
-      // DOMPurify 库使用 BootCDN，支持缓存到本地
-      purify: {
-        name: 'dompurify-3.1.6',
+      // 公式渲染库改为与“解方程器”相同的 MathJax 3.2.2 节点
+      mathjax: {
+        name: 'mathjax-tex-svg-3.2.2',
         type: 'script',
-        url: 'https://cdn.bootcdn.net/ajax/libs/dompurify/3.1.6/purify.min.js',
-        minLength: 10000,
-        global: 'DOMPurify'
-        ,
-        backupUrl: 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js'
-      },
-      // KaTeX 主脚本使用 BootCDN，支持缓存到本地
-      katex: {
-        name: 'katex-js-0.16.9',
-        type: 'script',
-        url: 'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.js',
+        url: 'https://jsd.onmicrosoft.cn/npm/mathjax@3.2.2/es5/tex-svg.js',
         minLength: 100000,
-        global: 'katex'
-        ,
-        backupUrl: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js'
+        global: 'MathJax',
+        backupUrl: 'https://cdn.jsdmirror.cn/npm/mathjax@3.2.2/es5/tex-svg.js'
       }
     };
 
     const PYODIDE_BASES = [
-      'https://cdn.jsdelivr.net.cn/pyodide/v0.28.3/full/',
-      'https://cdn.bootcdn.net/ajax/libs/pyodide/0.28.3/'
+      'https://jsd.onmicrosoft.cn/pyodide/v0.29.3/full/',
+      'https://cdn.jsdmirror.cn/pyodide/v0.29.3/full/'
     ];
 
     const polynomial = document.getElementById('polynomial');
@@ -1080,15 +1061,35 @@
     async function initializeRenderer() {
       setStatus(renderStatus, 'loading', '正在加载公式渲染库');
       try {
-        const cssSource = await loadCachedAsset(ASSETS.katexCss);
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true,
+            processEnvironments: true
+          },
+          svg: {
+            fontCache: 'global'
+          },
+          startup: {
+            typeset: false
+          }
+        };
+
         const scriptSources = [];
         scriptSources.push(await loadCachedAsset(ASSETS.marked));
-        scriptSources.push(await loadCachedAsset(ASSETS.purify));
-        scriptSources.push(await loadCachedAsset(ASSETS.katex));
+        scriptSources.push(await loadCachedAsset(ASSETS.mathjax));
+
+        if (window.MathJax?.startup?.promise) {
+          await window.MathJax.startup.promise;
+        }
+        if (!window.MathJax || typeof window.MathJax.typesetPromise !== 'function') {
+          throw new Error('MathJax 未正确初始化');
+        }
 
         window.marked.setOptions({ gfm: true, breaks: true, async: false });
         renderReady = true;
-        const allLocal = cssSource === 'local' && scriptSources.every(s => s === 'local');
+        const allLocal = scriptSources.every(s => s === 'local');
         setStatus(renderStatus, 'ready', allLocal ? '渲染库已从本地缓存加载' : '渲染库已加载并缓存到本地');
       } catch (error) {
         renderReady = false;
@@ -1107,7 +1108,7 @@
     }
 
     function renderMarkdown(markdown) {
-      if (!renderReady || !window.marked || !window.DOMPurify || !window.katex) {
+      if (!renderReady || !window.marked || !window.MathJax || typeof window.MathJax.typesetPromise !== 'function') {
         result.innerHTML = `<pre style="white-space:pre-wrap">${escapeHtml(markdown)}</pre>`;
         return;
       }
@@ -1123,27 +1124,26 @@
       });
 
       const rawHtml = window.marked.parse(protectedMarkdown);
-      result.innerHTML = window.DOMPurify.sanitize(rawHtml, {
-        USE_PROFILES: { html: true },
-        ADD_ATTR: ['data-math-index']
-      });
+      result.innerHTML = rawHtml;
 
       result.querySelectorAll('.math-placeholder').forEach((element) => {
         const entry = math[Number(element.dataset.mathIndex)];
         if (!entry) return;
-        try {
-          window.katex.render(entry.expression, element, {
-            displayMode: entry.display,
-            throwOnError: false,
-            strict: 'ignore',
-            trust: false,
-            output: 'htmlAndMathml'
-          });
-        } catch (error) {
-          element.textContent = entry.expression;
-          element.title = String(error && error.message ? error.message : error);
-        }
+        element.textContent = entry.display
+          ? `\\[${entry.expression}\\]`
+          : `\\(${entry.expression}\\)`;
       });
+
+      try {
+        if (typeof window.MathJax.typesetClear === 'function') {
+          window.MathJax.typesetClear([result]);
+        }
+        window.MathJax.typesetPromise([result]).catch((error) => {
+          console.error(error);
+        });
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     function showLoadingResult(message) {
@@ -1416,5 +1416,7 @@
   </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"714420ba517c46f1a8fc9efa6e860813","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"714420ba517c46f1a8fc9efa6e860813","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
