@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>五子棋Pro</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body{
+            background: linear-gradient(135deg,#a2c2e5,#f3d9b1);
+            font-family: Arial, sans-serif;
+            margin:0; padding:0;
+            overflow:hidden;
+            display:flex; flex-direction:column; justify-content:flex-start;
+            height:100vh;
+        }
+        canvas{
+            display:block; margin:12px auto 8px;
+            box-shadow:0 4px 10px rgba(0,0,0,.1);
+            cursor:pointer; background:#fff; border-radius:10px;
+        }
+        #result-wrap{
+            text-align:center; font-size:22px; font-weight:bold; color:#333;
+            margin:0 0 4px; height: 30px;
+        }
+        .controls{
+            display:flex; justify-content:center; align-items:center;
+            gap:14px; padding:6px 0 0; margin:8px 0 12px;
+        }
+        .btn{
+            display:inline-block; padding:10px 20px;
+            color:#fff; background:#6a85b3; border-radius:8px;
+            font-size:14px; font-weight:bold; cursor:pointer;
+            transition: background-color .25s, transform .25s;
+            user-select:none;
+            box-shadow:0 4px 10px rgba(0,0,0,.12);
+        }
+        .btn:hover{ background:#4e6498; transform: scale(1.06); }
+        .btn-wrap{ display:none; justify-content:center; position:absolute;
+            left:50%; top:50%; transform:translate(-50%,-50%); z-index: 100; }
+        .btn-wrap div{ margin:0 15px; }
+        .btn-wrap span{ display:inline-block; padding:12px 25px;
+            color:#fff; background:#6a85b3; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+            transition: background-color .3s, transform .3s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-wrap span:hover{ background:#4e6498; transform:scale(1.1); }
+        @media (max-width:600px){
+            canvas{ width:90%; height:auto; }
+            #result-wrap{ font-size:18px; }
+            .btn{ padding:9px 16px; font-size:13px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="chess" width="450" height="450"></canvas>
+    <div id="result-wrap">-- 益智五子棋 Pro --</div>
+
+    <div id="controls" class="controls">
+        <span id="undo" class="btn">悔棋</span>
+        <span id="restartTop" class="btn">重新开始</span>
+    </div>
+
+    <div class="btn-wrap">
+        <div id="restart" class="restart"><span>再来一局</span></div>
+    </div>
+
+    <script>
+    // --------- 基本配置与状态 ----------
+    var over = false;
+    var me = true; // true=玩家(黑), false=AI(白)
+
+    // 0=空, 1=黑(玩家), 2=白(AI)
+    var chessBoard = Array.from({length:15},()=>Array(15).fill(0));
+    var moveHistory = [];
+    var lastAIMove = null;   // 用于高亮AI最后一步
+    var aiTimer = null;      // AI延迟计时器
+    var justUndid = false;   // 防止连续悔棋
+    var winLine = null;      // 胜利连线高亮
+
+    // ---------- Zobrist 哈希 + 置换表（让搜索更强更快） ----------
+    // 说明：为了保持页面/UI不变，这里只增强AI内部逻辑。
+    const BLACK = 1;
+    const WHITE = 2;
+    const AI = WHITE;
+    const HUMAN = BLACK;
+
+    const ZOBRIST = (function(){
+        // xorshift32 伪随机（可复现，足够用于哈希）
+        let seed = 0x9e3779b9;
+        function rand32(){
+            seed ^= (seed << 13); seed |= 0;
+            seed ^= (seed >>> 17);
+            seed ^= (seed << 5);  seed |= 0;
+            return (seed >>> 0);
+        }
+        function rand64(){
+            const hi = BigInt(rand32());
+            const lo = BigInt(rand32());
+            return (hi << 32n) | lo;
+        }
+        const table = Array.from({length:15}, () =>
+            Array.from({length:15}, () => [0n, rand64(), rand64()])
+        );
+        const side = rand64(); // 轮到谁走（每走一步异或一次）
+        return { table, side };
+    })();
+
+    // 当前局面的哈希（包含“轮到谁走”信息）
+    // 初始：玩家先手(黑) => sideKey 不参与(=0)
+    var currentHash = 0n;
+
+    // 置换表（Transposition Table）
+    // key: BigInt hash
+    // value: { depth, value, flag, bestMove }
+    // flag: 0=EXACT, 1=LOWERBOUND, 2=UPPERBOUND
+    var TT = new Map();
+
+    // 控制 TT 大小，避免浏览器内存无限增长
+    function ttMaybePrune(){
+        if(TT.size > 200000){
+            TT.clear();
+        }
+    }
+
+    function hashPlayMove(i, j, player){
+        currentHash ^= ZOBRIST.table[i][j][player];
+        currentHash ^= ZOBRIST.side;
+    }
+    function hashUndoMove(i, j, player){
+        currentHash ^= ZOBRIST.side;
+        currentHash ^= ZOBRIST.table[i][j][player];
+    }
+
+    function makeMove(i, j, player){
+        chessBoard[i][j] = player;
+        hashPlayMove(i, j, player);
+    }
+    function unmakeMove(i, j, player){
+        hashUndoMove(i, j, player);
+        chessBoard[i][j] = 0;
+    }
+
+    // --------- 赢法数组（仅用于快速判断胜负/UI保持不变） ----------
+    var wins=[], count=0;
+    for(let i=0;i<15;i++){ wins[i]=[]; for(let j=0;j<15;j++){ wins[i][j]=[]; }}
+    // 横
+    for(let i=0;i<15;i++){ for(let j=0;j<11;j++){ for(let k=0;k<5;k++) wins[i][j+k][count]=true; count++; }}
+    // 竖
+    for(let i=0;i<15;i++){ for(let j=0;j<11;j++){ for(let k=0;k<5;k++) wins[j+k][i][count]=true; count++; }}
+    // 正斜
+    for(let i=0;i<11;i++){ for(let j=0;j<11;j++){ for(let k=0;k<5;k++) wins[i+k][j+k][count]=true; count++; }}
+    // 反斜
+    for(let i=0;i<11;i++){ for(let j=14;j>3;j--){ for(let k=0;k<5;k++) wins[i+k][j-k][count]=true; count++; }}
+
+    // 赢法统计（用于胜负判定）
+    var myWin = new Array(count).fill(0);
+    var computerWin = new Array(count).fill(0);
+
+    // --------- 绘图相关 ----------
+    var chess = document.getElementById('chess');
+    var ctx = chess.getContext('2d');
+    ctx.strokeStyle = '#bfbfbf';
+
+    function setControlsVisible(visible){
+        var c=document.getElementById('controls');
+        if(c) c.style.display = visible ? 'flex' : 'none';
+    }
+
+    function drawChessBoard(){
+        ctx.beginPath();
+        for(let i=0;i<15;i++){
+            ctx.moveTo(15 + i*30, 15);  ctx.lineTo(15 + i*30, 435);
+            ctx.moveTo(15, 15 + i*30);  ctx.lineTo(435, 15 + i*30);
+        }
+        ctx.stroke();
+    }
+    function drawPiece(i,j,isMe,isAI){
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 13, 0, Math.PI*2);
+        ctx.closePath();
+        var g = ctx.createRadialGradient(15+i*30+2,15+j*30-2,13, 15+i*30+2,15+j*30-2,0);
+        if(isAI){ // 白子
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9');
+        }else if(isMe){ // 黑子
+            g.addColorStop(0,'#0a0a0a'); g.addColorStop(1,'#636766');
+        }else{
+            g.addColorStop(0,'#d1d1d1'); g.addColorStop(1,'#f9f9f9');
+        }
+        ctx.fillStyle=g; ctx.fill();
+    }
+    function drawAIHalo(i,j){
+        if(i==null||j==null) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(15+i*30, 15+j*30, 18, 0, Math.PI*2);
+        ctx.strokeStyle='rgba(255,215,0,0.6)';
+        ctx.lineWidth=4;
+        ctx.shadowColor='rgba(255,215,0,0.8)';
+        ctx.shadowBlur=12;
+        ctx.stroke();
+        ctx.restore();
+    }
+    function getWinningLine(i,j,player){
+        const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+        let best=null;
+        for(const [di,dj] of dirs){
+            let cells=[];
+            let r=1;
+            while(true){ // 后
+                let ti=i-di*r, tj=j-dj*r;
+                if(ti>=0&&ti<15&&tj>=0&&tj<15&&chessBoard[ti][tj]===player){ cells.unshift({i:ti,j:tj}); r++; } else break;
+            }
+            cells.push({i,j});
+            r=1;
+            while(true){ // 前
+                let ti=i+di*r, tj=j+dj*r;
+                if(ti>=0&&ti<15&&tj>=0&&tj<15&&chessBoard[ti][tj]===player){ cells.push({i:ti,j:tj}); r++; } else break;
+            }
+            if(cells.length>=5){
+                if(!best || cells.length>best.cells.length) best={cells};
+            }
+        }
+        return best;
+    }
+    function drawWinHighlight(line){
+        if(!line || !line.cells || line.cells.length<5) return;
+        ctx.save();
+        ctx.lineWidth=4; ctx.strokeStyle='rgba(220,20,60,0.8)';
+        ctx.beginPath();
+        var start = line.cells[0];
+        var end = line.cells[line.cells.length-1];
+        ctx.moveTo(15+start.i*30, 15+start.j*30);
+        ctx.lineTo(15+end.i*30, 15+end.j*30);
+        ctx.stroke();
+        ctx.lineWidth=3; ctx.strokeStyle='rgba(255,0,0,1)';
+        for(const c of line.cells){
+            ctx.beginPath(); ctx.arc(15+c.i*30, 15+c.j*30, 8, 0, Math.PI*2); ctx.stroke();
+        }
+        ctx.restore();
+    }
+    function redrawAll(){
+        ctx.clearRect(0,0,chess.width,chess.height);
+        drawChessBoard();
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                if(chessBoard[i][j]===1) drawPiece(i,j,true,false);
+                if(chessBoard[i][j]===2) drawPiece(i,j,false,true);
+            }
+        }
+        drawAIHalo(lastAIMove?.i, lastAIMove?.j);
+        drawWinHighlight(winLine);
+    }
+    function recomputeWins(){
+        myWin.fill(0); computerWin.fill(0);
+        for(let i=0;i<15;i++){
+            for(let j=0;j<15;j++){
+                let p = chessBoard[i][j];
+                if(p===0) continue;
+                for(let k=0;k<count;k++){
+                    if(wins[i][j][k]){
+                        if(p===1){ myWin[k]++; computerWin[k]=6; }
+                        else{ computerWin[k]++; myWin[k]=6; }
+                    }
+                }
+            }
+        }
+    }
+
+    window.onload = function(){ drawChessBoard(); };
+
+    // --------- 基础工具函数 ----------
+    function inBounds(i,j){ return i>=0 && i<15 && j>=0 && j<15; }
+
+    function checkWinAt(i,j,player){
+        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+        for(const [dx,dy] of dirs){
+            let cnt = 1;
+            for(let step=1; step<=4; step++){
+                const x=i+dx*step, y=j+dy*step;
+                if(inBounds(x,y) && chessBoard[x][y]===player) cnt++; else break;
+            }
+            for(let step=1; step<=4; step++){
+                const x=i-dx*step, y=j-dy*step;
+                if(inBounds(x,y) && chessBoard[x][y]===player) cnt++; else break;
+            }
+            if(cnt>=5) return true;
+        }
+        return false;
+    }
+    function isWinningMove(i,j,player){
+        chessBoard[i][j]=player;
+        const win = checkWinAt(i,j,player);
+        chessBoard[i][j]=0;
+        return win;
+    }
+
+    // --------- 游戏逻辑 ----------
+    function handleMove(e){
+        if(over || !me) return;
+
+        e.preventDefault();
+        let clientX, clientY;
+        if(e.type==='touchstart'){
+            const t=e.touches[0]; clientX=t.clientX; clientY=t.clientY;
+        }else{ clientX=e.clientX; clientY=e.clientY; }
+
+        const rect=chess.getBoundingClientRect();
+        const scaleX=chess.width/rect.width, scaleY=chess.height/rect.height;
+        const x=(clientX-rect.left)*scaleX, y=(clientY-rect.top)*scaleY;
+        const i=Math.floor(x/30), j=Math.floor(y/30);
+        if(i<0||i>=15||j<0||j>=15) return;
+
+        if(chessBoard[i][j]===0){
+            const resultEl = document.getElementById('result-wrap');
+            if(resultEl.textContent.includes('悔棋')){ resultEl.textContent = '-- 益智五子棋 Pro --'; }
+            justUndid = false;
+
+            // 玩家下子 (1)
+            chessBoard[i][j]=1;
+            moveHistory.push({i,j,player:1});
+            hashPlayMove(i,j,1);
+            winLine=null;
+
+            // 胜负判定
+            for(let k=0;k<count;k++){
+                if(wins[i][j][k]){
+                    myWin[k]++; computerWin[k]=6;
+                    if(myWin[k]===5){
+                        endGame('恭喜，你赢了！', getWinningLine(i,j,1));
+                        return;
+                    }
+                }
+            }
+            redrawAll();
+
+            // 和棋判定
+            if(moveHistory.length === 225) {
+                endGame('和棋！棋逢对手！', null);
+                return;
+            }
+
+            if(!over){
+                me=false;
+                computerAI();
+            }
+        }
+    }
+
+    function endGame(msg, line) {
+        over = true;
+        winLine = line;
+        document.getElementById('result-wrap').innerHTML = msg;
+        document.querySelector('.btn-wrap').style.display='flex';
+        setControlsVisible(false); // 禁止悔棋
+        if(line) redrawAll();
+    }
+
+    chess.addEventListener('click', handleMove);
+    chess.addEventListener('touchstart', handleMove, {passive:false});
+
+    // ==========================================
+    //  Ultra Pro AI
+    //  融合：普通版的连续/活性评分 + Pro版棋型识别
+    //  再加入：候选点筛选、α-β 迭代加深搜索、置换表缓存
+    // ==========================================
+
+    const INF = 1e15;
+    const WIN = 1e12; // 搜索用“必胜”分
+    var searchStop = false;
+
+    // 候选点：只考虑周围radius格内有棋子的空位（避免全盘225个点都算）
+    function getCandidates(radius=2) {
+        var result = [];
+        var visited = Array.from({length:15},()=>Array(15).fill(false));
+        var hasStone = false;
+
+        for(let i=0; i<15; i++){
+            for(let j=0; j<15; j++){
+                if(chessBoard[i][j] !== 0) {
+                    hasStone = true;
+                    for(let dx=-radius; dx<=radius; dx++){
+                        for(let dy=-radius; dy<=radius; dy++){
+                            let nx = i+dx, ny = j+dy;
+                            if(nx>=0 && nx<15 && ny>=0 && ny<15 && chessBoard[nx][ny]===0 && !visited[nx][ny]){
+                                visited[nx][ny] = true;
+                                result.push({i:nx, j:ny});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if(!hasStone) return [{i:7, j:7}];
+        return result;
+    }
+
+    // ---------- 普通版：连续/活性评分（更“顾全当下”） ----------
+    function simpleLineInfo(x,y,dx,dy,player){
+        let c1=0;
+        for(let s=1;s<=4;s++){
+            let nx=x+dx*s, ny=y+dy*s;
+            if(inBounds(nx,ny) && chessBoard[nx][ny]===player) c1++; else break;
+        }
+        let c2=0;
+        for(let s=1;s<=4;s++){
+            let nx=x-dx*s, ny=y-dy*s;
+            if(inBounds(nx,ny) && chessBoard[nx][ny]===player) c2++; else break;
+        }
+        let count = 1 + c1 + c2;
+
+        let open = 0;
+        let nx1 = x+dx*(c1+1), ny1 = y+dy*(c1+1);
+        if(inBounds(nx1,ny1) && chessBoard[nx1][ny1]===0) open++;
+        let nx2 = x-dx*(c2+1), ny2 = y-dy*(c2+1);
+        if(inBounds(nx2,ny2) && chessBoard[nx2][ny2]===0) open++;
+
+        return {count, open};
+    }
+    function simplePatternScore(count, open){
+        if(count>=5) return 1000000;
+        if(count===4){
+            if(open===2) return 100000;
+            if(open===1) return 10000;
+            return 0;
+        }
+        if(count===3){
+            if(open===2) return 10000;
+            if(open===1) return 1000;
+            return 0;
+        }
+        if(count===2){
+            if(open===2) return 500;
+            if(open===1) return 100;
+            return 0;
+        }
+        if(count===1){
+            if(open===2) return 10;
+            if(open===1) return 1;
+            return 0;
+        }
+        return 0;
+    }
+    function simpleMoveScore(x,y,player){
+        const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+        let sum=0;
+        for(const [dx,dy] of dirs){
+            const info = simpleLineInfo(x,y,dx,dy,player);
+            sum += simplePatternScore(info.count, info.open);
+        }
+        return sum;
+    }
+
+    // ---------- Pro版：棋型识别（识别跳四/活三等更“布局”） ----------
+    // 返回：5(连五), 4.5(活四), 4(冲四/跳四), 3.5(活三), 3(眠三), 2.5(活二), 0
+    function analyzeLine(x, y, dx, dy, role, opponent) {
+        // 以(x,y)为中心，左右各4格 => 9格
+        // 0:空, 1:己, 2:敌/边界(堵)
+        let arr = [];
+        for(let k=-4; k<=4; k++){
+            let nx = x + dx*k, ny = y + dy*k;
+            if(!inBounds(nx,ny)) arr.push(2);
+            else{
+                let v = chessBoard[nx][ny];
+                if(v === role) arr.push(1);
+                else if(v === 0) arr.push(0);
+                else arr.push(2);
+            }
+        }
+        let s = arr.join("");
+
+        // 连五
+        if(s.includes("11111")) return 5;
+
+        // 活四
+        if(s.includes("011110")) return 4.5;
+
+        // 冲四 / 跳四
+        if(s.includes("211110") || s.includes("011112") ||
+           s.includes("11110")  || s.includes("01111")  ||
+           s.includes("11011")  || s.includes("10111")  || s.includes("11101")){
+            return 4;
+        }
+
+        // 活三（含跳活三）
+        if(s.includes("01110") || s.includes("010110") || s.includes("011010")){
+            return 3.5;
+        }
+
+        // 眠三（简化：有3子形态但被堵/不够活）
+        if(s.includes("111") || s.includes("1101") || s.includes("1011")){
+            return 3;
+        }
+
+        // 活二（含跳二）
+        if(s.includes("0110") || s.includes("01010") || s.includes("010010")){
+            return 2.5;
+        }
+
+        return 0;
+    }
+
+    // 点位落子后的“棋型分数”（越大越好）
+    function shapeScore(x, y, role, opponent) {
+        chessBoard[x][y] = role;
+
+        let win5 = 0;
+        let live4 = 0;
+        let rush4 = 0;
+        let live3 = 0;
+        let rush3 = 0;
+        let live2 = 0;
+
+        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+        for(const [dx,dy] of dirs){
+            const t = analyzeLine(x, y, dx, dy, role, opponent);
+            if(t === 5) win5++;
+            else if(t === 4.5) live4++;
+            else if(t === 4) rush4++;
+            else if(t === 3.5) live3++;
+            else if(t === 3) rush3++;
+            else if(t === 2.5) live2++;
+        }
+
+        chessBoard[x][y] = 0;
+
+        // 组合杀伤力（越接近胜利越爆炸）
+        if(win5 > 0) return 1e9;
+
+        if(live4 > 0) return 5e7;
+
+        // 双冲四 / 冲四+活三（常见强制胜）
+        if(rush4 >= 2 || (rush4 >= 1 && live3 >= 1)) return 3e7;
+
+        // 双活三（强威胁）
+        if(live3 >= 2) return 2e7;
+
+        if(rush4 > 0) return 8e6;
+        if(live3 > 0) return 8e5;
+
+        // 次级威胁
+        return live2 * 12000 + rush3 * 9000;
+    }
+
+    // 用于排序/评估的综合分（融合两套评分，更稳更“毒”）
+    function moveHeuristic(x, y, player){
+        const opp = (player===BLACK?WHITE:BLACK);
+
+        const attackShape = shapeScore(x,y,player,opp);
+        const defenseShape = shapeScore(x,y,opp,player);
+
+        const attackSimple = simpleMoveScore(x,y,player);
+        const defenseSimple = simpleMoveScore(x,y,opp);
+
+        // 中心偏好（开局布局更自然）
+        const center = 7;
+        const dist = Math.abs(x-center) + Math.abs(y-center);
+        const centerBias = (14 - dist) * 3;
+
+        // 防守略偏重（避免被“偷家”）
+        // shape 分巨大，simple 分用于细粒度打破平分/补漏
+        return (attackShape * 1.15 + defenseShape * 1.05) +
+               (attackSimple * 6 + defenseSimple * 7) +
+               centerBias;
+    }
+
+    // 局面评估：从AI视角（正分=AI优势）
+    function evaluateBoard(){
+        const candidates = getCandidates(2);
+
+        // 若候选为空，说明棋盘满/异常 => 0
+        if(!candidates || candidates.length===0) return 0;
+
+        let aiArr = [];
+        let humanArr = [];
+
+        for(const p of candidates){
+            // 取“下一手最好威胁”做局面近似（速度快，配合搜索足够强）
+            const a = shapeScore(p.i,p.j,AI,HUMAN) + simpleMoveScore(p.i,p.j,AI) * 6;
+            const h = shapeScore(p.i,p.j,HUMAN,AI) + simpleMoveScore(p.i,p.j,HUMAN) * 6;
+            aiArr.push(a);
+            humanArr.push(h);
+        }
+
+        aiArr.sort((a,b)=>b-a);
+        humanArr.sort((a,b)=>b-a);
+
+        // 取前三个威胁，避免只看一个点导致“看不见双三/双威胁”
+        const a0 = aiArr[0] || 0;
+        const a1 = aiArr[1] || 0;
+        const a2 = aiArr[2] || 0;
+
+        const h0 = humanArr[0] || 0;
+        const h1 = humanArr[1] || 0;
+        const h2 = humanArr[2] || 0;
+
+        const aiScore = a0 + a1*0.55 + a2*0.25;
+        const humanScore = h0 + h1*0.60 + h2*0.30;
+
+        return aiScore - humanScore * 1.05;
+    }
+
+    // ---------- 强制走法：必赢/必堵 ----------
+    function findForcedMove(){
+        const candidates = getCandidates(2);
+
+        // 1) AI 一步赢
+        for(const p of candidates){
+            if(isWinningMove(p.i,p.j,AI)) return {i:p.i, j:p.j};
+        }
+
+        // 2) 玩家一步赢 => 必堵
+        let blocks = [];
+        for(const p of candidates){
+            if(isWinningMove(p.i,p.j,HUMAN)) blocks.push(p);
+        }
+        if(blocks.length){
+            blocks.sort((a,b)=>moveHeuristic(b.i,b.j,AI)-moveHeuristic(a.i,a.j,AI));
+            return {i:blocks[0].i, j:blocks[0].j};
+        }
+
+        return null;
+    }
+
+    // ---------- 开局库（轻量）：让AI更像“懂布局” ----------
+    function openingBookMove(){
+        // AI是后手白棋：只处理第一手回应（moveHistory.length === 1）
+        if(moveHistory.length !== 1) return null;
+
+        const first = moveHistory[0];
+        const cx = 7, cy = 7;
+
+        // 如果玩家第一手离中心较远，AI直接占中心（强势布局）
+        const dist = Math.abs(first.i-cx) + Math.abs(first.j-cy);
+        if(chessBoard[cx][cy]===0 && dist >= 3){
+            return {i:cx, j:cy};
+        }
+
+        // 如果玩家下在中心，AI走“斜邻位”更隐蔽也更常见
+        if(first.i===cx && first.j===cy){
+            const diag = [
+                {i:cx-1,j:cy-1},{i:cx-1,j:cy+1},{i:cx+1,j:cy-1},{i:cx+1,j:cy+1}
+            ];
+            const ortho = [
+                {i:cx-1,j:cy},{i:cx+1,j:cy},{i:cx,j:cy-1},{i:cx,j:cy+1}
+            ];
+            const pool = (Math.random() < 0.72) ? diag : diag.concat(ortho);
+            return pool[Math.floor(Math.random()*pool.length)];
+        }
+
+        // 否则：尽量朝中心靠近地“贴身”回应
+        const dx = (first.i<cx) ? 1 : (first.i>cx ? -1 : 0);
+        const dy = (first.j<cy) ? 1 : (first.j>cy ? -1 : 0);
+        const opts = [
+            {i:first.i+dx, j:first.j+dy},
+            {i:first.i+dx, j:first.j},
+            {i:first.i,    j:first.j+dy}
+        ].filter(p=>inBounds(p.i,p.j) && chessBoard[p.i][p.j]===0);
+
+        if(opts.length){
+            // 选综合分最高的（再加一点随机性）
+            opts.sort((a,b)=>moveHeuristic(b.i,b.j,AI)-moveHeuristic(a.i,a.j,AI));
+            const top = opts.slice(0, Math.min(2, opts.length));
+            return top[Math.floor(Math.random()*top.length)];
+        }
+
+        return null;
+    }
+
+    // ---------- αβ搜索（迭代加深） ----------
+    function branchLimit(depth, isRoot){
+        // depth越大 => 分支越少，保证速度
+        let base = Math.max(10, 20 - depth*2);
+        if(isRoot) base += 2;
+        return base;
+    }
+
+    function orderedMoves(player, depth){
+        const moves = getCandidates(2);
+        const entry = TT.get(currentHash);
+        const pv = entry && entry.bestMove;
+
+        // 计算排序分
+        for(const m of moves){
+            m.score = moveHeuristic(m.i, m.j, player);
+
+            // PV优先
+            if(pv && m.i===pv.i && m.j===pv.j){
+                m.score += 1e8;
+            }
+        }
+
+        moves.sort((a,b)=>b.score - a.score);
+
+        // 限制候选数量
+        const lim = branchLimit(depth, false);
+        if(moves.length > lim) moves.length = lim;
+        return moves;
+    }
+
+    function negamax(depth, alpha, beta, player, sign, start, limitMs){
+        if(searchStop) return 0;
+        if(performance.now() - start > limitMs){
+            searchStop = true;
+            return 0;
+        }
+
+        if(depth === 0){
+            return sign * evaluateBoard();
+        }
+
+        // 置换表
+        const key = currentHash;
+        const entry = TT.get(key);
+        if(entry && entry.depth >= depth){
+            const v = entry.value;
+            if(entry.flag === 0) return v;
+            if(entry.flag === 1) alpha = Math.max(alpha, v);
+            else if(entry.flag === 2) beta = Math.min(beta, v);
+            if(alpha >= beta) return v;
+        }
+
+        const alphaOrig = alpha;
+        const betaOrig = beta;
+
+        const moves = orderedMoves(player, depth);
+        if(moves.length === 0){
+            return sign * evaluateBoard();
+        }
+
+        let best = -INF;
+        let bestMove = null;
+
+        const nextPlayer = (player === AI) ? HUMAN : AI;
+
+        for(const m of moves){
+            if(performance.now() - start > limitMs){
+                searchStop = true;
+                break;
+            }
+
+            makeMove(m.i, m.j, player);
+
+            let val;
+            if(checkWinAt(m.i, m.j, player)){
+                // 当前player可直接赢：给一个极大值；depth越大越优先更快的胜利
+                val = WIN + depth;
+            }else{
+                val = -negamax(depth-1, -beta, -alpha, nextPlayer, -sign, start, limitMs);
+            }
+
+            unmakeMove(m.i, m.j, player);
+
+            if(searchStop) break;
+
+            if(val > best){
+                best = val;
+                bestMove = {i:m.i, j:m.j};
+            }
+
+            if(val > alpha){
+                alpha = val;
+                if(alpha >= beta) break;
+            }
+        }
+
+        // 写入TT（在不超时的情况下）
+        if(!searchStop){
+            let flag = 0;
+            if(best <= alphaOrig) flag = 2;       // UPPER
+            else if(best >= betaOrig) flag = 1;   // LOWER
+            else flag = 0;                        // EXACT
+            TT.set(key, {depth: depth, value: best, flag: flag, bestMove: bestMove});
+        }
+
+        return best;
+    }
+
+    function rootSearch(depth, start, limitMs){
+        let alpha = -INF, beta = INF;
+
+        const moves = getCandidates(2);
+        // 根节点排序（更强的布局/杀招优先）
+        const entry = TT.get(currentHash);
+        const pv = entry && entry.bestMove;
+
+        for(const m of moves){
+            m.score = moveHeuristic(m.i,m.j,AI);
+            if(pv && m.i===pv.i && m.j===pv.j) m.score += 1e8;
+        }
+        moves.sort((a,b)=>b.score-a.score);
+
+        // 根节点多给一点分支
+        const lim = branchLimit(depth, true);
+        if(moves.length > lim) moves.length = lim;
+
+        let best = -INF;
+        let bestMoves = [];
+        let bestMove = null;
+
+        for(const m of moves){
+            if(performance.now() - start > limitMs){
+                searchStop = true;
+                break;
+            }
+
+            makeMove(m.i, m.j, AI);
+
+            let val;
+            if(checkWinAt(m.i, m.j, AI)){
+                val = WIN + depth;
+            }else{
+                val = -negamax(depth-1, -beta, -alpha, HUMAN, -1, start, limitMs);
+            }
+
+            unmakeMove(m.i, m.j, AI);
+
+            if(searchStop) break;
+
+            if(val > best){
+                best = val;
+                bestMove = {i:m.i, j:m.j};
+                bestMoves = [bestMove];
+            }else if(val === best){
+                bestMoves.push({i:m.i, j:m.j});
+            }
+
+            if(val > alpha){
+                alpha = val;
+                if(alpha >= beta) break;
+            }
+        }
+
+        if(bestMove && !searchStop){
+            TT.set(currentHash, {depth: depth, value: best, flag: 0, bestMove: bestMove});
+        }
+
+        return {score: best, move: bestMove, bestMoves: bestMoves};
+    }
+
+    function searchBestMove(){
+        ttMaybePrune();
+        searchStop = false;
+
+        // 动态配置：开局适当减深，防止过慢；中盘更深
+        const ply = moveHistory.length; // 已下总步数
+        const maxDepth = (ply < 8) ? 5 : 6;
+        const limitMs = (ply < 10) ? 720 : 680;
+
+        const start = performance.now();
+
+        let bestMove = null;
+        let bestMoves = null;
+
+        // 迭代加深：保证“随时可用”的最优解
+        for(let d=2; d<=maxDepth; d++){
+            const res = rootSearch(d, start, limitMs);
+            if(searchStop) break;
+            if(res && res.move){
+                bestMove = res.move;
+                bestMoves = res.bestMoves;
+
+                // 如果已经找到明显必胜，提前结束
+                if(res.score >= WIN - 5000) break;
+            }
+        }
+
+        if(bestMoves && bestMoves.length){
+            // 为了不死板：同分随机（更“出乎意料”）
+            return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        }
+        return bestMove;
+    }
+
+    function fallbackMove(){
+        const candidates = getCandidates(2);
+        if(!candidates.length) return {i:7, j:7};
+
+        candidates.sort((a,b)=>moveHeuristic(b.i,b.j,AI)-moveHeuristic(a.i,a.j,AI));
+        const top = candidates.slice(0, Math.min(3, candidates.length));
+        return top[Math.floor(Math.random()*top.length)];
+    }
+
+    // ---------- AI主入口 ----------
+    function computerAI(){
+        aiTimer = setTimeout(function(){
+            aiTimer = null;
+            if(over) return;
+
+            // 1) 先看是否有必赢/必堵
+            let move = findForcedMove();
+
+            // 2) 再走开局库（仅在第一手回应时触发）
+            if(!move){
+                move = openingBookMove();
+            }
+
+            // 3) 再用搜索找更强的走法
+            if(!move){
+                move = searchBestMove();
+            }
+
+            // 4) 兜底（极少发生）
+            if(!move){
+                move = fallbackMove();
+            }
+
+            doAiMove(move.i, move.j);
+        }, 400); // 思考延迟（保持与原Pro版本一致）
+    }
+
+    // --------- 落子执行 ----------
+    function doAiMove(i, j){
+        chessBoard[i][j] = 2;
+        moveHistory.push({i,j,player:2});
+        hashPlayMove(i,j,2);
+        lastAIMove = {i,j};
+
+        // 判定胜负
+        for(let k=0;k<count;k++){
+            if(wins[i][j][k]){
+                computerWin[k]++; myWin[k]=6;
+                if(computerWin[k]===5){
+                    endGame('计算机赢了，再接再厉！', getWinningLine(i,j,2));
+                    return;
+                }
+            }
+        }
+        redrawAll();
+
+        // 判定和棋
+        if(moveHistory.length === 225) {
+            endGame('和棋！棋逢对手！', null);
+            return;
+        }
+
+        if(!over) me = true;
+    }
+
+    // --------- 悔棋/重开 ----------
+    function undoOnce(){
+        const resultEl = document.getElementById('result-wrap');
+        // 游戏结束不能悔棋
+        if(over) return;
+
+        if(justUndid){ resultEl.innerHTML = '不能连续悔棋哦～'; return; }
+        if(moveHistory.length===0){ resultEl.innerHTML = '当前无法悔棋'; return; }
+
+        // AI思考中取消（只撤回玩家刚下的一手）
+        if(aiTimer){
+            clearTimeout(aiTimer); aiTimer=null;
+            const last = moveHistory.pop();
+            // 回滚哈希
+            hashUndoMove(last.i,last.j,last.player);
+            chessBoard[last.i][last.j]=0;
+
+            me = true; over = false; winLine = null;
+            recomputeWins();
+            lastAIMove = null;
+            for(let t=moveHistory.length-1;t>=0;t--){
+                if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+            }
+            redrawAll();
+            justUndid = true;
+            return;
+        }
+
+        if(moveHistory.length<2){ resultEl.innerHTML = '步数不足'; return; }
+
+        let stepAI = moveHistory.pop(); // AI
+        hashUndoMove(stepAI.i,stepAI.j,stepAI.player);
+        chessBoard[stepAI.i][stepAI.j]=0;
+
+        let stepPlayer = moveHistory.pop(); // Player
+        hashUndoMove(stepPlayer.i,stepPlayer.j,stepPlayer.player);
+        chessBoard[stepPlayer.i][stepPlayer.j]=0;
+
+        me = true; over=false; winLine=null;
+        document.querySelector('.btn-wrap').style.display='none';
+        resultEl.innerHTML='-- 益智五子棋 Pro --';
+
+        recomputeWins();
+        lastAIMove = null;
+        for(let t=moveHistory.length-1;t>=0;t--){
+            if(moveHistory[t].player===2){ lastAIMove={i:moveHistory[t].i, j:moveHistory[t].j}; break; }
+        }
+        redrawAll();
+        justUndid = true;
+        setControlsVisible(true);
+    }
+
+    document.getElementById('undo').onclick = undoOnce;
+    document.getElementById('restartTop').onclick = function(){ window.location.reload(); };
+    document.getElementById('restart').onclick = function(){ window.location.reload(); };
+    </script>
+
+</body>
+</html>

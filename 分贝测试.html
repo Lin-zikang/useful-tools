@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>分贝测试器</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card: #ffffff;
+      --card-soft: #fafafa;
+      --line: #e8ecf2;
+      --text: #101828;
+      --muted: #667085;
+      --primary: #2563eb;
+      --primary-soft: #eff6ff;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: env(safe-area-inset-top, 0px) 18px env(safe-area-inset-bottom, 0px);
+    }
+
+    .app {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      padding: 20px 0 32px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .hero-main {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--card-soft);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .hero-side {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .mini {
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
+    }
+
+    .mini .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .mini .value {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .meter-block {
+      display: grid;
+      gap: 16px;
+    }
+
+    .meter-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .meter {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfbfd 100%);
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .meter::before {
+      content: "";
+      position: absolute;
+      inset: auto -10% -50% auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.03) 40%, rgba(255,255,255,0) 72%);
+      pointer-events: none;
+    }
+
+    .meter-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .db-value {
+      font-size: clamp(56px, 10vw, 104px);
+      line-height: 0.95;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      margin: 0;
+    }
+
+    .db-unit {
+      font-size: clamp(20px, 2.7vw, 28px);
+      color: var(--muted);
+      margin-left: 10px;
+      font-weight: 700;
+    }
+
+    .status-box {
+      text-align: right;
+      min-width: 140px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--card-soft);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .level-text {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .bar-wrap {
+      margin-top: 22px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar {
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: linear-gradient(90deg, #dcfce7 0%, #fef9c3 50%, #fee2e2 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(37,99,235,0.15), rgba(37,99,235,0.45));
+      transition: width 0.1s ease-out;
+    }
+
+    .bar-peak {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 3px;
+      background: #111827;
+      border-radius: 999px;
+      transition: left 0.15s linear;
+      left: 0%;
+    }
+
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .stat .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .stat .v {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .stat .s {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: grid;
+      gap: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 16px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #cfd7e4;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.soft {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: #cfe0ff;
+    }
+
+    button.warn {
+      background: #fff7ed;
+      color: var(--warning);
+      border-color: #fed7aa;
+    }
+
+    button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 18px;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .fields {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .field input[type="number"],
+    .field input[type="text"],
+    .field input[type="file"],
+    .field select,
+    .field textarea,
+    .field input[type="range"] {
+      width: 100%;
+    }
+
+    .field input[type="number"],
+    .field input[type="text"],
+    .field input[type="file"],
+    .field select,
+    .field textarea {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    .field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .field input[type="range"] {
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .inline {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .switch input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .canvas-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #fff;
+      border-radius: 16px;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .log-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .log-time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .log-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .log-note {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .log-db {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .file-area {
+      display: grid;
+      gap: 14px;
+    }
+
+    .drop {
+      border: 2px dashed #d8e0ec;
+      border-radius: 22px;
+      padding: 18px;
+      background: #fcfdff;
+    }
+
+    .file-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid #dbeafe;
+      background: #f8fbff;
+      color: #1d4ed8;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .danger-note {
+      border-color: #fee2e2;
+      background: #fff7f7;
+      color: #b42318;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+      text-align: center;
+    }
+
+    .active-alert {
+      animation: pulseBorder 1s ease-in-out infinite;
+      border-color: rgba(220, 38, 38, 0.4);
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08), 0 16px 40px rgba(220, 38, 38, 0.08);
+    }
+
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.10), 0 16px 40px rgba(220, 38, 38, 0.08); }
+      50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0.06), 0 16px 40px rgba(220, 38, 38, 0.08); }
+    }
+
+    @media (max-width: 1120px) {
+      .hero, .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .inline {
+        grid-template-columns: 1fr;
+      }
+
+      .meter-grid {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .status-box {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 540px) {
+      body {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .app {
+        padding-top: 12px;
+      }
+
+      .card,
+      .meter,
+      .panel,
+      .canvas-card {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .toolbar button {
+        width: 100%;
+      }
+
+      .log-item {
+        grid-template-columns: 1fr auto;
+      }
+
+      .log-time {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="brand">
+          <div>
+            <h1>分贝测试器</h1>
+            <p class="sub">白色极简界面，适配手机与电脑。支持 <strong>实时麦克风测分贝</strong>、<strong>频谱分析</strong>、<strong>历史曲线</strong>、<strong>阈值提醒</strong>、<strong>校准</strong>、<strong>CSV 导出</strong>，并额外提供 <strong>本地音频文件分析</strong> 模式。</p>
+          </div>
+          <div class="pill">
+            <span class="dot" id="secureDot"></span>
+            <span id="contextLabel">检测环境中</span>
+          </div>
+        </div>
+        <div class="pill-row">
+          <div class="pill">单文件 HTML</div>
+          <div class="pill">响应式布局</div>
+          <div class="pill">触屏按钮优化</div>
+          <div class="pill">无第三方依赖</div>
+        </div>
+      </div>
+
+      <div class="hero-side">
+        <div class="card mini">
+          <div class="label">当前状态</div>
+          <div class="value" id="runStatus">未开始</div>
+        </div>
+        <div class="card mini">
+          <div class="label">原始输入</div>
+          <div class="value" id="rawDbfs">-∞ dBFS</div>
+        </div>
+        <div class="card mini">
+          <div class="label">主频估算</div>
+          <div class="value" id="dominantFreq">-- Hz</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <div class="card meter-block" id="meterCard">
+          <div class="meter-head">
+            <div>
+              <h2 class="section-title">实时分贝监测</h2>
+              <div class="hint" id="compatHint">点击“开始测试”后浏览器会申请麦克风权限。若手机浏览器不允许本地页面直接调麦克风，请把此页面放到 HTTPS 或 localhost 打开。</div>
+            </div>
+            <div class="badge" id="modeBadge">待机</div>
+          </div>
+
+          <div class="meter">
+            <div class="meter-grid">
+              <div>
+                <div>
+                  <span class="db-value" id="dbValue">0</span>
+                  <span class="db-unit">dB</span>
+                </div>
+                <div class="level-text" id="levelText">等待开始测试</div>
+              </div>
+              <div class="status-box">
+                <div class="badge" id="noiseBadge">静默</div>
+                <div class="level-text" id="adviceText">开启后会根据声音强度给出等级和建议。</div>
+              </div>
+            </div>
+            <div class="bar-wrap">
+              <div class="bar" aria-hidden="true">
+                <div class="bar-fill" id="barFill"></div>
+                <div class="bar-peak" id="barPeak"></div>
+              </div>
+              <div class="ticks">
+                <span>0</span>
+                <span>30</span>
+                <span>60</span>
+                <span>90</span>
+                <span>120+</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="k">平均值</div>
+              <div class="v" id="avgValue">0 dB</div>
+              <div class="s">用于观察整体噪声水平</div>
+            </div>
+            <div class="stat">
+              <div class="k">峰值</div>
+              <div class="v" id="maxValue">0 dB</div>
+              <div class="s">瞬时最大声压估算</div>
+            </div>
+            <div class="stat">
+              <div class="k">最小值</div>
+              <div class="v" id="minValue">0 dB</div>
+              <div class="s">当前测试阶段最低值</div>
+            </div>
+            <div class="stat">
+              <div class="k">动态范围</div>
+              <div class="v" id="rangeValue">0 dB</div>
+              <div class="s">峰值与最小值之差</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card canvas-card">
+          <div class="row-between" style="margin-bottom: 12px;">
+            <div>
+              <h3 style="margin:0;">历史曲线</h3>
+              <div class="hint">记录最近一段时间的分贝变化，便于观察环境趋势。</div>
+            </div>
+            <div class="hint" id="historyMeta">0 条记录</div>
+          </div>
+          <canvas id="historyCanvas" width="960" height="300"></canvas>
+        </div>
+
+        <div class="card canvas-card">
+          <div class="row-between" style="margin-bottom: 12px;">
+            <div>
+              <h3 style="margin:0;">频谱分析</h3>
+              <div class="hint">实时显示声音能量在不同频率上的分布，可辅助判断是低频轰鸣还是人声区域更强。</div>
+            </div>
+            <div class="hint">20 Hz - 8 kHz+</div>
+          </div>
+          <canvas id="spectrumCanvas" width="960" height="260"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="row-between" style="margin-bottom: 12px;">
+            <div>
+              <h2 class="section-title">本地音频文件分析</h2>
+              <div class="hint">如果某些手机浏览器限制网页直接读麦克风，可以改用音频文件分析模式。</div>
+            </div>
+            <div class="badge">离线分析</div>
+          </div>
+
+          <div class="file-area">
+            <div class="drop">
+              <div class="fields">
+                <div class="field">
+                  <label for="audioFile">选择音频文件</label>
+                  <input id="audioFile" type="file" accept="audio/*" />
+                </div>
+                <div class="toolbar">
+                  <button id="analyzeFileBtn" class="soft" disabled>分析文件</button>
+                  <button id="exportSummaryBtn" disabled>导出文件分析摘要</button>
+                </div>
+                <audio id="audioPreview" controls style="width: 100%; display: none;"></audio>
+              </div>
+            </div>
+
+            <div class="stats" id="fileStats">
+              <div class="stat">
+                <div class="k">时长</div>
+                <div class="v" id="fileDuration">--</div>
+                <div class="s">音频总长度</div>
+              </div>
+              <div class="stat">
+                <div class="k">平均响度</div>
+                <div class="v" id="fileAvg">--</div>
+                <div class="s">整体平均估算</div>
+              </div>
+              <div class="stat">
+                <div class="k">峰值响度</div>
+                <div class="v" id="filePeak">--</div>
+                <div class="s">文件中的最大峰值</div>
+              </div>
+              <div class="stat">
+                <div class="k">采样信息</div>
+                <div class="v" id="fileSampleInfo">--</div>
+                <div class="s">声道与采样率</div>
+              </div>
+            </div>
+
+            <div class="canvas-card" style="padding: 14px;">
+              <div class="row-between" style="margin-bottom: 10px;">
+                <div class="hint">文件波形概览</div>
+                <div class="hint" id="fileMetaLine">尚未分析文件</div>
+              </div>
+              <canvas id="fileCanvas" width="960" height="260"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack controls">
+        <div class="card">
+          <h2 class="section-title" style="margin-bottom: 12px;">控制面板</h2>
+          <div class="toolbar" style="margin-bottom: 18px;">
+            <button id="startBtn" class="primary">开始测试</button>
+            <button id="stopBtn" class="warn" disabled>停止测试</button>
+            <button id="pauseBtn" disabled>暂停记录</button>
+            <button id="resetBtn">重置数据</button>
+          </div>
+
+          <div class="fields">
+            <div class="panel">
+              <h3>阈值与提醒</h3>
+              <div class="fields">
+                <div class="field">
+                  <div class="row-between">
+                    <label for="thresholdRange">提醒阈值</label>
+                    <strong id="thresholdLabel">85 dB</strong>
+                  </div>
+                  <input id="thresholdRange" type="range" min="40" max="120" step="1" value="85" />
+                </div>
+                <label class="switch">
+                  <input id="alertToggle" type="checkbox" checked />
+                  <span>超阈值时高亮提醒（支持设备会轻微震动）</span>
+                </label>
+                <div class="field">
+                  <label for="noteInput">超阈值日志备注（可选）</label>
+                  <input id="noteInput" type="text" placeholder="例如：施工噪声 / 音箱测试 / 地铁到站" />
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3>校准与平滑</h3>
+              <div class="fields">
+                <div class="inline">
+                  <div class="field">
+                    <label for="offsetInput">校准偏移（dB）</label>
+                    <input id="offsetInput" type="number" value="90" step="0.5" />
+                  </div>
+                  <div class="field">
+                    <label for="referenceInput">参考目标（dB）</label>
+                    <input id="referenceInput" type="number" value="60" step="0.5" />
+                  </div>
+                </div>
+                <div class="toolbar">
+                  <button id="calibrateBtn" class="soft">以当前值校准到参考目标</button>
+                  <button id="offsetResetBtn">恢复默认偏移</button>
+                </div>
+                <div class="field">
+                  <label for="smoothingSelect">平滑等级</label>
+                  <select id="smoothingSelect">
+                    <option value="0.55">灵敏</option>
+                    <option value="0.75" selected>均衡</option>
+                    <option value="0.9">更平稳</option>
+                  </select>
+                </div>
+                <label class="switch">
+                  <input id="holdPeakToggle" type="checkbox" checked />
+                  <span>保留峰值指示线</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3>数据记录</h3>
+              <div class="fields">
+                <div class="toolbar">
+                  <button id="exportBtn" class="soft">导出 CSV</button>
+                  <button id="clearLogsBtn">清空日志</button>
+                  <button id="copySummaryBtn">复制摘要</button>
+                </div>
+                <div class="note" id="summaryBox">当前暂无测试数据。开始后可导出完整记录或复制摘要。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row-between" style="margin-bottom: 12px;">
+            <div>
+              <h2 class="section-title">事件日志</h2>
+              <div class="hint">自动记录超阈值事件，便于回看高噪声时刻。</div>
+            </div>
+            <div class="badge" id="logCountBadge">0 条</div>
+          </div>
+          <div class="log-list" id="logList">
+            <div class="note">暂无事件。开始监测后，超过阈值的时刻会显示在这里。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title" style="margin-bottom: 12px;">使用说明</h2>
+          <div class="fields">
+            <div class="note">1. <strong>开始测试</strong>：允许麦克风权限后即可实时监测。<br>2. <strong>校准</strong>：把手机或电脑放到已知声级环境中，输入参考目标后点击“以当前值校准”。<br>3. <strong>导出 CSV</strong>：适合做噪声巡检、设备测试或环境记录。<br>4. <strong>文件分析</strong>：可分析本地录音文件，适合手机端无法直接调用麦克风时使用。</div>
+            <div class="note danger-note">说明：网页端麦克风读数受设备麦克风、系统自动增益和浏览器策略影响，结果属于<strong>估算值</strong>，不能替代专业声级计。若你需要更准确结果，请先做现场校准或使用专业仪器对照。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">建议在最新版 Chrome、Edge、Safari 或 Android 浏览器中打开。为了让手机端麦克风权限更稳定，优先使用 HTTPS 页面或 localhost。</div>
+  </div>
+
+  <script>
+    (() => {
+      const MAX_DB = 120;
+      const HISTORY_LIMIT = 180;
+      const SAMPLE_INTERVAL_MS = 280;
+      const DEFAULT_OFFSET = 90;
+      const MIN_DBFS = -100;
+
+      const el = {
+        secureDot: document.getElementById('secureDot'),
+        contextLabel: document.getElementById('contextLabel'),
+        runStatus: document.getElementById('runStatus'),
+        rawDbfs: document.getElementById('rawDbfs'),
+        dominantFreq: document.getElementById('dominantFreq'),
+        compatHint: document.getElementById('compatHint'),
+        modeBadge: document.getElementById('modeBadge'),
+        dbValue: document.getElementById('dbValue'),
+        levelText: document.getElementById('levelText'),
+        noiseBadge: document.getElementById('noiseBadge'),
+        adviceText: document.getElementById('adviceText'),
+        barFill: document.getElementById('barFill'),
+        barPeak: document.getElementById('barPeak'),
+        avgValue: document.getElementById('avgValue'),
+        maxValue: document.getElementById('maxValue'),
+        minValue: document.getElementById('minValue'),
+        rangeValue: document.getElementById('rangeValue'),
+        historyMeta: document.getElementById('historyMeta'),
+        startBtn: document.getElementById('startBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        pauseBtn: document.getElementById('pauseBtn'),
+        resetBtn: document.getElementById('resetBtn'),
+        thresholdRange: document.getElementById('thresholdRange'),
+        thresholdLabel: document.getElementById('thresholdLabel'),
+        alertToggle: document.getElementById('alertToggle'),
+        noteInput: document.getElementById('noteInput'),
+        offsetInput: document.getElementById('offsetInput'),
+        referenceInput: document.getElementById('referenceInput'),
+        calibrateBtn: document.getElementById('calibrateBtn'),
+        offsetResetBtn: document.getElementById('offsetResetBtn'),
+        smoothingSelect: document.getElementById('smoothingSelect'),
+        holdPeakToggle: document.getElementById('holdPeakToggle'),
+        exportBtn: document.getElementById('exportBtn'),
+        clearLogsBtn: document.getElementById('clearLogsBtn'),
+        copySummaryBtn: document.getElementById('copySummaryBtn'),
+        summaryBox: document.getElementById('summaryBox'),
+        meterCard: document.getElementById('meterCard'),
+        logList: document.getElementById('logList'),
+        logCountBadge: document.getElementById('logCountBadge'),
+        analyzeFileBtn: document.getElementById('analyzeFileBtn'),
+        audioFile: document.getElementById('audioFile'),
+        audioPreview: document.getElementById('audioPreview'),
+        exportSummaryBtn: document.getElementById('exportSummaryBtn'),
+        fileDuration: document.getElementById('fileDuration'),
+        fileAvg: document.getElementById('fileAvg'),
+        filePeak: document.getElementById('filePeak'),
+        fileSampleInfo: document.getElementById('fileSampleInfo'),
+        fileMetaLine: document.getElementById('fileMetaLine'),
+      };
+
+      const canvases = {
+        history: document.getElementById('historyCanvas'),
+        spectrum: document.getElementById('spectrumCanvas'),
+        file: document.getElementById('fileCanvas'),
+      };
+
+      const ctx = {
+        history: canvases.history.getContext('2d'),
+        spectrum: canvases.spectrum.getContext('2d'),
+        file: canvases.file.getContext('2d'),
+      };
+
+      const logicalCanvasHeights = {
+        history: 300,
+        spectrum: 260,
+        file: 260,
+      };
+
+      const state = {
+        audioContext: null,
+        analyser: null,
+        stream: null,
+        source: null,
+        timeData: null,
+        freqData: null,
+        rafId: null,
+        isRunning: false,
+        isPaused: false,
+        lastSampleAt: 0,
+        history: [],
+        fullLog: [],
+        alertLog: [],
+        min: Infinity,
+        max: 0,
+        sum: 0,
+        count: 0,
+        peakIndicator: 0,
+        lastAlertAt: 0,
+        thresholdBreached: false,
+        currentDb: 0,
+        currentDbfs: MIN_DBFS,
+        dominantFreq: 0,
+        fileResult: null,
+        previewUrl: null,
+      };
+
+      const formatter = new Intl.DateTimeFormat('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      function initContextLabel() {
+        const secure = window.isSecureContext;
+        const fileLike = location.protocol === 'file:';
+        if (secure) {
+          el.contextLabel.textContent = fileLike ? '本地文件环境' : '安全环境可用';
+          el.secureDot.style.background = 'var(--success)';
+          el.compatHint.textContent = '点击“开始测试”后浏览器会申请麦克风权限。若未能读取麦克风，可尝试切换浏览器，或使用下方的本地音频文件分析模式。';
+        } else {
+          el.contextLabel.textContent = '建议 HTTPS 环境';
+          el.secureDot.style.background = 'var(--warning)';
+          el.compatHint.textContent = '当前页面可能不属于浏览器认可的安全环境。部分设备会禁止网页调用麦克风，请改为 HTTPS 或 localhost 打开，或者使用本地音频文件分析。';
+        }
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+
+      function logicalSize(canvas) {
+        return {
+          width: Number(canvas.dataset.logicalWidth) || canvas.clientWidth || canvas.width,
+          height: Number(canvas.dataset.logicalHeight) || canvas.clientHeight || canvas.height,
+        };
+      }
+
+      function resizeCanvas(canvas, logicalHeight) {
+        const dpr = Math.max(window.devicePixelRatio || 1, 1);
+        const cssWidth = Math.max(320, Math.floor(canvas.getBoundingClientRect().width || canvas.clientWidth || 960));
+        canvas.style.height = `${logicalHeight}px`;
+        canvas.width = Math.floor(cssWidth * dpr);
+        canvas.height = Math.floor(logicalHeight * dpr);
+        canvas.dataset.logicalWidth = String(cssWidth);
+        canvas.dataset.logicalHeight = String(logicalHeight);
+        const context = canvas.getContext('2d');
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function resizeAllCanvases() {
+        resizeCanvas(canvases.history, logicalCanvasHeights.history);
+        resizeCanvas(canvases.spectrum, logicalCanvasHeights.spectrum);
+        resizeCanvas(canvases.file, logicalCanvasHeights.file);
+        drawHistory();
+        drawSpectrum();
+        drawFileWaveform(state.fileResult?.samples || null);
+      }
+
+      function round(value, digits = 1) {
+        return Number(value.toFixed(digits));
+      }
+
+      function safeDbfsFromRms(rms) {
+        if (!Number.isFinite(rms) || rms <= 0) return MIN_DBFS;
+        return clamp(20 * Math.log10(rms), MIN_DBFS, 0);
+      }
+
+      function toEstimatedDb(dbfs) {
+        const offset = Number(el.offsetInput.value || DEFAULT_OFFSET);
+        return clamp(dbfs + offset, 0, 140);
+      }
+
+      function getThreshold() {
+        return Number(el.thresholdRange.value || 85);
+      }
+
+      function formatDb(value) {
+        if (!Number.isFinite(value)) return '--';
+        return `${round(value, 1)} dB`;
+      }
+
+      function formatDbfs(value) {
+        if (!Number.isFinite(value) || value <= MIN_DBFS) return '-∞ dBFS';
+        return `${round(value, 1)} dBFS`;
+      }
+
+      function formatHz(value) {
+        if (!Number.isFinite(value) || value <= 0) return '-- Hz';
+        return value >= 1000 ? `${round(value / 1000, 2)} kHz` : `${Math.round(value)} Hz`;
+      }
+
+      function getNoiseInfo(db) {
+        if (db < 25) return { label: '几乎静音', advice: '环境非常安静，适合休息、录音或精细工作。', tone: '安静' };
+        if (db < 40) return { label: '安静室内', advice: '接近安静房间或图书馆级别。', tone: '舒适' };
+        if (db < 55) return { label: '轻声环境', advice: '适合办公、阅读或普通家庭环境。', tone: '轻声' };
+        if (db < 70) return { label: '普通交流', advice: '属于日常对话、办公室或商场常见声级。', tone: '正常' };
+        if (db < 85) return { label: '偏吵环境', advice: '持续暴露会开始影响专注度。', tone: '偏吵' };
+        if (db < 100) return { label: '较高噪声', advice: '建议减少暴露时长，必要时考虑保护听力。', tone: '较吵' };
+        if (db < 115) return { label: '高噪声', advice: '已经接近危险声级，请谨慎。', tone: '警告' };
+        return { label: '极高噪声', advice: '风险很高，建议立即远离或佩戴专业防护。', tone: '危险' };
+      }
+
+      function updateNoiseUi(db) {
+        const info = getNoiseInfo(db);
+        el.levelText.textContent = `${info.label} · 当前估算分贝 ${round(db, 1)} dB`;
+        el.noiseBadge.textContent = info.tone;
+        el.adviceText.textContent = info.advice;
+        el.modeBadge.textContent = db >= getThreshold() ? '超阈值' : '监测中';
+      }
+
+      function updateSummary() {
+        if (!state.count) {
+          el.summaryBox.textContent = '当前暂无测试数据。开始后可导出完整记录或复制摘要。';
+          return;
+        }
+        const avg = state.sum / state.count;
+        const summary = [
+          `当前：${formatDb(state.currentDb)}`,
+          `平均：${formatDb(avg)}`,
+          `峰值：${formatDb(state.max)}`,
+          `最小：${formatDb(state.min)}`,
+          `动态范围：${formatDb(state.max - state.min)}`,
+          `主频：${formatHz(state.dominantFreq)}`,
+          `阈值：${getThreshold()} dB`,
+          `记录数：${state.fullLog.length}`,
+        ].join(' ｜ ');
+        el.summaryBox.textContent = summary;
+      }
+
+      function updateStats() {
+        const avg = state.count ? state.sum / state.count : 0;
+        el.avgValue.textContent = formatDb(avg);
+        el.maxValue.textContent = formatDb(state.count ? state.max : 0);
+        el.minValue.textContent = formatDb(state.count ? state.min : 0);
+        el.rangeValue.textContent = formatDb(state.count ? state.max - state.min : 0);
+        el.rawDbfs.textContent = formatDbfs(state.currentDbfs);
+        el.dominantFreq.textContent = formatHz(state.dominantFreq);
+        el.historyMeta.textContent = `${state.fullLog.length} 条记录`;
+        updateSummary();
+      }
+
+      function updateMainMeter(db) {
+        el.dbValue.textContent = Math.round(db);
+        const percent = clamp((db / MAX_DB) * 100, 0, 100);
+        el.barFill.style.width = `${percent}%`;
+        if (el.holdPeakToggle.checked) {
+          state.peakIndicator = Math.max(state.peakIndicator * 0.992, percent);
+        } else {
+          state.peakIndicator = percent;
+        }
+        el.barPeak.style.left = `${clamp(state.peakIndicator, 0, 100)}%`;
+        updateNoiseUi(db);
+      }
+
+      function clearCanvas(targetCtx, canvas, bg = '#ffffff') {
+        const { width, height } = logicalSize(canvas);
+        targetCtx.save();
+        targetCtx.clearRect(0, 0, width, height);
+        targetCtx.fillStyle = bg;
+        targetCtx.fillRect(0, 0, width, height);
+        targetCtx.restore();
+      }
+
+      function drawGrid(targetCtx, canvas, maxValue = MAX_DB) {
+        const { width, height } = logicalSize(canvas);
+        targetCtx.save();
+        targetCtx.strokeStyle = '#edf2f7';
+        targetCtx.lineWidth = 1;
+        targetCtx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+        targetCtx.fillStyle = '#98a2b3';
+
+        for (let i = 0; i <= 4; i += 1) {
+          const y = 16 + (height - 38) * (i / 4);
+          targetCtx.beginPath();
+          targetCtx.moveTo(44, y);
+          targetCtx.lineTo(width - 14, y);
+          targetCtx.stroke();
+          const value = Math.round(maxValue - (maxValue * i) / 4);
+          targetCtx.fillText(String(value), 10, y + 4);
+        }
+
+        for (let i = 0; i < 6; i += 1) {
+          const x = 44 + ((width - 58) * i) / 5;
+          targetCtx.beginPath();
+          targetCtx.moveTo(x, 12);
+          targetCtx.lineTo(x, height - 22);
+          targetCtx.stroke();
+        }
+        targetCtx.restore();
+      }
+
+      function drawHistory() {
+        const canvas = canvases.history;
+        const targetCtx = ctx.history;
+        const { width: canvasWidth, height: canvasHeight } = logicalSize(canvas);
+        clearCanvas(targetCtx, canvas);
+        drawGrid(targetCtx, canvas, MAX_DB);
+
+        const points = state.history;
+        if (!points.length) {
+          targetCtx.save();
+          targetCtx.fillStyle = '#98a2b3';
+          targetCtx.font = '15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+          targetCtx.fillText('开始测试后会在这里绘制历史曲线', 58, canvasHeight / 2);
+          targetCtx.restore();
+          return;
+        }
+
+        const left = 44;
+        const right = canvasWidth - 14;
+        const top = 14;
+        const bottom = canvasHeight - 24;
+        const width = right - left;
+        const height = bottom - top;
+
+        targetCtx.save();
+        targetCtx.beginPath();
+        points.forEach((item, index) => {
+          const x = left + (width * index) / Math.max(points.length - 1, 1);
+          const y = bottom - (height * clamp(item.db, 0, MAX_DB)) / MAX_DB;
+          if (index === 0) targetCtx.moveTo(x, y);
+          else targetCtx.lineTo(x, y);
+        });
+        targetCtx.lineWidth = 3;
+        targetCtx.strokeStyle = '#2563eb';
+        targetCtx.stroke();
+
+        targetCtx.lineTo(right, bottom);
+        targetCtx.lineTo(left, bottom);
+        targetCtx.closePath();
+        targetCtx.fillStyle = 'rgba(37, 99, 235, 0.10)';
+        targetCtx.fill();
+
+        const threshold = getThreshold();
+        const y = bottom - (height * threshold) / MAX_DB;
+        targetCtx.beginPath();
+        targetCtx.moveTo(left, y);
+        targetCtx.lineTo(right, y);
+        targetCtx.setLineDash([8, 7]);
+        targetCtx.lineWidth = 2;
+        targetCtx.strokeStyle = '#dc2626';
+        targetCtx.stroke();
+        targetCtx.setLineDash([]);
+        targetCtx.fillStyle = '#dc2626';
+        targetCtx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+        targetCtx.fillText(`阈值 ${threshold} dB`, right - 78, y - 8);
+        targetCtx.restore();
+      }
+
+      function drawSpectrum() {
+        const canvas = canvases.spectrum;
+        const targetCtx = ctx.spectrum;
+        const { width: canvasWidth, height: canvasHeight } = logicalSize(canvas);
+        clearCanvas(targetCtx, canvas);
+
+        targetCtx.save();
+        targetCtx.strokeStyle = '#edf2f7';
+        targetCtx.lineWidth = 1;
+        for (let i = 0; i <= 5; i += 1) {
+          const y = 14 + ((canvasHeight - 26) * i) / 5;
+          targetCtx.beginPath();
+          targetCtx.moveTo(12, y);
+          targetCtx.lineTo(canvasWidth - 12, y);
+          targetCtx.stroke();
+        }
+        targetCtx.restore();
+
+        if (!state.freqData) {
+          targetCtx.save();
+          targetCtx.fillStyle = '#98a2b3';
+          targetCtx.font = '15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+          targetCtx.fillText('开始测试后显示频谱分布', 20, canvasHeight / 2);
+          targetCtx.restore();
+          return;
+        }
+
+        const bars = 72;
+        const binStep = Math.max(1, Math.floor(state.freqData.length / bars));
+        const usableHeight = canvasHeight - 24;
+        const barWidth = (canvasWidth - 24) / bars;
+
+        targetCtx.save();
+        for (let i = 0; i < bars; i += 1) {
+          const start = i * binStep;
+          let sum = 0;
+          for (let j = 0; j < binStep; j += 1) {
+            sum += state.freqData[Math.min(start + j, state.freqData.length - 1)] || 0;
+          }
+          const magnitude = sum / binStep;
+          const norm = magnitude / 255;
+          const h = Math.max(2, usableHeight * norm);
+          const x = 12 + i * barWidth;
+          const y = canvasHeight - 10 - h;
+          targetCtx.fillStyle = i % 3 === 0 ? 'rgba(37, 99, 235, 0.75)' : 'rgba(37, 99, 235, 0.45)';
+          targetCtx.fillRect(x, y, Math.max(2, barWidth - 2), h);
+        }
+        targetCtx.restore();
+      }
+
+      function drawFileWaveform(samples) {
+        const canvas = canvases.file;
+        const targetCtx = ctx.file;
+        const { width: canvasWidth, height: canvasHeight } = logicalSize(canvas);
+        clearCanvas(targetCtx, canvas);
+
+        targetCtx.save();
+        targetCtx.strokeStyle = '#edf2f7';
+        targetCtx.lineWidth = 1;
+        for (let i = 0; i <= 4; i += 1) {
+          const y = 14 + ((canvasHeight - 28) * i) / 4;
+          targetCtx.beginPath();
+          targetCtx.moveTo(12, y);
+          targetCtx.lineTo(canvasWidth - 12, y);
+          targetCtx.stroke();
+        }
+        targetCtx.restore();
+
+        if (!samples || !samples.length) {
+          targetCtx.save();
+          targetCtx.fillStyle = '#98a2b3';
+          targetCtx.font = '15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+          targetCtx.fillText('上传并分析音频文件后会显示波形概览', 20, canvasHeight / 2);
+          targetCtx.restore();
+          return;
+        }
+
+        const midY = canvasHeight / 2;
+        const halfHeight = (canvasHeight - 28) / 2;
+        const step = samples.length / (canvasWidth - 24);
+
+        targetCtx.save();
+        targetCtx.beginPath();
+        for (let x = 0; x < canvasWidth - 24; x += 1) {
+          const start = Math.floor(x * step);
+          const end = Math.max(start + 1, Math.floor((x + 1) * step));
+          let min = 1;
+          let max = -1;
+          for (let i = start; i < end && i < samples.length; i += 1) {
+            const v = samples[i];
+            if (v < min) min = v;
+            if (v > max) max = v;
+          }
+          targetCtx.moveTo(12 + x, midY + min * halfHeight);
+          targetCtx.lineTo(12 + x, midY + max * halfHeight);
+        }
+        targetCtx.strokeStyle = 'rgba(37, 99, 235, 0.9)';
+        targetCtx.lineWidth = 1;
+        targetCtx.stroke();
+        targetCtx.restore();
+      }
+
+      function refreshLogList() {
+        el.logCountBadge.textContent = `${state.alertLog.length} 条`;
+        if (!state.alertLog.length) {
+          el.logList.innerHTML = '<div class="note">暂无事件。开始监测后，超过阈值的时刻会显示在这里。</div>';
+          return;
+        }
+
+        el.logList.innerHTML = state.alertLog
+          .slice()
+          .reverse()
+          .map((item) => {
+            const note = item.note ? `<div class="log-note">备注：${escapeHtml(item.note)}</div>` : '';
+            return `
+              <div class="log-item">
+                <div class="log-time">${item.time}</div>
+                <div>
+                  <div class="log-title">超过阈值 ${item.threshold} dB</div>
+                  ${note}
+                </div>
+                <div class="log-db">${round(item.db, 1)} dB</div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function addAlertEvent(db) {
+        const now = Date.now();
+        if (now - state.lastAlertAt < 1400) return;
+        state.lastAlertAt = now;
+
+        const event = {
+          db,
+          threshold: getThreshold(),
+          note: el.noteInput.value.trim(),
+          time: formatter.format(new Date(now)),
+          stamp: new Date(now).toISOString(),
+        };
+        state.alertLog.push(event);
+        if (state.alertLog.length > 80) state.alertLog.shift();
+        refreshLogList();
+
+        if (el.alertToggle.checked) {
+          el.meterCard.classList.add('active-alert');
+          if ('vibrate' in navigator) navigator.vibrate?.(80);
+          clearTimeout(addAlertEvent._timer);
+          addAlertEvent._timer = setTimeout(() => {
+            el.meterCard.classList.remove('active-alert');
+          }, 900);
+        }
+      }
+
+      function addSample(db, dbfs, peakDb, dominantFreq) {
+        const timeIso = new Date().toISOString();
+        const timeLabel = formatter.format(new Date());
+        const sample = {
+          stamp: timeIso,
+          time: timeLabel,
+          db: round(db, 2),
+          dbfs: round(dbfs, 2),
+          peakDb: round(peakDb, 2),
+          dominantFreq: Math.round(dominantFreq || 0),
+          note: el.noteInput.value.trim(),
+        };
+        state.fullLog.push(sample);
+        if (state.fullLog.length > 5000) state.fullLog.shift();
+
+        state.history.push(sample);
+        if (state.history.length > HISTORY_LIMIT) state.history.shift();
+
+        state.sum += db;
+        state.count += 1;
+        state.min = Math.min(state.min, db);
+        state.max = Math.max(state.max, peakDb, db);
+
+        const threshold = getThreshold();
+        if (db >= threshold) addAlertEvent(db);
+      }
+
+      function exportCsv() {
+        if (!state.fullLog.length) {
+          alert('当前没有可导出的记录。');
+          return;
+        }
+
+        const header = ['timestamp', 'time', 'estimated_db', 'raw_dbfs', 'peak_db', 'dominant_frequency_hz', 'note'];
+        const lines = [header.join(',')].concat(
+          state.fullLog.map((row) => [
+            row.stamp,
+            row.time,
+            row.db,
+            row.dbfs,
+            row.peakDb,
+            row.dominantFreq,
+            `"${String(row.note || '').replaceAll('"', '""')}"`,
+          ].join(','))
+        );
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `decibel-log-${new Date().toISOString().replaceAll(':', '-')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      async function copySummary() {
+        const text = el.summaryBox.textContent.trim();
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          const original = el.copySummaryBtn.textContent;
+          el.copySummaryBtn.textContent = '已复制';
+          setTimeout(() => {
+            el.copySummaryBtn.textContent = original;
+          }, 1200);
+        } catch (error) {
+          alert('复制失败，请手动复制。');
+        }
+      }
+
+      function resetData(options = { keepLogs: false }) {
+        state.history = [];
+        state.min = Infinity;
+        state.max = 0;
+        state.sum = 0;
+        state.count = 0;
+        state.peakIndicator = 0;
+        state.currentDb = 0;
+        state.currentDbfs = MIN_DBFS;
+        state.dominantFreq = 0;
+        if (!options.keepLogs) state.fullLog = [];
+        drawHistory();
+        updateMainMeter(0);
+        updateStats();
+      }
+
+      function stopStreamTracks() {
+        if (state.stream) {
+          state.stream.getTracks().forEach((track) => track.stop());
+          state.stream = null;
+        }
+      }
+
+      async function stopMonitoring() {
+        state.isRunning = false;
+        state.isPaused = false;
+        cancelAnimationFrame(state.rafId);
+        state.rafId = null;
+        stopStreamTracks();
+        if (state.audioContext && state.audioContext.state !== 'closed') {
+          await state.audioContext.close().catch(() => {});
+        }
+        state.audioContext = null;
+        state.analyser = null;
+        state.source = null;
+        state.timeData = null;
+        state.freqData = null;
+
+        el.runStatus.textContent = '已停止';
+        el.modeBadge.textContent = '待机';
+        el.meterCard.classList.remove('active-alert');
+        el.noiseBadge.textContent = '静默';
+        el.levelText.textContent = '监测已停止';
+        el.adviceText.textContent = '可重新开始测试，或在下方分析本地音频文件。';
+        el.startBtn.disabled = false;
+        el.stopBtn.disabled = true;
+        el.pauseBtn.disabled = true;
+        el.pauseBtn.textContent = '暂停记录';
+      }
+
+      function analyzeFrame() {
+        if (!state.isRunning || !state.analyser || !state.audioContext) return;
+
+        state.analyser.getFloatTimeDomainData(state.timeData);
+        state.analyser.getByteFrequencyData(state.freqData);
+
+        let rmsSum = 0;
+        let peakAbs = 0;
+        for (let i = 0; i < state.timeData.length; i += 1) {
+          const sample = state.timeData[i];
+          rmsSum += sample * sample;
+          const abs = Math.abs(sample);
+          if (abs > peakAbs) peakAbs = abs;
+        }
+        const rms = Math.sqrt(rmsSum / state.timeData.length);
+        const dbfs = safeDbfsFromRms(rms);
+        const estimatedDb = toEstimatedDb(dbfs);
+        const peakDb = toEstimatedDb(safeDbfsFromRms(peakAbs));
+
+        let dominantIndex = 0;
+        let dominantValue = -1;
+        for (let i = 2; i < state.freqData.length; i += 1) {
+          const value = state.freqData[i];
+          if (value > dominantValue) {
+            dominantValue = value;
+            dominantIndex = i;
+          }
+        }
+        const dominantFreq = state.audioContext.sampleRate * dominantIndex / state.analyser.fftSize;
+
+        state.currentDb = estimatedDb;
+        state.currentDbfs = dbfs;
+        state.dominantFreq = dominantFreq;
+
+        updateMainMeter(estimatedDb);
+        updateStats();
+        drawSpectrum();
+
+        if (!state.isPaused && performance.now() - state.lastSampleAt >= SAMPLE_INTERVAL_MS) {
+          state.lastSampleAt = performance.now();
+          addSample(estimatedDb, dbfs, peakDb, dominantFreq);
+          updateStats();
+          drawHistory();
+        }
+
+        state.rafId = requestAnimationFrame(analyzeFrame);
+      }
+
+      async function startMonitoring() {
+        if (state.isRunning) return;
+        if (!navigator.mediaDevices?.getUserMedia) {
+          alert('当前浏览器不支持麦克风采集。请改用较新的浏览器，或使用下方的音频文件分析模式。');
+          return;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            },
+            video: false,
+          });
+
+          state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          state.stream = stream;
+          state.source = state.audioContext.createMediaStreamSource(stream);
+          state.analyser = state.audioContext.createAnalyser();
+          state.analyser.fftSize = 4096;
+          state.analyser.smoothingTimeConstant = Number(el.smoothingSelect.value || 0.75);
+          state.source.connect(state.analyser);
+
+          state.timeData = new Float32Array(state.analyser.fftSize);
+          state.freqData = new Uint8Array(state.analyser.frequencyBinCount);
+          state.isRunning = true;
+          state.isPaused = false;
+          state.lastSampleAt = 0;
+          state.peakIndicator = 0;
+
+          el.runStatus.textContent = '监测中';
+          el.modeBadge.textContent = '监测中';
+          el.startBtn.disabled = true;
+          el.stopBtn.disabled = false;
+          el.pauseBtn.disabled = false;
+          el.pauseBtn.textContent = '暂停记录';
+
+          analyzeFrame();
+        } catch (error) {
+          console.error(error);
+          const message = error?.name === 'NotAllowedError'
+            ? '你拒绝了麦克风权限。请在浏览器地址栏重新允许，或使用本地音频文件分析模式。'
+            : '启动麦克风失败。请检查浏览器权限、安全环境或设备是否占用麦克风。';
+          alert(message);
+        }
+      }
+
+      async function analyzeAudioFile() {
+        const file = el.audioFile.files?.[0];
+        if (!file) {
+          alert('请先选择一个音频文件。');
+          return;
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const tempContext = new AudioCtx();
+        try {
+          const audioBuffer = await tempContext.decodeAudioData(arrayBuffer.slice(0));
+          const channels = audioBuffer.numberOfChannels;
+          const length = audioBuffer.length;
+          const sampleRate = audioBuffer.sampleRate;
+          const mono = new Float32Array(length);
+
+          for (let ch = 0; ch < channels; ch += 1) {
+            const data = audioBuffer.getChannelData(ch);
+            for (let i = 0; i < length; i += 1) {
+              mono[i] += data[i] / channels;
+            }
+          }
+
+          let squareSum = 0;
+          let peak = 0;
+          for (let i = 0; i < mono.length; i += 1) {
+            const v = mono[i];
+            squareSum += v * v;
+            const abs = Math.abs(v);
+            if (abs > peak) peak = abs;
+          }
+          const rms = Math.sqrt(squareSum / mono.length);
+          const avgDbfs = safeDbfsFromRms(rms);
+          const peakDbfs = safeDbfsFromRms(peak);
+          const avgDb = toEstimatedDb(avgDbfs);
+          const peakDb = toEstimatedDb(peakDbfs);
+
+          el.fileDuration.textContent = `${round(audioBuffer.duration, 2)} s`;
+          el.fileAvg.textContent = formatDb(avgDb);
+          el.filePeak.textContent = formatDb(peakDb);
+          el.fileSampleInfo.textContent = `${channels} ch · ${Math.round(sampleRate / 1000)} kHz`;
+          el.fileMetaLine.textContent = `${file.name} ｜ ${round(audioBuffer.duration, 2)} 秒 ｜ ${channels} 声道`;
+          drawFileWaveform(mono);
+
+          state.fileResult = {
+            fileName: file.name,
+            duration: round(audioBuffer.duration, 2),
+            avgDb: round(avgDb, 2),
+            peakDb: round(peakDb, 2),
+            avgDbfs: round(avgDbfs, 2),
+            peakDbfs: round(peakDbfs, 2),
+            channels,
+            sampleRate,
+            samples: mono,
+          };
+          el.exportSummaryBtn.disabled = false;
+        } catch (error) {
+          console.error(error);
+          alert('音频文件解析失败，请尝试 MP3、WAV、M4A 等常见格式。');
+        } finally {
+          tempContext.close().catch(() => {});
+        }
+      }
+
+      function exportFileSummary() {
+        if (!state.fileResult) {
+          alert('还没有文件分析结果。');
+          return;
+        }
+        const text = [
+          '多功能分贝测试器 - 文件分析摘要',
+          `文件名：${state.fileResult.fileName}`,
+          `时长：${state.fileResult.duration} 秒`,
+          `平均响度：${state.fileResult.avgDb} dB`,
+          `峰值响度：${state.fileResult.peakDb} dB`,
+          `原始平均：${state.fileResult.avgDbfs} dBFS`,
+          `原始峰值：${state.fileResult.peakDbfs} dBFS`,
+          `声道：${state.fileResult.channels}`,
+          `采样率：${state.fileResult.sampleRate} Hz`,
+          `导出时间：${new Date().toLocaleString('zh-CN')}`,
+        ].join('\n');
+
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audio-analysis-${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function bindEvents() {
+        el.startBtn.addEventListener('click', startMonitoring);
+        el.stopBtn.addEventListener('click', stopMonitoring);
+        el.pauseBtn.addEventListener('click', () => {
+          if (!state.isRunning) return;
+          state.isPaused = !state.isPaused;
+          el.pauseBtn.textContent = state.isPaused ? '继续记录' : '暂停记录';
+          el.runStatus.textContent = state.isPaused ? '运行中（已暂停记录）' : '监测中';
+        });
+        el.resetBtn.addEventListener('click', () => resetData({ keepLogs: false }));
+        el.thresholdRange.addEventListener('input', () => {
+          el.thresholdLabel.textContent = `${el.thresholdRange.value} dB`;
+          drawHistory();
+        });
+        el.offsetInput.addEventListener('input', () => {
+          updateMainMeter(toEstimatedDb(state.currentDbfs));
+          updateStats();
+        });
+        el.calibrateBtn.addEventListener('click', () => {
+          if (!Number.isFinite(state.currentDbfs) || state.currentDbfs <= MIN_DBFS) {
+            alert('请先开始测试并产生有效声音，再进行校准。');
+            return;
+          }
+          const target = Number(el.referenceInput.value || 60);
+          const newOffset = round(target - state.currentDbfs, 1);
+          el.offsetInput.value = String(newOffset);
+          updateMainMeter(toEstimatedDb(state.currentDbfs));
+          updateStats();
+        });
+        el.offsetResetBtn.addEventListener('click', () => {
+          el.offsetInput.value = String(DEFAULT_OFFSET);
+          updateMainMeter(toEstimatedDb(state.currentDbfs));
+          updateStats();
+        });
+        el.smoothingSelect.addEventListener('change', () => {
+          if (state.analyser) state.analyser.smoothingTimeConstant = Number(el.smoothingSelect.value || 0.75);
+        });
+        el.exportBtn.addEventListener('click', exportCsv);
+        el.clearLogsBtn.addEventListener('click', () => {
+          state.alertLog = [];
+          refreshLogList();
+        });
+        el.copySummaryBtn.addEventListener('click', copySummary);
+        el.audioFile.addEventListener('change', () => {
+          const file = el.audioFile.files?.[0];
+          el.analyzeFileBtn.disabled = !file;
+          el.exportSummaryBtn.disabled = true;
+          state.fileResult = null;
+          if (state.previewUrl) {
+            URL.revokeObjectURL(state.previewUrl);
+            state.previewUrl = null;
+          }
+          if (file) {
+            const url = URL.createObjectURL(file);
+            state.previewUrl = url;
+            el.audioPreview.src = url;
+            el.audioPreview.style.display = 'block';
+          } else {
+            el.audioPreview.removeAttribute('src');
+            el.audioPreview.style.display = 'none';
+            drawFileWaveform(null);
+          }
+        });
+        el.analyzeFileBtn.addEventListener('click', analyzeAudioFile);
+        el.exportSummaryBtn.addEventListener('click', exportFileSummary);
+
+        window.addEventListener('resize', resizeAllCanvases);
+        window.addEventListener('beforeunload', () => {
+          stopStreamTracks();
+          if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+        });
+      }
+
+      function setup() {
+        initContextLabel();
+        el.thresholdLabel.textContent = `${el.thresholdRange.value} dB`;
+        resizeAllCanvases();
+        refreshLogList();
+        updateMainMeter(0);
+        updateStats();
+        bindEvents();
+      }
+
+      setup();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>质因数分解器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <meta name="description" content="质因数分解器：支持高精度 BigInt 与 1e1000 输入，使用 Pollard Rho + Miller-Rabin 在浏览器端分解。" />
+  <style>
+    :root{
+      --bg:#070a12;
+      --panel:#0b1020;
+      --panel2:#0b1226;
+      --text:#e5e7eb;
+      --muted:#9aa6bf;
+      --border:#1f2a44;
+      --accent:#22c55e;
+      --accent2:#16a34a;
+      --danger:#fb7185;
+      --warn:#fbbf24;
+      --shadow: 0 18px 40px rgba(0,0,0,.45);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC","Microsoft YaHei", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 10% 10%, rgba(34,197,94,.16), transparent 55%),
+        radial-gradient(900px 520px at 90% 0%, rgba(251,191,36,.10), transparent 58%),
+        radial-gradient(900px 520px at 55% 100%, rgba(59,130,246,.10), transparent 62%),
+        linear-gradient(180deg, #050714, var(--bg));
+      padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    }
+
+    .page{
+      max-width: 980px;
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .top{
+      padding: 6px 2px;
+    }
+    h1{
+      margin:0 0 8px 0;
+      font-size: clamp(22px, 4.4vw, 34px);
+      letter-spacing:.6px;
+    }
+    .desc{
+      margin:0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(11,16,32,.92), rgba(11,18,38,.92));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .panelHead{
+      padding: 14px 14px 10px 14px;
+      border-bottom: 1px solid rgba(31,42,68,.8);
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .formRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
+
+    input{
+      flex: 1 1 360px;
+      min-width: 220px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(31,42,68,.95);
+      background: rgba(2,6,23,.65);
+      color: var(--text);
+      font-size: 16px; /* iOS 防止放大 */
+      outline: none;
+      font-family: var(--mono);
+    }
+    input:focus{
+      border-color: rgba(34,197,94,.55);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+    }
+
+    button{
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(34,197,94,.35);
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      color: #06210f;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-width: 140px;
+      box-shadow: 0 10px 18px rgba(34,197,94,.18);
+    }
+    button:active{ transform: translateY(1px); }
+    button:disabled{
+      opacity: .6;
+      cursor: not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
+    .panelBody{
+      padding: 14px;
+      display:grid;
+      gap: 12px;
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(31,42,68,.95);
+      background: rgba(2,6,23,.35);
+      color: var(--muted);
+      line-height: 1.55;
+      min-height: 48px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .pill.ok{ color: var(--accent); border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+    .pill.bad{ color: var(--danger); border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.08); }
+    .pill.warn{ color: var(--warn); border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.08); }
+
+    .spinner{
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(148,163,184,.25);
+      border-top-color: rgba(34,197,94,.95);
+      animation: spin 0.9s linear infinite;
+      flex: 0 0 auto;
+    }
+    @keyframes spin{ to { transform: rotate(360deg);} }
+
+    .result{
+      border-radius: 16px;
+      border: 1px solid rgba(31,42,68,.95);
+      background: rgba(2,6,23,.55);
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .expr{
+      font-family: var(--mono);
+      font-size: 15px;
+      line-height: 1.7;
+      word-break: break-word;
+      color: var(--text);
+    }
+
+    .list{
+      margin: 10px 0 0 0;
+      padding: 0;
+      list-style: none;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tag{
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(31,42,68,.95);
+      background: rgba(15,23,42,.55);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .tag b{
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .foot{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      padding: 0 2px;
+    }
+
+    @media (max-width: 560px){
+      button{ width:100%; }
+      input{ width:100%; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <h1>质因数分解器</h1>
+      <p class="desc">输入一个数字（支持高精度，最多可达 1e1000），点击分解按钮进行质因数分解。</p>
+    </header>
+
+    <section class="panel" aria-label="质因数分解器">
+      <div class="panelHead">
+        <div class="formRow">
+          <input id="nInput" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+                 placeholder="例如：360 或 1e1000" />
+          <button id="factorBtn" type="button">分解质因数</button>
+        </div>
+      </div>
+
+      <div class="panelBody">
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <div class="result" aria-label="分解结果">
+          <div id="expr" class="expr"></div>
+          <ul id="list" class="list"></ul>
+        </div>
+
+        <div class="foot">
+          说明：分解在浏览器端完成（Worker 中运行）。超大且“难分解”的整数可能需要很久；像 <code style="font-family:var(--mono)">1e1000</code> 这类结构简单的数会很快。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      "use strict";
+
+      const $ = (s) => document.querySelector(s);
+      const input = $("#nInput");
+      const btn = $("#factorBtn");
+      const status = $("#status");
+      const expr = $("#expr");
+      const list = $("#list");
+
+      function setStatus({state, text, loading=false}){
+        status.innerHTML = "";
+
+        if(loading){
+          const sp = document.createElement("div");
+          sp.className = "spinner";
+          status.appendChild(sp);
+        }
+
+        if(state){
+          const pill = document.createElement("span");
+          pill.className = "pill " + state;
+          pill.textContent =
+            state === "ok" ? "完成" :
+            state === "bad" ? "错误" : "处理中";
+          status.appendChild(pill);
+        }
+
+        const msg = document.createElement("div");
+        msg.style.flex = "1 1 auto";
+        msg.textContent = text || "";
+        status.appendChild(msg);
+      }
+
+      function clearResult(){
+        expr.textContent = "";
+        list.innerHTML = "";
+      }
+
+      // 解析：支持纯整数与 1e1000（仅整数系数）
+      function parseHugeInt(raw){
+        const s = String(raw ?? "").trim();
+        if(!s) throw new Error("请输入一个大于 1 的整数。");
+
+        if(/^[+]?\d+$/.test(s)){
+          const n = BigInt(s);
+          if(n <= 1n) throw new Error("请输入一个大于 1 的整数。");
+          return n;
+        }
+
+        const m = s.match(/^([+]?\d+)[eE]([+]?\d+)$/);
+        if(m){
+          const coeff = BigInt(m[1]);
+          const exp = BigInt(m[2]);
+
+          if(coeff <= 0n) throw new Error("请输入一个大于 1 的整数。");
+          if(exp < 0n) throw new Error("不支持负指数。");
+          if(exp > 20000n) throw new Error("指数过大（> 20000），为避免卡死已拒绝。");
+
+          const n = coeff * (10n ** exp);
+          if(n <= 1n) throw new Error("请输入一个大于 1 的整数。");
+          return n;
+        }
+
+        throw new Error("格式错误：请输入整数，支持如 1e1000 的科学计数法（仅整数系数）。");
+      }
+
+      // 渲染：把 [ [pStr, exp], ... ] 渲染成表达式和标签
+      function renderFactorization(nOriginalStr, factors){
+        // factors: Array<[string, number]>
+        // 表达式
+        const parts = factors.map(([p, e]) => {
+          if(e === 1) return p;
+          return p + "<sup>" + e + "</sup>";
+        });
+        expr.innerHTML = nOriginalStr + " = " + (parts.length ? parts.join(" × ") : "(无法分解)");
+
+        // 标签列表
+        list.innerHTML = "";
+        for(const [p, e] of factors){
+          const li = document.createElement("li");
+          li.className = "tag";
+          li.innerHTML = "<b>" + p + "</b>" + (e === 1 ? "" : (" ^ " + e));
+          list.appendChild(li);
+        }
+      }
+
+      // Worker（Pollard Rho + Miller-Rabin）
+      let worker = null;
+      let msgId = 0;
+
+      function ensureWorker(){
+        if(worker) return worker;
+
+        const workerCode =
+`(() => {
+  'use strict';
+
+  // 小素数试除上限：足够提升速度，又不至于太重
+  const TRIAL_LIMIT = 10000;
+
+  function sieve(limit){
+    const isP = new Uint8Array(limit + 1);
+    isP.fill(1, 2);
+    const primes = [];
+    for(let i=2;i<=limit;i++){
+      if(isP[i]){
+        primes.push(BigInt(i));
+        if(i*i <= limit){
+          for(let j=i*i; j<=limit; j+=i) isP[j] = 0;
+        }
+      }
+    }
+    return primes;
+  }
+  const TRIAL_PRIMES = sieve(TRIAL_LIMIT);
+
+  function abs(n){ return n < 0n ? -n : n; }
+
+  function gcd(a,b){
+    while(b !== 0n){
+      const t = a % b;
+      a = b;
+      b = t;
+    }
+    return abs(a);
+  }
+
+  function modPow(base, exp, mod){
+    let result = 1n;
+    let b = base % mod;
+    let e = exp;
+    while(e > 0n){
+      if(e & 1n) result = (result * b) % mod;
+      e >>= 1n;
+      b = (b * b) % mod;
+    }
+    return result;
+  }
+
+  function randBelow(max){
+    if(max <= 0n) return 0n;
+
+    const bitLen = max.toString(2).length;
+    const byteLen = Math.ceil(bitLen / 8);
+    const excess = byteLen * 8 - bitLen;
+    const bytes = new Uint8Array(byteLen);
+
+    const fillRandom = () => {
+      const c = (self.crypto || crypto);
+      if(c && c.getRandomValues){
+        c.getRandomValues(bytes);
+      }else{
+        for(let i=0;i<byteLen;i++) bytes[i] = (Math.random() * 256) | 0;
+      }
+      if(excess) bytes[0] &= (0xff >> excess);
+    };
+
+    while(true){
+      fillRandom();
+      let x = 0n;
+      for(const b of bytes) x = (x << 8n) + BigInt(b);
+      if(x < max) return x;
+    }
+  }
+
+  function isProbablePrime(n){
+    if(n < 2n) return false;
+
+    const small = [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n];
+    for(const p of small){
+      if(n === p) return true;
+      if(n % p === 0n) return false;
+    }
+
+    let d = n - 1n;
+    let s = 0;
+    while((d & 1n) === 0n){
+      d >>= 1n;
+      s++;
+    }
+
+    const witness = (a) => {
+      let x = modPow(a, d, n);
+      if(x === 1n || x === (n - 1n)) return false;
+      for(let r=1; r<s; r++){
+        x = (x * x) % n;
+        if(x === (n - 1n)) return false;
+      }
+      return true;
+    };
+
+    if(n < 18446744073709551616n){
+      const bases = [2n, 325n, 9375n, 28178n, 450775n, 9780504n, 1795265022n];
+      for(const a0 of bases){
+        const a = (a0 % (n - 3n)) + 2n;
+        if(witness(a)) return false;
+      }
+      return true;
+    }
+
+    const rounds = 16;
+    for(let i=0;i<rounds;i++){
+      const a = randBelow(n - 3n) + 2n;
+      if(witness(a)) return false;
+    }
+    return true;
+  }
+
+  function pollardRho(n){
+    if(n % 2n === 0n) return 2n;
+    if(n % 3n === 0n) return 3n;
+
+    while(true){
+      const c = randBelow(n - 1n) + 1n;
+      let x = randBelow(n - 2n) + 2n;
+      let y = x;
+      let d = 1n;
+
+      const f = (v) => (v * v + c) % n;
+
+      // 迭代上限：避免极少数情况卡住；失败就换参数重试
+      for(let iter=0; iter<250000; iter++){
+        x = f(x);
+        y = f(f(y));
+        d = gcd(abs(x - y), n);
+
+        if(d === 1n) continue;
+        if(d === n) break;
+        return d;
+      }
+    }
+  }
+
+  function factorizeToCounts(n){
+    const counts = new Map(); // BigInt -> number
+    const add = (p) => counts.set(p, (counts.get(p) || 0) + 1);
+
+    // 小素数试除
+    for(const p of TRIAL_PRIMES){
+      while(n % p === 0n){
+        add(p);
+        n /= p;
+      }
+      // 试除到一定程度就行（p 是小数，这里不强制 p*p>n 的 break）
+    }
+
+    // 递归分解
+    const factorRec = (m) => {
+      if(m === 1n) return;
+      if(isProbablePrime(m)){
+        add(m);
+        return;
+      }
+      const d = pollardRho(m);
+      factorRec(d);
+      factorRec(m / d);
+    };
+
+    if(n > 1n) factorRec(n);
+
+    // 输出排序后的数组
+    const arr = Array.from(counts.entries())
+      .sort((a,b) => (a[0] < b[0] ? -1 : 1))
+      .map(([p,e]) => [p.toString(), e]);
+
+    return arr;
+  }
+
+  self.onmessage = (ev) => {
+    const data = ev.data || {};
+    const id = data.id;
+    try{
+      const n = BigInt(data.nStr);
+      if(n <= 1n){
+        self.postMessage({ id, ok: false, error: '请输入一个大于 1 的整数。' });
+        return;
+      }
+      const factors = factorizeToCounts(n);
+      self.postMessage({ id, ok: true, factors });
+    }catch(err){
+      self.postMessage({ id, ok: false, error: (err && err.message) ? err.message : String(err) });
+    }
+  };
+})();`;
+
+        worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:"text/javascript"})));
+        return worker;
+      }
+
+      function runFactor(){
+        clearResult();
+
+        let n;
+        try{
+          n = parseHugeInt(input.value);
+        }catch(e){
+          setStatus({state:"bad", text: e.message || String(e)});
+          return;
+        }
+
+        btn.disabled = true;
+        setStatus({state:"warn", text:"正在分解…（大数可能较慢）", loading:true});
+
+        const w = ensureWorker();
+        const id = ++msgId;
+
+        const nStr = n.toString();
+
+        const onMsg = (ev) => {
+          const msg = ev.data || {};
+          if(msg.id !== id) return;
+
+          w.removeEventListener("message", onMsg);
+          btn.disabled = false;
+
+          if(!msg.ok){
+            setStatus({state:"bad", text: msg.error || "发生错误"});
+            return;
+          }
+
+          const factors = msg.factors || [];
+          setStatus({state:"ok", text:"分解完成。"});
+          renderFactorization(nStr, factors);
+        };
+
+        w.addEventListener("message", onMsg);
+        w.postMessage({ id, nStr });
+      }
+
+      btn.addEventListener("click", runFactor);
+      input.addEventListener("keydown", (e) => {
+        if(e.key === "Enter") runFactor();
+      });
+
+      setStatus({state:"warn", text:"请输入一个大于 1 的整数后点击“分解质因数”。"});
+      clearResult();
+    })();
+  </script>
+</body>
+</html>

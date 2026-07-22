@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文本查重器</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --card: rgba(255, 255, 255, 0.86);
+      --card-solid: #ffffff;
+      --text: #182236;
+      --muted: #65738a;
+      --line: rgba(75, 111, 156, 0.18);
+      --primary: #1e88e5;
+      --primary-dark: #1267b6;
+      --primary-soft: #e4f2ff;
+      --cyan: #17b7d9;
+      --green: #1fa874;
+      --yellow: #f5b83b;
+      --orange: #f17842;
+      --red: #e94d5f;
+      --purple: #7b61ff;
+      --shadow: 0 18px 60px rgba(31, 97, 156, 0.15);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 5%, rgba(133, 218, 255, 0.42), transparent 30%),
+        radial-gradient(circle at 92% 12%, rgba(255, 224, 139, 0.48), transparent 27%),
+        radial-gradient(circle at 55% 85%, rgba(211, 198, 255, 0.38), transparent 32%),
+        linear-gradient(135deg, #f8fcff 0%, #eef8ff 45%, #fff8ea 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -1;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      filter: blur(4px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    body::before {
+      left: -85px;
+      top: 160px;
+      background: linear-gradient(135deg, rgba(30, 136, 229, 0.16), rgba(23, 183, 217, 0.12));
+    }
+
+    body::after {
+      right: -80px;
+      bottom: 80px;
+      background: linear-gradient(135deg, rgba(245, 184, 59, 0.18), rgba(123, 97, 255, 0.12));
+    }
+
+    .app {
+      width: min(1240px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-main,
+    .hero-side,
+    .panel {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: var(--radius-lg);
+    }
+
+    .hero-main {
+      padding: 30px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-main::after {
+      content: "查重";
+      position: absolute;
+      right: -8px;
+      bottom: -30px;
+      font-size: clamp(72px, 10vw, 138px);
+      font-weight: 900;
+      letter-spacing: -0.1em;
+      color: rgba(30, 136, 229, 0.065);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(30, 136, 229, 0.1);
+      color: var(--primary-dark);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .eyebrow .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--primary));
+      box-shadow: 0 0 0 5px rgba(30, 136, 229, 0.11);
+    }
+
+    h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(30px, 6vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -0.06em;
+    }
+
+    .hero-text {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .hero-side {
+      padding: 22px;
+      display: grid;
+      gap: 12px;
+      align-content: center;
+    }
+
+    .feature-pill {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid var(--line);
+    }
+
+    .feature-icon {
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(30, 136, 229, 0.16), rgba(23, 183, 217, 0.13));
+      font-size: 18px;
+    }
+
+    .feature-pill strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .feature-pill span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .panel {
+      padding: 22px;
+      margin-top: 20px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title h2,
+    .panel-title h3 {
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .toolbar,
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 800;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(30, 136, 229, 0.16);
+      box-shadow: 0 8px 18px rgba(32, 105, 170, 0.08);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 13px 28px rgba(32, 105, 170, 0.13);
+      background: #fff;
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-color: transparent;
+      min-width: 150px;
+    }
+
+    .btn-primary:hover { background: linear-gradient(135deg, #157bd1, #12a8c8); }
+
+    .btn-danger {
+      color: #b8293b;
+      border-color: rgba(233, 77, 95, 0.18);
+      background: rgba(255, 247, 249, 0.85);
+    }
+
+    .text-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .text-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    .text-card header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(75, 111, 156, 0.12);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(235, 248, 255, 0.72));
+    }
+
+    .text-card label {
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 330px;
+      resize: vertical;
+      border: 0;
+      outline: none;
+      padding: 16px;
+      font: 15px/1.76 var(--font);
+      color: var(--text);
+      background: transparent;
+    }
+
+    textarea::placeholder { color: #9aa8ba; }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+      margin-top: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .select,
+    .input-like {
+      width: 100%;
+      border: 1px solid rgba(30, 136, 229, 0.16);
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--text);
+      outline: 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      min-height: 46px;
+    }
+
+    input[type="range"] {
+      accent-color: var(--primary);
+      width: 100%;
+    }
+
+    .hint {
+      margin: 12px 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .results {
+      display: grid;
+      gap: 20px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .score-card {
+      display: grid;
+      place-items: center;
+      padding: 26px;
+      text-align: center;
+      background: linear-gradient(160deg, rgba(255,255,255,0.9), rgba(239,248,255,0.8));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      min-height: 360px;
+    }
+
+    .score-orb {
+      --score-angle: 0deg;
+      --score-color: var(--primary);
+      width: min(220px, 70vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, #fff 0 58%, transparent 59%),
+        conic-gradient(var(--score-color) var(--score-angle), rgba(30, 136, 229, 0.11) 0);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8), 0 20px 46px rgba(30, 136, 229, 0.14);
+      transition: background 0.35s ease;
+      position: relative;
+    }
+
+    .score-orb::before {
+      content: "";
+      position: absolute;
+      inset: 15px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px rgba(75, 111, 156, 0.1);
+    }
+
+    .score-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .score-value {
+      display: block;
+      font-size: clamp(42px, 9vw, 62px);
+      font-weight: 950;
+      letter-spacing: -0.08em;
+    }
+
+    .score-label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 900;
+      background: rgba(30, 136, 229, 0.1);
+      color: var(--primary-dark);
+    }
+
+    .conclusion {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+
+    .metric-area {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--line);
+      min-height: 128px;
+    }
+
+    .metric-card .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .metric-card strong {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .metric-card .metric-num {
+      font-size: 24px;
+      font-weight: 950;
+      letter-spacing: -0.06em;
+    }
+
+    .metric-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .bar {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(30, 136, 229, 0.1);
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--cyan));
+      transition: width 0.6s ease;
+    }
+
+    .chart-card {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--line);
+      min-height: 214px;
+    }
+
+    #radarCanvas {
+      width: 100%;
+      max-width: 300px;
+      height: 230px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .advice-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .advice-list li {
+      padding: 12px 13px;
+      border-radius: 16px;
+      background: rgba(245, 251, 255, 0.76);
+      border: 1px solid rgba(30, 136, 229, 0.12);
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+
+    .stat-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .stat-card strong {
+      display: block;
+      font-size: 22px;
+      letter-spacing: -0.04em;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid var(--line);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .chip small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .match-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .match-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.74);
+      overflow: hidden;
+    }
+
+    .match-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 15px;
+      border-bottom: 1px solid rgba(75, 111, 156, 0.12);
+      background: linear-gradient(135deg, rgba(235, 248, 255, 0.72), rgba(255, 255, 255, 0.72));
+    }
+
+    .match-head strong { font-size: 13px; }
+
+    .match-score {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-weight: 950;
+      background: rgba(30, 136, 229, 0.1);
+      color: var(--primary-dark);
+      font-size: 13px;
+    }
+
+    .match-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .quote-box {
+      margin: 0;
+      padding: 12px;
+      min-height: 88px;
+      border-radius: 16px;
+      background: rgba(248, 252, 255, 0.86);
+      border: 1px solid rgba(30, 136, 229, 0.1);
+      color: #334057;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .quote-box b {
+      display: block;
+      color: var(--primary-dark);
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .highlight-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .highlight-box {
+      min-height: 240px;
+      max-height: 540px;
+      overflow: auto;
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+      line-height: 1.9;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+    }
+
+    .highlight-box h4 {
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      font-size: 14px;
+    }
+
+    .sentence {
+      border-radius: 7px;
+      padding: 1px 3px;
+      transition: background 0.2s ease;
+    }
+
+    .hit-low { background: rgba(30, 136, 229, 0.14); }
+    .hit-mid { background: rgba(245, 184, 59, 0.28); }
+    .hit-high { background: rgba(241, 120, 66, 0.32); }
+    .hit-strong { background: rgba(233, 77, 95, 0.30); box-shadow: inset 0 -2px 0 rgba(233, 77, 95, 0.26); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .empty-state {
+      padding: 22px;
+      border: 1px dashed rgba(30, 136, 229, 0.28);
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 20px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(233, 77, 95, 0.18);
+      color: #a82335;
+      background: rgba(255, 246, 248, 0.88);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .notice.show { display: block; }
+
+    .footer-note {
+      margin-top: 20px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1080px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .score-card { min-height: auto; }
+      .chart-card { grid-template-columns: 1fr; }
+      #radarCanvas { height: 260px; }
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .text-grid,
+      .setting-row,
+      .highlight-grid,
+      .match-body {
+        grid-template-columns: 1fr;
+      }
+
+      .setting-row { align-items: stretch; }
+      .btn-primary { width: 100%; }
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      textarea { min-height: 260px; }
+    }
+
+    @media (max-width: 560px) {
+      .app { width: min(100% - 20px, 1240px); padding-top: 16px; }
+      .hero-main,
+      .hero-side,
+      .panel { border-radius: 22px; padding: 16px; }
+      .metric-grid,
+      .stats-grid { grid-template-columns: 1fr; }
+      .toolbar .btn { flex: 1 1 calc(50% - 10px); }
+      .panel-title { align-items: flex-start; }
+      .score-orb { width: min(215px, 76vw); }
+      .score-card { padding: 18px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero" aria-label="页面说明">
+      <div class="hero-main">
+        <span class="eyebrow"><span class="dot"></span> 本地运行 · 双文本查重分析</span>
+        <h1>文本查重器</h1>
+        <p class="hero-text">
+          输入两组文本后，程序会综合词项余弦、加权 Jaccard、字符 N-gram、句段匹配、最长公共子序列与 SimHash 指纹进行判定，输出查重风险、相似句段、高亮对比和修改建议。全程在浏览器本地计算，无需上传服务器。
+        </p>
+      </div>
+      <aside class="hero-side" aria-label="功能特点">
+        <div class="feature-pill">
+          <span class="feature-icon">🧠</span>
+          <div><strong>多算法融合</strong><span>兼顾中文改写、局部复制、整体相似和顺序重合。</span></div>
+        </div>
+        <div class="feature-pill">
+          <span class="feature-icon">✨</span>
+          <div><strong>可视化结果</strong><span>总分仪表、维度雷达、句段排行、关键词重合一屏查看。</span></div>
+        </div>
+        <div class="feature-pill">
+          <span class="feature-icon">📱</span>
+          <div><strong>全端适配</strong><span>手机、平板、电脑自动响应式排版，亮色调界面。</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel" aria-label="输入文本">
+      <div class="panel-title">
+        <div>
+          <h2>输入待比对文本</h2>
+          <p>建议每组文本不少于 80 个中文字符；文本越短，结果越容易受常用词影响。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" type="button" id="sampleBtn">载入示例</button>
+          <button class="btn" type="button" id="swapBtn">交换文本</button>
+          <button class="btn btn-danger" type="button" id="clearBtn">清空</button>
+        </div>
+      </div>
+
+      <div class="text-grid">
+        <section class="text-card">
+          <header>
+            <label for="textA">文本 A</label>
+            <span class="counter" id="countA">0 字符</span>
+          </header>
+          <textarea id="textA" placeholder="请粘贴第一组文本，例如论文段落、文章片段、报告内容……"></textarea>
+        </section>
+        <section class="text-card">
+          <header>
+            <label for="textB">文本 B</label>
+            <span class="counter" id="countB">0 字符</span>
+          </header>
+          <textarea id="textB" placeholder="请粘贴第二组文本，用于与文本 A 进行查重对比……"></textarea>
+        </section>
+      </div>
+
+      <div class="setting-row">
+        <div class="field">
+          <label for="sensitivity">判定模式</label>
+          <select class="select" id="sensitivity">
+            <option value="standard" selected>标准：推荐</option>
+            <option value="strict">严格：更容易提示风险</option>
+            <option value="loose">宽松：降低误报</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="minSentenceScore">句段展示阈值 <span id="thresholdText">35%</span></label>
+          <div class="input-like range-wrap">
+            <input id="minSentenceScore" type="range" min="20" max="80" step="5" value="35" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="maxMatches">相似句段数量</label>
+          <select class="select" id="maxMatches">
+            <option value="10">显示前 10 条</option>
+            <option value="20" selected>显示前 20 条</option>
+            <option value="40">显示前 40 条</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" type="button" id="analyzeBtn">开始查重</button>
+      </div>
+      <div class="notice" id="notice"></div>
+      <p class="hint">说明：本页面不依赖外部网络库，优先使用浏览器原生中文分词能力，旧浏览器会自动降级为中文 N-gram 与英文词切分，因此在国内网络环境下打开更稳定。</p>
+    </section>
+
+    <section class="results" id="results" hidden>
+      <section class="panel">
+        <div class="panel-title">
+          <div>
+            <h2>综合判定</h2>
+            <p id="runInfo">已完成本地查重分析。</p>
+          </div>
+          <div class="toolbar">
+            <button class="btn" type="button" id="exportBtn">导出报告 TXT</button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="score-card">
+            <div>
+              <div class="score-orb" id="scoreOrb">
+                <div class="score-inner">
+                  <span class="score-value" id="scoreValue">0%</span>
+                  <span class="score-label">查重风险</span>
+                </div>
+              </div>
+              <div class="risk-badge" id="riskBadge">等待分析</div>
+              <p class="conclusion" id="conclusionText"></p>
+            </div>
+          </div>
+          <div class="metric-area">
+            <div class="metric-grid" id="metricGrid"></div>
+            <div class="chart-card">
+              <canvas id="radarCanvas" aria-label="相似度维度雷达图"></canvas>
+              <ul class="advice-list" id="adviceList"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <div>
+            <h3>文本统计</h3>
+            <p>用于判断文本规模、分句数量与分析可信度。</p>
+          </div>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <div>
+            <h3>重合关键词 / 短语</h3>
+            <p>筛选双方共同出现且具有代表性的词项，便于定位重复主题。</p>
+          </div>
+        </div>
+        <div class="chips" id="commonTerms"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <div>
+            <h3>相似句段排行</h3>
+            <p>按句段相似度从高到低排序，分数越高越值得优先检查。</p>
+          </div>
+        </div>
+        <div class="match-list" id="matchList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <div>
+            <h3>高亮对比</h3>
+            <p>红色/橙色代表较高相似，黄色代表中等相似，蓝色代表轻度相似。</p>
+          </div>
+        </div>
+        <div class="highlight-grid">
+          <div class="highlight-box" id="highlightA"><h4>文本 A 高亮</h4></div>
+          <div class="highlight-box" id="highlightB"><h4>文本 B 高亮</h4></div>
+        </div>
+        <div class="legend">
+          <span><i class="hit-strong"></i> ≥ 75%</span>
+          <span><i class="hit-high"></i> 60% - 74%</span>
+          <span><i class="hit-mid"></i> 45% - 59%</span>
+          <span><i class="hit-low"></i> 35% - 44%</span>
+        </div>
+      </section>
+    </section>
+
+    <p class="footer-note">本工具适合写作自查、作业草稿互检、内容改写辅助。正式论文、专利、期刊或法律场景仍应以机构指定查重系统为准。</p>
+  </main>
+
+  <script>
+    "use strict";
+
+    const CJK_RE = /[\u3400-\u9FFF\uF900-\uFAFF]/;
+    const CJK_ONLY_RE = /^[\u3400-\u9FFF\uF900-\uFAFF]+$/;
+    const TOKEN_RE = /[\u3400-\u9FFF\uF900-\uFAFF]+|[a-z0-9]+/g;
+    const MAX_SENTENCE_COMPARE = 520;
+
+    const STOPWORDS = new Set([
+      "的", "了", "和", "是", "在", "与", "及", "并", "就", "都", "而", "或", "也", "但", "很", "又", "被", "把", "对", "为", "到", "从", "以", "于", "中", "上", "下", "等", "这", "那", "一个", "一种", "这个", "那个", "我们", "你们", "他们", "它们", "可以", "进行", "通过", "由于", "因此", "所以", "如果", "因为", "以及", "其中", "相关", "方面", "问题", "the", "and", "for", "are", "was", "were", "with", "that", "this", "from", "into", "have", "has", "had", "not", "you", "your", "our", "their", "they", "them", "will", "can", "could", "should"
+    ]);
+
+    const els = {
+      textA: document.getElementById("textA"),
+      textB: document.getElementById("textB"),
+      countA: document.getElementById("countA"),
+      countB: document.getElementById("countB"),
+      sampleBtn: document.getElementById("sampleBtn"),
+      swapBtn: document.getElementById("swapBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      analyzeBtn: document.getElementById("analyzeBtn"),
+      sensitivity: document.getElementById("sensitivity"),
+      minSentenceScore: document.getElementById("minSentenceScore"),
+      thresholdText: document.getElementById("thresholdText"),
+      maxMatches: document.getElementById("maxMatches"),
+      notice: document.getElementById("notice"),
+      results: document.getElementById("results"),
+      runInfo: document.getElementById("runInfo"),
+      exportBtn: document.getElementById("exportBtn"),
+      scoreOrb: document.getElementById("scoreOrb"),
+      scoreValue: document.getElementById("scoreValue"),
+      riskBadge: document.getElementById("riskBadge"),
+      conclusionText: document.getElementById("conclusionText"),
+      metricGrid: document.getElementById("metricGrid"),
+      radarCanvas: document.getElementById("radarCanvas"),
+      adviceList: document.getElementById("adviceList"),
+      statsGrid: document.getElementById("statsGrid"),
+      commonTerms: document.getElementById("commonTerms"),
+      matchList: document.getElementById("matchList"),
+      highlightA: document.getElementById("highlightA"),
+      highlightB: document.getElementById("highlightB")
+    };
+
+    let lastResult = null;
+
+    function toHalfWidth(str) {
+      return String(str || "")
+        .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/\u3000/g, " ");
+    }
+
+    function normalizeText(str) {
+      return toHalfWidth(str)
+        .toLowerCase()
+        .replace(/[“”‘’]/g, "'")
+        .replace(/[^a-z0-9\u3400-\u9FFF\uF900-\uFAFF]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function cleanChars(str) {
+      return toHalfWidth(str)
+        .toLowerCase()
+        .replace(/[^a-z0-9\u3400-\u9FFF\uF900-\uFAFF]/g, "");
+    }
+
+    function tokenize(text) {
+      const source = normalizeText(text);
+      const out = [];
+
+      if (!source) return out;
+
+      if (typeof Intl !== "undefined" && Intl.Segmenter) {
+        try {
+          const segmenter = new Intl.Segmenter("zh-CN", { granularity: "word" });
+          for (const item of segmenter.segment(source)) {
+            const segment = item.segment.trim();
+            if (!segment) continue;
+            if (item.isWordLike || CJK_RE.test(segment) || /[a-z0-9]/.test(segment)) {
+              addTokenPart(segment, out);
+            }
+          }
+        } catch (err) {
+          splitByRegex(source, out);
+        }
+      } else {
+        splitByRegex(source, out);
+      }
+
+      if (out.length < 2) {
+        const chars = cleanChars(text);
+        out.push(...charNgrams(chars, chars.length >= 2 ? 2 : 1));
+      }
+      return out;
+    }
+
+    function splitByRegex(source, out) {
+      const parts = source.match(TOKEN_RE) || [];
+      for (const part of parts) addTokenPart(part, out);
+    }
+
+    function addTokenPart(part, out) {
+      const pieces = String(part).toLowerCase().match(TOKEN_RE) || [];
+      for (const piece of pieces) {
+        if (!piece || STOPWORDS.has(piece)) continue;
+
+        if (CJK_ONLY_RE.test(piece)) {
+          if (piece.length === 1) {
+            if (!STOPWORDS.has(piece)) out.push(piece);
+            continue;
+          }
+          if (!STOPWORDS.has(piece)) out.push(piece);
+          for (let n = 2; n <= Math.min(3, piece.length); n++) {
+            for (let i = 0; i <= piece.length - n; i++) {
+              const gram = piece.slice(i, i + n);
+              if (!STOPWORDS.has(gram)) out.push(gram);
+            }
+          }
+        } else if (piece.length > 1 && !STOPWORDS.has(piece)) {
+          out.push(piece);
+        }
+      }
+    }
+
+    function charNgrams(textOrClean, n) {
+      const s = /[^a-z0-9\u3400-\u9FFF\uF900-\uFAFF]/.test(textOrClean) ? cleanChars(textOrClean) : String(textOrClean || "");
+      if (!s) return [];
+      if (s.length <= n) return [s];
+      const grams = [];
+      for (let i = 0; i <= s.length - n; i++) grams.push(s.slice(i, i + n));
+      return grams;
+    }
+
+    function frequency(tokens) {
+      const map = new Map();
+      for (const token of tokens) map.set(token, (map.get(token) || 0) + 1);
+      return map;
+    }
+
+    function cosineMap(a, b) {
+      if (!a.size || !b.size) return 0;
+      let dot = 0;
+      let normA = 0;
+      let normB = 0;
+      for (const v of a.values()) normA += v * v;
+      for (const v of b.values()) normB += v * v;
+      const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+      for (const [key, v] of small) {
+        const other = large.get(key);
+        if (other) dot += v * other;
+      }
+      return normA && normB ? dot / Math.sqrt(normA * normB) : 0;
+    }
+
+    function weightedJaccard(a, b) {
+      const keys = new Set([...a.keys(), ...b.keys()]);
+      if (!keys.size) return 0;
+      let minSum = 0;
+      let maxSum = 0;
+      for (const key of keys) {
+        const av = a.get(key) || 0;
+        const bv = b.get(key) || 0;
+        minSum += Math.min(av, bv);
+        maxSum += Math.max(av, bv);
+      }
+      return maxSum ? minSum / maxSum : 0;
+    }
+
+    function weightedContainment(a, b) {
+      let common = 0;
+      let totalA = 0;
+      let totalB = 0;
+      for (const v of a.values()) totalA += v;
+      for (const v of b.values()) totalB += v;
+      const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+      for (const [key, v] of small) {
+        const other = large.get(key) || 0;
+        common += Math.min(v, other);
+      }
+      return {
+        aInB: totalA ? common / totalA : 0,
+        bInA: totalB ? common / totalB : 0,
+        max: Math.max(totalA ? common / totalA : 0, totalB ? common / totalB : 0),
+        min: Math.min(totalA ? common / totalA : 0, totalB ? common / totalB : 0)
+      };
+    }
+
+    function setJaccard(setA, setB) {
+      if (!setA.size && !setB.size) return 0;
+      const [small, large] = setA.size <= setB.size ? [setA, setB] : [setB, setA];
+      let common = 0;
+      for (const item of small) if (large.has(item)) common++;
+      return common / (setA.size + setB.size - common || 1);
+    }
+
+    function setContainmentMax(setA, setB) {
+      if (!setA.size || !setB.size) return 0;
+      const [small, large] = setA.size <= setB.size ? [setA, setB] : [setB, setA];
+      let common = 0;
+      for (const item of small) if (large.has(item)) common++;
+      return common / small.size;
+    }
+
+    function fnv1a64(str) {
+      let hash = 0xcbf29ce484222325n;
+      const prime = 0x100000001b3n;
+      const mask = (1n << 64n) - 1n;
+      for (const ch of str) {
+        hash ^= BigInt(ch.codePointAt(0));
+        hash = (hash * prime) & mask;
+      }
+      return hash;
+    }
+
+    function simHash(freqMap) {
+      const bits = new Array(64).fill(0);
+      for (const [token, count] of freqMap) {
+        const hash = fnv1a64(token);
+        const weight = Math.min(6, 1 + Math.log2(count + 1));
+        for (let i = 0; i < 64; i++) {
+          bits[i] += ((hash >> BigInt(i)) & 1n) ? weight : -weight;
+        }
+      }
+      let out = 0n;
+      for (let i = 0; i < 64; i++) if (bits[i] >= 0) out |= 1n << BigInt(i);
+      return out;
+    }
+
+    function bitCount64(x) {
+      let n = 0;
+      while (x) {
+        x &= x - 1n;
+        n++;
+      }
+      return n;
+    }
+
+    function simHashSimilarity(freqA, freqB) {
+      if (!freqA.size || !freqB.size) return 0;
+      const a = simHash(freqA);
+      const b = simHash(freqB);
+      const distance = bitCount64(a ^ b);
+      return 1 - distance / 64;
+    }
+
+    function lcsRatio(textA, textB) {
+      let a = cleanChars(textA);
+      let b = cleanChars(textB);
+      if (!a || !b) return 0;
+
+      const maxLen = 3400;
+      if (a.length > maxLen) a = smartSample(a, maxLen);
+      if (b.length > maxLen) b = smartSample(b, maxLen);
+
+      if (a.length < b.length) [a, b] = [b, a];
+      const m = b.length;
+      let prev = new Uint16Array(m + 1);
+      let curr = new Uint16Array(m + 1);
+
+      for (let i = 1; i <= a.length; i++) {
+        const ca = a.charCodeAt(i - 1);
+        for (let j = 1; j <= m; j++) {
+          curr[j] = ca === b.charCodeAt(j - 1)
+            ? prev[j - 1] + 1
+            : Math.max(prev[j], curr[j - 1]);
+        }
+        [prev, curr] = [curr, prev];
+        curr.fill(0);
+      }
+      const lcs = prev[m];
+      return (2 * lcs) / (a.length + b.length);
+    }
+
+    function smartSample(text, maxLen) {
+      if (text.length <= maxLen) return text;
+      const head = Math.floor(maxLen * 0.38);
+      const tail = Math.floor(maxLen * 0.32);
+      const middle = maxLen - head - tail;
+      const startMid = Math.max(head, Math.floor((text.length - middle) / 2));
+      return text.slice(0, head) + text.slice(startMid, startMid + middle) + text.slice(text.length - tail);
+    }
+
+    function splitSentences(text) {
+      const output = [];
+      let buf = "";
+      const hard = "。！？!?；;\n";
+      const soft = "，,、：:";
+      for (const ch of String(text || "").replace(/\r/g, "")) {
+        buf += ch;
+        const cleanLen = cleanChars(buf).length;
+        if (hard.includes(ch) || (cleanLen >= 150 && soft.includes(ch)) || cleanLen >= 220) {
+          pushSentence(output, buf);
+          buf = "";
+        }
+      }
+      pushSentence(output, buf);
+      return output;
+    }
+
+    function pushSentence(arr, text) {
+      const normalizedLen = cleanChars(text).length;
+      if (normalizedLen === 0) return;
+      arr.push({
+        index: arr.length,
+        text,
+        cleanLen: normalizedLen,
+        bestScore: 0,
+        bestIndex: -1,
+        tokens: null,
+        freq: null,
+        gram2: null,
+        gram3: null
+      });
+    }
+
+    function prepareSentence(sentence) {
+      sentence.tokens = tokenize(sentence.text);
+      sentence.freq = frequency(sentence.tokens);
+      sentence.gram2 = new Set(charNgrams(sentence.text, 2));
+      sentence.gram3 = new Set(charNgrams(sentence.text, 3));
+      return sentence;
+    }
+
+    function sentenceSimilarity(a, b) {
+      if (Math.min(a.cleanLen, b.cleanLen) < 5) return 0;
+      const cos = cosineMap(a.freq, b.freq);
+      const jac = weightedJaccard(a.freq, b.freq);
+      const ngram = 0.45 * setJaccard(a.gram2, b.gram2) + 0.55 * setJaccard(a.gram3, b.gram3);
+      const lenPenalty = Math.sqrt(Math.min(a.cleanLen, b.cleanLen) / Math.max(a.cleanLen, b.cleanLen));
+      const shortPenalty = Math.min(a.cleanLen, b.cleanLen) < 12 ? 0.78 : 1;
+      return clamp((0.44 * cos + 0.22 * jac + 0.34 * ngram) * (0.72 + 0.28 * lenPenalty) * shortPenalty);
+    }
+
+    function analyzeSentences(rawA, rawB, threshold) {
+      const originalA = splitSentences(rawA);
+      const originalB = splitSentences(rawB);
+      const truncated = originalA.length > MAX_SENTENCE_COMPARE || originalB.length > MAX_SENTENCE_COMPARE;
+      const sentsA = originalA.slice(0, MAX_SENTENCE_COMPARE).map(prepareSentence);
+      const sentsB = originalB.slice(0, MAX_SENTENCE_COMPARE).map(prepareSentence);
+      const matches = [];
+
+      if (!sentsA.length || !sentsB.length) {
+        return { sentsA: originalA, sentsB: originalB, matches, score: 0, truncated };
+      }
+
+      for (const a of sentsA) {
+        for (const b of sentsB) {
+          const score = sentenceSimilarity(a, b);
+          if (score > a.bestScore) {
+            a.bestScore = score;
+            a.bestIndex = b.index;
+          }
+          if (score > b.bestScore) {
+            b.bestScore = score;
+            b.bestIndex = a.index;
+          }
+          if (score >= threshold && Math.min(a.cleanLen, b.cleanLen) >= 8) {
+            matches.push({ score, aIndex: a.index, bIndex: b.index, aText: a.text, bText: b.text });
+          }
+        }
+      }
+
+      matches.sort((x, y) => y.score - x.score || Math.max(y.aText.length, y.bText.length) - Math.max(x.aText.length, x.bText.length));
+
+      const weightA = weightedAverage(sentsA.map(s => [s.bestScore, Math.min(180, Math.max(8, s.cleanLen))]));
+      const weightB = weightedAverage(sentsB.map(s => [s.bestScore, Math.min(180, Math.max(8, s.cleanLen))]));
+      const score = (weightA + weightB) / 2;
+
+      for (const s of originalA) {
+        const found = sentsA.find(item => item.index === s.index);
+        if (found) {
+          s.bestScore = found.bestScore;
+          s.bestIndex = found.bestIndex;
+        }
+      }
+      for (const s of originalB) {
+        const found = sentsB.find(item => item.index === s.index);
+        if (found) {
+          s.bestScore = found.bestScore;
+          s.bestIndex = found.bestIndex;
+        }
+      }
+
+      return { sentsA: originalA, sentsB: originalB, matches, score, truncated };
+    }
+
+    function weightedAverage(pairs) {
+      let total = 0;
+      let weight = 0;
+      for (const [score, w] of pairs) {
+        total += score * w;
+        weight += w;
+      }
+      return weight ? total / weight : 0;
+    }
+
+    function analyzeTexts(rawA, rawB, threshold) {
+      const cleanA = cleanChars(rawA);
+      const cleanB = cleanChars(rawB);
+      const tokensA = tokenize(rawA);
+      const tokensB = tokenize(rawB);
+      const freqA = frequency(tokensA);
+      const freqB = frequency(tokensB);
+      const gram2A = new Set(charNgrams(cleanA, 2));
+      const gram2B = new Set(charNgrams(cleanB, 2));
+      const gram3A = new Set(charNgrams(cleanA, 3));
+      const gram3B = new Set(charNgrams(cleanB, 3));
+
+      const tokenCosine = cosineMap(freqA, freqB);
+      const tokenJaccard = weightedJaccard(freqA, freqB);
+      const tokenContain = weightedContainment(freqA, freqB);
+      const char2 = setJaccard(gram2A, gram2B);
+      const char3 = setJaccard(gram3A, gram3B);
+      const charScore = 0.42 * char2 + 0.58 * char3;
+      const charContain = Math.max(setContainmentMax(gram2A, gram2B), setContainmentMax(gram3A, gram3B));
+      const lcs = lcsRatio(rawA, rawB);
+      const simhash = simHashSimilarity(freqA, freqB);
+      const sentence = analyzeSentences(rawA, rawB, threshold);
+
+      const wholeSimilarity = clamp(
+        0.30 * tokenCosine +
+        0.16 * tokenJaccard +
+        0.18 * charScore +
+        0.16 * sentence.score +
+        0.12 * lcs +
+        0.08 * simhash
+      );
+
+      const containment = clamp(0.56 * tokenContain.max + 0.44 * charContain);
+      const minClean = Math.min(cleanA.length, cleanB.length);
+      const containmentFactor = minClean < 30 ? 0.58 : minClean < 80 ? 0.76 : 0.92;
+      const riskScore = clamp(Math.max(wholeSimilarity, containment * containmentFactor));
+
+      const stats = {
+        a: buildStats(rawA, cleanA, tokensA, sentence.sentsA.length),
+        b: buildStats(rawB, cleanB, tokensB, sentence.sentsB.length)
+      };
+
+      return {
+        rawA,
+        rawB,
+        cleanA,
+        cleanB,
+        tokensA,
+        tokensB,
+        freqA,
+        freqB,
+        metrics: {
+          tokenCosine,
+          tokenJaccard,
+          tokenContainAInB: tokenContain.aInB,
+          tokenContainBInA: tokenContain.bInA,
+          tokenContainMax: tokenContain.max,
+          charScore,
+          charContain,
+          lcs,
+          simhash,
+          sentenceScore: sentence.score,
+          wholeSimilarity,
+          containment,
+          riskScore
+        },
+        sentence,
+        stats,
+        commonTerms: topCommonTerms(freqA, freqB, 24)
+      };
+    }
+
+    function buildStats(raw, clean, tokens, sentenceCount) {
+      const trimmed = String(raw || "").trim();
+      return {
+        chars: String(raw || "").length,
+        cleanChars: clean.length,
+        paragraphs: trimmed ? trimmed.split(/\n\s*\n/g).filter(Boolean).length : 0,
+        sentences: sentenceCount,
+        tokens: tokens.length,
+        uniqueTokens: new Set(tokens).size
+      };
+    }
+
+    function topCommonTerms(freqA, freqB, limit) {
+      const terms = [];
+      for (const [term, countA] of freqA) {
+        const countB = freqB.get(term) || 0;
+        if (!countB) continue;
+        if (term.length < 2 || STOPWORDS.has(term)) continue;
+        if (/^[a-z0-9]$/.test(term)) continue;
+        const score = Math.min(countA, countB) * Math.log2(3 + countA + countB) * Math.min(8, term.length);
+        terms.push({ term, countA, countB, score });
+      }
+      terms.sort((a, b) => b.score - a.score || b.term.length - a.term.length);
+      return terms.slice(0, limit);
+    }
+
+    function classifyRisk(percent, mode) {
+      const table = {
+        strict: { very: 82, high: 66, mid: 42, low: 22 },
+        standard: { very: 88, high: 72, mid: 48, low: 26 },
+        loose: { very: 92, high: 80, mid: 58, low: 34 }
+      }[mode] || { very: 88, high: 72, mid: 48, low: 26 };
+
+      if (percent >= table.very) return { level: "极高风险", icon: "🚨", color: "var(--red)", tone: "danger" };
+      if (percent >= table.high) return { level: "高风险", icon: "⚠️", color: "var(--orange)", tone: "high" };
+      if (percent >= table.mid) return { level: "中等风险", icon: "🔎", color: "var(--yellow)", tone: "mid" };
+      if (percent >= table.low) return { level: "轻度相似", icon: "🟦", color: "var(--primary)", tone: "low" };
+      return { level: "低风险", icon: "✅", color: "var(--green)", tone: "safe" };
+    }
+
+    function buildConclusion(result, risk, percent) {
+      const m = result.metrics;
+      const lines = [];
+      if (risk.tone === "danger") {
+        lines.push("两组文本存在非常明显的重合或局部包含，建议重点重写高亮句段，并补充新的结构、论证和来源表达。");
+      } else if (risk.tone === "high") {
+        lines.push("两组文本相似度较高，存在较多共享表达或连续句段，建议优先处理红色与橙色区域。");
+      } else if (risk.tone === "mid") {
+        lines.push("两组文本存在一定相似，可能来自相同主题、模板化表达或局部改写，建议检查黄色以上句段。");
+      } else if (risk.tone === "low") {
+        lines.push("整体风险不高，但仍检测到少量相似片段，可视需要调整措辞或增加原创说明。");
+      } else {
+        lines.push("当前结果显示重复风险较低，未发现大面积高相似句段。");
+      }
+      if (m.containment > 0.78 && m.wholeSimilarity < 0.55) {
+        lines.push("另外检测到较强的“局部包含”特征：一组文本可能被另一组文本部分吸收，建议查看句段排行。");
+      }
+      if (Math.min(result.cleanA.length, result.cleanB.length) < 80) {
+        lines.push("由于至少一组文本较短，分数波动会更明显，建议粘贴更长段落复核。");
+      }
+      if (result.sentence.truncated) {
+        lines.push("文本句段很多，为避免浏览器卡顿，句段矩阵只分析了前 " + MAX_SENTENCE_COMPARE + " 句；总体词项与 N-gram 指标仍基于全文。");
+      }
+      return lines.join(" ");
+    }
+
+    function buildAdvice(result, risk) {
+      const m = result.metrics;
+      const list = [];
+      if (risk.tone === "danger" || risk.tone === "high") {
+        list.push("优先重写相似度最高的句段：不要只替换同义词，应改变句子结构、论证顺序和信息组织方式。");
+        list.push("对必须保留的事实、定义或引用内容，补充明确引用、出处说明或引号标识。");
+      } else if (risk.tone === "mid") {
+        list.push("检查黄色及以上高亮内容，重点区分“主题相同”与“表达重复”。");
+        list.push("增加个人分析、实验过程、案例细节或数据解释，可有效降低模板化相似。");
+      } else {
+        list.push("整体重复风险较低，可继续保持独立表达，并保留必要引用信息。");
+      }
+      if (m.tokenCosine > 0.68) list.push("词项余弦较高：两段使用了大量相同关键词，建议替换表述角度并减少固定搭配堆叠。");
+      if (m.charScore > 0.55 || m.lcs > 0.55) list.push("字符级重合较明显：可能存在连续复制，建议逐句改写或拆分重组。");
+      if (m.sentenceScore > 0.55) list.push("句段匹配较高：建议先处理相似句段排行中的前几条。 ");
+      return list.slice(0, 5);
+    }
+
+    function renderResult(result) {
+      lastResult = result;
+      const percent = Math.round(result.metrics.riskScore * 100);
+      const risk = classifyRisk(percent, els.sensitivity.value);
+
+      els.results.hidden = false;
+      els.runInfo.textContent = "分析时间：" + new Date().toLocaleString("zh-CN") + "｜本地算法融合判定";
+      els.scoreValue.textContent = percent + "%";
+      els.scoreOrb.style.setProperty("--score-angle", (percent * 3.6) + "deg");
+      els.scoreOrb.style.setProperty("--score-color", risk.color);
+      els.riskBadge.style.color = risk.color;
+      els.riskBadge.style.background = colorSoft(risk.tone);
+      els.riskBadge.textContent = risk.icon + " " + risk.level;
+      els.conclusionText.textContent = buildConclusion(result, risk, percent);
+
+      renderMetrics(result);
+      drawRadar(result);
+      renderAdvice(result, risk);
+      renderStats(result);
+      renderCommonTerms(result.commonTerms);
+      renderMatches(result);
+      renderHighlights(result);
+      els.results.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function colorSoft(tone) {
+      const map = {
+        danger: "rgba(233, 77, 95, 0.11)",
+        high: "rgba(241, 120, 66, 0.12)",
+        mid: "rgba(245, 184, 59, 0.15)",
+        low: "rgba(30, 136, 229, 0.11)",
+        safe: "rgba(31, 168, 116, 0.12)"
+      };
+      return map[tone] || map.low;
+    }
+
+    function renderMetrics(result) {
+      const m = result.metrics;
+      const cards = [
+        ["整体相似度", m.wholeSimilarity, "衡量两组文本作为整体的接近程度。"],
+        ["局部包含度", m.containment, "识别一段文本被另一段吸收或复制的风险。"],
+        ["词项余弦", m.tokenCosine, "关键词、短语和中文 N-gram 的方向相似。"],
+        ["字符 N-gram", m.charScore, "连续字符片段的重合比例，适合发现复制。"],
+        ["句段匹配", m.sentenceScore, "逐句寻找最接近片段后的加权平均。"],
+        ["最长顺序重合", m.lcs, "保留原顺序的公共字符序列比例。"]
+      ];
+
+      els.metricGrid.innerHTML = cards.map(([name, value, desc]) => {
+        const pct = Math.round(value * 100);
+        return `<article class="metric-card">
+          <div class="metric-top"><strong>${escapeHtml(name)}</strong><span class="metric-num">${pct}%</span></div>
+          <div class="bar"><span style="width:${pct}%"></span></div>
+          <p>${escapeHtml(desc)}</p>
+        </article>`;
+      }).join("");
+    }
+
+    function drawRadar(result) {
+      const canvas = els.radarCanvas;
+      const box = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(260, Math.floor(box.width || 300));
+      const height = Math.max(220, Math.floor(box.height || 230));
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const m = result.metrics;
+      const items = [
+        ["词项", m.tokenCosine],
+        ["N-gram", m.charScore],
+        ["句段", m.sentenceScore],
+        ["序列", m.lcs],
+        ["指纹", m.simhash],
+        ["包含", m.containment]
+      ];
+      const cx = width / 2;
+      const cy = height / 2 + 2;
+      const radius = Math.min(width, height) * 0.34;
+      const sides = items.length;
+
+      ctx.lineWidth = 1;
+      ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      for (let level = 5; level >= 1; level--) {
+        const r = radius * level / 5;
+        ctx.beginPath();
+        for (let i = 0; i < sides; i++) {
+          const p = polar(cx, cy, r, i, sides);
+          i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = "rgba(30, 136, 229, 0.14)";
+        ctx.stroke();
+        if (level === 5) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+          ctx.fill();
+        }
+      }
+
+      for (let i = 0; i < sides; i++) {
+        const end = polar(cx, cy, radius, i, sides);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(end.x, end.y);
+        ctx.strokeStyle = "rgba(30, 136, 229, 0.13)";
+        ctx.stroke();
+        const label = polar(cx, cy, radius + 25, i, sides);
+        ctx.fillStyle = "#65738a";
+        ctx.fillText(items[i][0], label.x, label.y);
+      }
+
+      ctx.beginPath();
+      items.forEach(([, value], i) => {
+        const p = polar(cx, cy, radius * clamp(value), i, sides);
+        i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+      });
+      ctx.closePath();
+      const gradient = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+      gradient.addColorStop(0, "rgba(30, 136, 229, 0.58)");
+      gradient.addColorStop(1, "rgba(23, 183, 217, 0.38)");
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(18, 103, 182, 0.72)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      items.forEach(([, value], i) => {
+        const p = polar(cx, cy, radius * clamp(value), i, sides);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(18, 103, 182, 0.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+
+    function polar(cx, cy, radius, index, total) {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * index / total);
+      return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
+    }
+
+    function renderAdvice(result, risk) {
+      els.adviceList.innerHTML = buildAdvice(result, risk)
+        .map(item => `<li>${escapeHtml(item)}</li>`)
+        .join("");
+    }
+
+    function renderStats(result) {
+      const s = result.stats;
+      const rows = [
+        ["A 原始字符", s.a.chars],
+        ["B 原始字符", s.b.chars],
+        ["A 有效字符", s.a.cleanChars],
+        ["B 有效字符", s.b.cleanChars],
+        ["A 句段数", s.a.sentences],
+        ["B 句段数", s.b.sentences],
+        ["A 分词项", s.a.tokens],
+        ["B 分词项", s.b.tokens]
+      ];
+      els.statsGrid.innerHTML = rows.map(([name, value]) => `<article class="stat-card"><span>${escapeHtml(name)}</span><strong>${formatNumber(value)}</strong></article>`).join("");
+    }
+
+    function renderCommonTerms(terms) {
+      if (!terms.length) {
+        els.commonTerms.innerHTML = `<div class="empty-state">未发现明显重合关键词或短语。文本较短时，这是正常现象。</div>`;
+        return;
+      }
+      els.commonTerms.innerHTML = terms.map(item => `<span class="chip">${escapeHtml(item.term)} <small>A:${item.countA} / B:${item.countB}</small></span>`).join("");
+    }
+
+    function renderMatches(result) {
+      const limit = Number(els.maxMatches.value) || 20;
+      const matches = dedupeMatches(result.sentence.matches).slice(0, limit);
+      if (!matches.length) {
+        els.matchList.innerHTML = `<div class="empty-state">当前阈值下没有找到显著相似句段。可降低“句段展示阈值”后重新分析。</div>`;
+        return;
+      }
+
+      els.matchList.innerHTML = matches.map((m, i) => {
+        const pct = Math.round(m.score * 100);
+        return `<article class="match-card">
+          <div class="match-head">
+            <strong>#${i + 1}　A 第 ${m.aIndex + 1} 句 ↔ B 第 ${m.bIndex + 1} 句</strong>
+            <span class="match-score">${pct}%</span>
+          </div>
+          <div class="match-body">
+            <blockquote class="quote-box"><b>文本 A</b>${escapeHtml(truncate(m.aText, 360))}</blockquote>
+            <blockquote class="quote-box"><b>文本 B</b>${escapeHtml(truncate(m.bText, 360))}</blockquote>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function dedupeMatches(matches) {
+      const seenA = new Set();
+      const seenB = new Set();
+      const chosen = [];
+      for (const m of matches) {
+        const key = m.aIndex + ":" + m.bIndex;
+        if (seenA.has(key)) continue;
+        const pairUse = (seenA.has(m.aIndex) ? 1 : 0) + (seenB.has(m.bIndex) ? 1 : 0);
+        if (pairUse >= 2 && m.score < 0.82) continue;
+        chosen.push(m);
+        seenA.add(m.aIndex);
+        seenB.add(m.bIndex);
+        seenA.add(key);
+      }
+      return chosen;
+    }
+
+    function renderHighlights(result) {
+      els.highlightA.innerHTML = `<h4>文本 A 高亮</h4>` + renderSentenceSpans(result.sentence.sentsA);
+      els.highlightB.innerHTML = `<h4>文本 B 高亮</h4>` + renderSentenceSpans(result.sentence.sentsB);
+    }
+
+    function renderSentenceSpans(sentences) {
+      if (!sentences.length) return `<div class="empty-state">暂无可高亮内容。</div>`;
+      return sentences.map(s => {
+        const score = s.bestScore || 0;
+        const cls = score >= 0.75 ? "hit-strong" : score >= 0.60 ? "hit-high" : score >= 0.45 ? "hit-mid" : score >= 0.35 ? "hit-low" : "";
+        const title = cls ? ` title="最高句段相似度：${Math.round(score * 100)}%"` : "";
+        return `<span class="sentence ${cls}"${title}>${escapeHtml(s.text)}</span>`;
+      }).join("");
+    }
+
+    function buildReport(result) {
+      const p = v => Math.round(v * 100) + "%";
+      const m = result.metrics;
+      const riskPercent = Math.round(m.riskScore * 100);
+      const risk = classifyRisk(riskPercent, els.sensitivity.value);
+      const matches = dedupeMatches(result.sentence.matches).slice(0, Number(els.maxMatches.value) || 20);
+      const lines = [];
+      lines.push("智能文本查重报告");
+      lines.push("生成时间：" + new Date().toLocaleString("zh-CN"));
+      lines.push("判定模式：" + els.sensitivity.options[els.sensitivity.selectedIndex].text);
+      lines.push("");
+      lines.push("【综合结果】");
+      lines.push("查重风险：" + riskPercent + "%（" + risk.level + "）");
+      lines.push("整体相似度：" + p(m.wholeSimilarity));
+      lines.push("局部包含度：" + p(m.containment));
+      lines.push("词项余弦：" + p(m.tokenCosine));
+      lines.push("加权 Jaccard：" + p(m.tokenJaccard));
+      lines.push("字符 N-gram：" + p(m.charScore));
+      lines.push("句段匹配：" + p(m.sentenceScore));
+      lines.push("最长顺序重合：" + p(m.lcs));
+      lines.push("SimHash 指纹：" + p(m.simhash));
+      lines.push("");
+      lines.push("【文本统计】");
+      lines.push("A：原始字符 " + result.stats.a.chars + "，有效字符 " + result.stats.a.cleanChars + "，句段 " + result.stats.a.sentences + "，分词项 " + result.stats.a.tokens);
+      lines.push("B：原始字符 " + result.stats.b.chars + "，有效字符 " + result.stats.b.cleanChars + "，句段 " + result.stats.b.sentences + "，分词项 " + result.stats.b.tokens);
+      lines.push("");
+      lines.push("【重合关键词/短语】");
+      lines.push(result.commonTerms.length ? result.commonTerms.map(t => `${t.term}(A:${t.countA}, B:${t.countB})`).join("、") : "无明显重合词项");
+      lines.push("");
+      lines.push("【相似句段】");
+      if (!matches.length) {
+        lines.push("当前阈值下无显著相似句段。");
+      } else {
+        matches.forEach((m, i) => {
+          lines.push(`#${i + 1} 相似度 ${p(m.score)}｜A第${m.aIndex + 1}句 ↔ B第${m.bIndex + 1}句`);
+          lines.push("A：" + oneLine(m.aText));
+          lines.push("B：" + oneLine(m.bText));
+          lines.push("");
+        });
+      }
+      lines.push("说明：本报告为浏览器本地相似度分析结果，可用于写作自查；正式场景请以指定查重系统为准。");
+      return lines.join("\n");
+    }
+
+    function exportReport() {
+      if (!lastResult) return;
+      const report = buildReport(lastResult);
+      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "文本查重报告_" + new Date().toISOString().slice(0, 10) + ".txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function runAnalysis() {
+      hideNotice();
+      const rawA = els.textA.value;
+      const rawB = els.textB.value;
+      const cleanA = cleanChars(rawA);
+      const cleanB = cleanChars(rawB);
+      if (!cleanA || !cleanB) {
+        showNotice("请先输入两组文本，再开始查重分析。");
+        return;
+      }
+      if (Math.max(cleanA.length, cleanB.length) < 12) {
+        showNotice("文本过短，无法形成可靠判断。请至少输入一句完整内容。");
+        return;
+      }
+      els.analyzeBtn.disabled = true;
+      els.analyzeBtn.textContent = "分析中…";
+      window.setTimeout(() => {
+        try {
+          const threshold = Number(els.minSentenceScore.value) / 100;
+          const result = analyzeTexts(rawA, rawB, threshold);
+          renderResult(result);
+        } catch (err) {
+          console.error(err);
+          showNotice("分析时出现异常：" + (err && err.message ? err.message : "未知错误"));
+        } finally {
+          els.analyzeBtn.disabled = false;
+          els.analyzeBtn.textContent = "开始查重";
+        }
+      }, 20);
+    }
+
+    function updateCounters() {
+      els.countA.textContent = formatNumber(els.textA.value.length) + " 字符｜有效 " + formatNumber(cleanChars(els.textA.value).length);
+      els.countB.textContent = formatNumber(els.textB.value.length) + " 字符｜有效 " + formatNumber(cleanChars(els.textB.value).length);
+    }
+
+    function loadSample() {
+      els.textA.value = "人工智能技术正在改变教育评价方式。传统评价往往依赖期末考试和单一分数，难以及时发现学生在学习过程中的薄弱环节。通过学习数据采集、知识点画像和个性化反馈，教师可以更准确地了解学生的掌握情况，并据此调整教学节奏。需要注意的是，技术工具不能替代教师判断，学校还应建立数据安全和隐私保护机制。";
+      els.textB.value = "人工智能正在深刻影响教育评价模式。过去的评价主要依靠期末测试以及单个成绩，不能及时看出学生学习过程中的问题。借助学习行为数据、知识点画像和个性化反馈，教师能够更精准地掌握学生的学习状况，并调整课堂教学进度。不过，技术系统并不能完全取代教师的专业判断，学校也必须完善数据安全与隐私保护制度。";
+      updateCounters();
+      hideNotice();
+      runAnalysis();
+    }
+
+    function swapTexts() {
+      const temp = els.textA.value;
+      els.textA.value = els.textB.value;
+      els.textB.value = temp;
+      updateCounters();
+      if (!els.results.hidden) runAnalysis();
+    }
+
+    function clearAll() {
+      els.textA.value = "";
+      els.textB.value = "";
+      els.results.hidden = true;
+      lastResult = null;
+      updateCounters();
+      hideNotice();
+    }
+
+    function showNotice(msg) {
+      els.notice.textContent = msg;
+      els.notice.classList.add("show");
+    }
+
+    function hideNotice() {
+      els.notice.classList.remove("show");
+      els.notice.textContent = "";
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function truncate(str, max) {
+      const s = String(str || "").trim();
+      return s.length > max ? s.slice(0, max - 1) + "…" : s;
+    }
+
+    function oneLine(str) {
+      return String(str || "").replace(/\s+/g, " ").trim();
+    }
+
+    function clamp(v) {
+      return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("zh-CN");
+    }
+
+    els.textA.addEventListener("input", updateCounters);
+    els.textB.addEventListener("input", updateCounters);
+    els.sampleBtn.addEventListener("click", loadSample);
+    els.swapBtn.addEventListener("click", swapTexts);
+    els.clearBtn.addEventListener("click", clearAll);
+    els.analyzeBtn.addEventListener("click", runAnalysis);
+    els.exportBtn.addEventListener("click", exportReport);
+    els.minSentenceScore.addEventListener("input", () => {
+      els.thresholdText.textContent = els.minSentenceScore.value + "%";
+    });
+    window.addEventListener("resize", () => {
+      if (lastResult) drawRadar(lastResult);
+    });
+
+    updateCounters();
+  </script>
+</body>
+</html>

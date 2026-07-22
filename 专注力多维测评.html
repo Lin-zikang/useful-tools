@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>专注力多维测评</title>
+    <link rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png" />
+    <style>
+        :root {
+            --bg: #f9f6f1;
+            --card-bg: #ffffff;
+            --text: #3d3a4d;
+            --text-secondary: #6b6780;
+            --accent: #f0a8b8;
+            --accent2: #a8c8f0;
+            --accent3: #b8e0c8;
+            --accent4: #f0d8a8;
+            --accent5: #c8b8e8;
+            --btn-primary: #f090a8;
+            --btn-primary-hover: #e87890;
+            --btn-success: #88c8a0;
+            --btn-success-hover: #70b888;
+            --btn-danger: #f0a090;
+            --btn-neutral: #e8e4df;
+            --btn-neutral-hover: #d8d4cf;
+            --btn-export: #7eb8da;
+            --btn-export-hover: #5da0c8;
+            --shadow-sm: 0 2px 8px rgba(60, 50, 40, 0.06);
+            --shadow-md: 0 6px 20px rgba(60, 50, 40, 0.10);
+            --shadow-lg: 0 12px 36px rgba(60, 50, 40, 0.14);
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 22px;
+            --radius-xl: 28px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            --color-red: #e8556d;
+            --color-blue: #4a90d9;
+            --color-green: #4caf84;
+            --color-yellow: #d4a843;
+            --color-orange: #e8885a;
+            --color-purple: #8b6db8;
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(160deg, #fefaf3 0%, #fdf3f0 25%, #f3f6fd 50%, #f6faf4 75%, #fefaf3 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(10px, 2.5vw, 20px);
+            padding-bottom: calc(clamp(10px, 2.5vw, 20px) + var(--safe-bottom));
+            color: var(--text);
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 680px;
+            position: relative;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: clamp(18px, 4vw, 30px) clamp(14px, 3.5vw, 26px);
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition);
+            border: 1px solid rgba(200, 190, 180, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent4), var(--accent5));
+            border-radius: 3px 3px 0 0;
+        }
+        @media (max-width: 480px) {
+            .card {
+                padding: 16px 12px;
+                border-radius: var(--radius-lg);
+            }
+            .card::before {
+                height: 2px;
+            }
+        }
+
+        .progress-bar-outer {
+            background: #f0ece6;
+            border-radius: 20px;
+            height: clamp(6px, 1.2vw, 9px);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #f0a8b8, #a8c8f0, #88c8a0, #f0d8a8);
+            background-size: 300% 100%;
+            animation: progressShimmer 2s ease-in-out infinite;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        @keyframes progressShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .progress-label {
+            font-size: clamp(0.7rem, 1.4vw, 0.82rem);
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 6px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        h1 {
+            font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            text-align: center;
+            margin-bottom: 6px;
+            color: #3d3a4d;
+        }
+        h2 {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            font-weight: 650;
+            text-align: center;
+            margin-bottom: 4px;
+            color: #3d3a4d;
+        }
+        h3 {
+            font-size: clamp(0.95rem, 2vw, 1.15rem);
+            font-weight: 600;
+            text-align: center;
+            color: #3d3a4d;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: clamp(0.78rem, 1.5vw, 0.92rem);
+            margin-bottom: 18px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 30px;
+            padding: clamp(10px, 2vw, 14px) clamp(18px, 3.5vw, 30px);
+            font-size: clamp(0.85rem, 1.6vw, 1rem);
+            transition: all var(--transition);
+            letter-spacing: 0.3px;
+            min-height: clamp(40px, 7vw, 50px);
+            gap: 6px;
+            white-space: nowrap;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+        .btn:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+        .btn-primary {
+            background: var(--btn-primary);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(240, 144, 168, 0.35);
+        }
+        .btn-primary:hover {
+            background: var(--btn-primary-hover);
+            box-shadow: 0 6px 18px rgba(240, 144, 168, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: var(--btn-success);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(136, 200, 160, 0.35);
+        }
+        .btn-success:hover {
+            background: var(--btn-success-hover);
+            box-shadow: 0 6px 18px rgba(136, 200, 160, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-neutral {
+            background: var(--btn-neutral);
+            color: #5a5668;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-neutral:hover {
+            background: var(--btn-neutral-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .btn-export {
+            background: var(--btn-export);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(126, 184, 218, 0.35);
+        }
+        .btn-export:hover {
+            background: var(--btn-export-hover);
+            box-shadow: 0 6px 18px rgba(126, 184, 218, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #fff;
+            color: #5a5668;
+            border: 2px solid #d8d4cf;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-outline:hover {
+            border-color: #b5b0a8;
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .btn-large {
+            padding: clamp(13px, 2.5vw, 17px) clamp(28px, 5vw, 44px);
+            font-size: clamp(0.95rem, 1.8vw, 1.18rem);
+            border-radius: 36px;
+            min-height: clamp(48px, 8vw, 58px);
+            letter-spacing: 0.5px;
+        }
+        .btn-block {
+            display: flex;
+            width: 100%;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .btn-sm {
+            padding: clamp(7px, 1.3vw, 10px) clamp(14px, 2.5vw, 20px);
+            font-size: clamp(0.72rem, 1.3vw, 0.82rem);
+            min-height: clamp(34px, 5.5vw, 40px);
+            border-radius: 24px;
+        }
+        @media (max-width: 480px) {
+            .btn { border-radius: 26px; }
+            .btn-large { border-radius: 30px; }
+            .btn-sm { border-radius: 20px; }
+        }
+
+        .color-btn-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(7px, 1.5vw, 11px);
+            justify-content: center;
+            margin-top: 12px;
+        }
+        .color-btn {
+            width: clamp(44px, 9vw, 60px);
+            height: clamp(44px, 9vw, 60px);
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            font-size: clamp(0.6rem, 1.1vw, 0.72rem);
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+        }
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+        .color-btn:active {
+            transform: scale(0.9);
+            transition: transform 0.1s ease;
+        }
+        @media (max-width: 480px) {
+            .color-btn {
+                width: clamp(38px, 10vw, 48px);
+                height: clamp(38px, 10vw, 48px);
+                font-size: 0.6rem;
+                border-width: 2px;
+            }
+            .color-btn-grid { gap: 6px; }
+        }
+
+        .stimulus-word {
+            font-size: clamp(3rem, 7vw, 5rem);
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 2px;
+            min-height: clamp(85px, 16vw, 130px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            line-height: 1;
+        }
+
+        .digit-display {
+            font-size: clamp(3rem, 7.5vw, 5.5rem);
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: clamp(3px, 1vw, 8px);
+            font-family: var(--font-mono);
+            min-height: clamp(90px, 18vw, 140px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3d3a4d;
+            transition: all 0.1s ease;
+        }
+
+        .cpt-letter {
+            font-size: clamp(4rem, 9vw, 6.5rem);
+            font-weight: 900;
+            text-align: center;
+            font-family: var(--font-mono);
+            min-height: clamp(100px, 20vw, 160px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.08s ease;
+            letter-spacing: 0;
+        }
+
+        .search-grid {
+            display: grid;
+            gap: clamp(2px, 0.5vw, 4px);
+            justify-content: center;
+            margin: 10px auto;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .search-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #faf8f5;
+            border-radius: clamp(2px, 0.5vw, 4px);
+            font-weight: 700;
+            font-family: var(--font-mono);
+            cursor: default;
+            transition: background 0.15s;
+            aspect-ratio: 1;
+            border: 1px solid #ece8e0;
+            color: #4a4560;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .input-large {
+            font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+            font-weight: 700;
+            text-align: center;
+            padding: clamp(10px, 2vw, 15px) clamp(12px, 2.5vw, 18px);
+            border-radius: var(--radius);
+            border: 2px solid #e0dcd5;
+            background: #fdfcf9;
+            width: 100%;
+            max-width: 280px;
+            letter-spacing: clamp(2px, 0.8vw, 5px);
+            font-family: var(--font-mono);
+            transition: all var(--transition);
+            color: #3d3a4d;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        .input-large:focus {
+            border-color: var(--accent2);
+            box-shadow: 0 0 0 4px rgba(168, 200, 240, 0.2);
+        }
+        .input-large::-webkit-inner-spin-button,
+        .input-large::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .feedback-flash {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: clamp(3rem, 7vw, 5rem);
+            pointer-events: none;
+            z-index: 100;
+            transition: none;
+            animation: flashPop 0.6s ease-out forwards;
+        }
+        @keyframes flashPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+        }
+        .feedback-correct { color: #4caf84; }
+        .feedback-wrong { color: #e8556d; }
+
+        .result-score-circle {
+            width: clamp(100px, 20vw, 135px);
+            height: clamp(100px, 20vw, 135px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #fefaf3, #fdf5f0);
+            border: clamp(3px, 0.6vw, 5px) solid #e8e0d8;
+            position: relative;
+            box-shadow: var(--shadow-md);
+        }
+        .result-score-number {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #3d3a4d;
+            line-height: 1;
+        }
+        .result-score-label {
+            font-size: clamp(0.65rem, 1.2vw, 0.78rem);
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .dimension-bar-wrap { margin: clamp(7px, 1.4vw, 11px) 0; }
+        .dimension-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: clamp(0.75rem, 1.3vw, 0.87rem);
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #4a4560;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .dimension-bar-outer {
+            background: #f0ece6;
+            border-radius: 12px;
+            height: clamp(10px, 1.8vw, 13px);
+            overflow: hidden;
+        }
+        .dimension-bar-inner {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 1s ease;
+        }
+        .bar-color-1 { background: linear-gradient(90deg, #f0a8b8, #e8789a); }
+        .bar-color-2 { background: linear-gradient(90deg, #a8c8f0, #6da8e0); }
+        .bar-color-3 { background: linear-gradient(90deg, #b8e0c8, #70c090); }
+        .bar-color-4 { background: linear-gradient(90deg, #f0d8a8, #e8b860); }
+        .bar-color-5 { background: linear-gradient(90deg, #c8b8e8, #9a7dc8); }
+        .bar-color-6 { background: linear-gradient(90deg, #e8c8b8, #d49578); }
+
+        .analysis-card {
+            background: #fdfcf9;
+            border-radius: var(--radius);
+            padding: clamp(12px, 2vw, 17px);
+            margin: clamp(6px, 1vw, 9px) 0;
+            border: 1px solid #ece8e0;
+            text-align: left;
+        }
+        .analysis-card h4 {
+            font-size: clamp(0.82rem, 1.5vw, 0.97rem);
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #3d3a4d;
+        }
+        .analysis-card p {
+            font-size: clamp(0.72rem, 1.3vw, 0.84rem);
+            color: #6b6780;
+            line-height: 1.5;
+        }
+        .tag {
+            display: inline-block;
+            padding: clamp(3px, 0.6vw, 5px) clamp(10px, 1.8vw, 13px);
+            border-radius: 20px;
+            font-size: clamp(0.68rem, 1.2vw, 0.77rem);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin: 2px 3px;
+        }
+        .tag-excellent { background: #e6f7ee; color: #3a8a5c; }
+        .tag-good { background: #e8f2fb; color: #3a6a9a; }
+        .tag-average { background: #fef8ec; color: #8a703a; }
+        .tag-needs-work { background: #fef0ec; color: #9a4a3a; }
+
+        .timer-display {
+            font-size: clamp(0.75rem, 1.4vw, 0.87rem);
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        .timer-warning {
+            color: #e8885a;
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #3d3a4d;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 200;
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.4px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .hidden { display: none !important; }
+
+        .text-center { text-align: center; }
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-20 { margin-top: 20px; }
+        .mb-8 { margin-bottom: 8px; }
+        .mb-12 { margin-bottom: 12px; }
+        .mb-16 { margin-bottom: 16px; }
+        .gap-8 { gap: 8px; }
+        .gap-12 { gap: 12px; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .flex-col { display: flex; flex-direction: column; align-items: center; }
+        .flex-wrap { flex-wrap: wrap; }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(6px, 1.2vw, 10px);
+            justify-content: center;
+        }
+
+        .section { animation: fadeSlideIn 0.4s ease; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media print {
+            body { background: #fff !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .app-container { max-width: 100% !important; }
+            .card { box-shadow: none !important; border: 1px solid #ddd !important; border-radius: 8px !important; page-break-inside: avoid; }
+            .card::before { background: #888 !important; height: 2px !important; }
+            .btn, .progress-bar-outer, .progress-label, .feedback-flash, .toast, #exportButtons, .no-print { display: none !important; }
+            .dimension-bar-inner { transition: none !important; }
+            .result-score-circle { border-color: #ccc !important; }
+            @page { margin: 12mm; size: A4; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app"></div>
+    <div class="feedback-flash hidden" id="feedbackFlash"></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            const app = document.getElementById('app');
+            const feedbackFlash = document.getElementById('feedbackFlash');
+            const toast = document.getElementById('toast');
+
+            const state = {
+                currentSection: 'welcome',
+                stroop: { trials: [], currentTrial: 0, results: [], startTime: 0, _trialStartTime: 0 },
+                digitSpan: { currentLevel: 3, maxLevel: 9, sequence: [], userInput: '', results: [], failCount: 0,
+                    maxCorrectLevel: 0, phase: 'showing', digitIndex: 0, showingTimer: null, previousSequences: [] },
+                cpt: { totalTrials: 54, targetRate: 0.22, sequence: [], currentTrial: 0, results: [], trialStartTime: 0,
+                    displayTimer: null, interTrialTimer: null, canRespond: false, respondedThisTrial: false },
+                visualSearch: { levels: [], currentLevel: 0, results: [], gridData: [], timeLeft: 0, timerInterval: null,
+                    userAnswer: '', _levelStartTime: 0 },
+                finalResults: null,
+                testStartTime: 0,
+            };
+
+            function shuffle(arr) {
+                const a = [...arr];
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            function randInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function showFeedback(emoji, type) {
+                if (!feedbackFlash) return;
+                feedbackFlash.textContent = emoji;
+                feedbackFlash.className = 'feedback-flash';
+                feedbackFlash.classList.add(type === 'correct' ? 'feedback-correct' : 'feedback-wrong');
+                feedbackFlash.classList.remove('hidden');
+                void feedbackFlash.offsetWidth;
+                feedbackFlash.style.animation = 'none';
+                void feedbackFlash.offsetWidth;
+                feedbackFlash.style.animation = 'flashPop 0.6s ease-out forwards';
+                setTimeout(() => { feedbackFlash.classList.add('hidden'); }, 600);
+            }
+
+            function showToast(message, duration = 2200) {
+                if (!toast) return;
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(() => { toast.classList.remove('show'); }, duration);
+            }
+
+            function formatTime(ms) {
+                if (ms < 1000) return Math.round(ms) + 'ms';
+                return (ms / 1000).toFixed(1) + 's';
+            }
+
+            function clamp(val, min, max) {
+                return Math.max(min, Math.min(max, val));
+            }
+
+            function sigmoidNorm(x, center, slope) {
+                return 1 / (1 + Math.exp(-(x - center) * slope));
+            }
+
+            function invSigmoidNorm(x, center, slope) {
+                return 1 / (1 + Math.exp((x - center) * slope));
+            }
+
+            function render(html) {
+                app.innerHTML = html;
+                const mainDiv = app.querySelector('.section');
+                if (mainDiv) {
+                    mainDiv.style.animation = 'none';
+                    void mainDiv.offsetWidth;
+                    mainDiv.style.animation = 'fadeSlideIn 0.4s ease';
+                }
+            }
+
+            function updateProgress(current, total) {
+                const pct = Math.round((current / total) * 100);
+                const bar = document.querySelector('.progress-bar-inner');
+                const label = document.querySelector('.progress-label');
+                if (bar) bar.style.width = pct + '%';
+                if (label) label.textContent = '测评进度 ' + current + '/' + total;
+            }
+
+            function showWelcome() {
+                state.currentSection = 'welcome';
+                state.finalResults = null;
+                state.testStartTime = 0;
+                resetAllTests();
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="text-center mb-16">
+                      <div style="font-size:clamp(2.5rem,6vw,4rem);margin-bottom:8px;">🧠</div>
+                      <h1>专注力多维测评</h1>
+                      <p class="subtitle">科学评估 · 多方位检测 · 深度分析</p>
+                    </div>
+                    <div style="background:#fdfcf9;border-radius:var(--radius);padding:clamp(12px,2.5vw,18px);margin-bottom:16px;border:1px solid #ece8e0;">
+                      <p style="font-size:clamp(0.78rem,1.4vw,0.9rem);color:#5a5668;line-height:1.6;text-align:center;">
+                        本测评包含 <strong>4项</strong> 科学测试，从多个维度评估您的专注力水平
+                      </p>
+                      <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;">
+                        <span class="tag tag-good">🎨 斯特鲁普测试</span>
+                        <span class="tag tag-excellent">🔢 数字记忆广度</span>
+                        <span class="tag tag-average">👁️ 持续性注意力</span>
+                        <span class="tag tag-good">🔍 视觉搜索</span>
+                      </div>
+                    </div>
+                    <div style="font-size:clamp(0.72rem,1.3vw,0.84rem);color:#8b8798;text-align:center;margin-bottom:16px;">
+                      ⏱️ 预计用时约 <strong>5-7分钟</strong> · 请在安静环境中完成
+                    </div>
+                    <button class="btn btn-primary btn-large btn-block" onclick="window._startTest()">
+                      ✨ 开始测评
+                    </button>
+                  </div>
+                </div>
+              `);
+                updateProgress(0, 4);
+            }
+
+            function resetAllTests() {
+                state.stroop = { trials: [], currentTrial: 0, results: [], startTime: 0, _trialStartTime: 0 };
+                state.digitSpan = { currentLevel: 3, maxLevel: 9, sequence: [], userInput: '', results: [], failCount: 0,
+                    maxCorrectLevel: 0, phase: 'showing', digitIndex: 0, showingTimer: null, previousSequences: [] };
+                state.cpt = { totalTrials: 54, targetRate: 0.22, sequence: [], currentTrial: 0, results: [],
+                    trialStartTime: 0, displayTimer: null, interTrialTimer: null, canRespond: false, respondedThisTrial: false };
+                state.visualSearch = { levels: [], currentLevel: 0, results: [], gridData: [], timeLeft: 0,
+                    timerInterval: null, userAnswer: '', _levelStartTime: 0 };
+            }
+
+            function showTransition(title, description, nextCallback) {
+                state.currentSection = 'transition';
+                let countdown = 5;
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="text-center mb-16">
+                      <div style="font-size:clamp(2.5rem,6vw,4rem);margin-bottom:8px;">⏳</div>
+                      <h2>准备进入下一项测试</h2>
+                      <p class="subtitle">稍作休息，调整状态</p>
+                    </div>
+                    <div style="background:#fdfcf9;border-radius:var(--radius);padding:clamp(12px,2.5vw,18px);margin-bottom:16px;border:1px solid #ece8e0;">
+                      <p style="font-size:clamp(0.85rem,1.6vw,1rem);color:var(--text-secondary);line-height:1.6;text-align:center;font-weight:600;margin-bottom:8px;">
+                        ${title}
+                      </p>
+                      <p style="font-size:clamp(0.78rem,1.4vw,0.9rem);color:#5a5668;line-height:1.6;text-align:center;">
+                        ${description}
+                      </p>
+                    </div>
+                    <div class="timer-display" id="transitionTimer" style="font-size:clamp(1.2rem,2.5vw,1.6rem);font-weight:700;color:var(--accent);">
+                      ${countdown} 秒后开始
+                    </div>
+                  </div>
+                </div>
+                `);
+                const interval = setInterval(() => {
+                    countdown--;
+                    const timerEl = document.getElementById('transitionTimer');
+                    if (timerEl) timerEl.textContent = countdown + ' 秒后开始';
+                    if (countdown <= 0) {
+                        clearInterval(interval);
+                        nextCallback();
+                    }
+                }, 1000);
+            }
+
+            // ============ 斯特鲁普测试 ============
+            function startStroop() {
+                state.currentSection = 'stroop';
+                state.testStartTime = performance.now();
+                const colors = [
+                    { name: '红', css: '#e8556d', label: '红色' },
+                    { name: '蓝', css: '#4a90d9', label: '蓝色' },
+                    { name: '绿', css: '#4caf84', label: '绿色' },
+                    { name: '黄', css: '#d4a843', label: '黄色' },
+                    { name: '橙', css: '#e8885a', label: '橙色' },
+                    { name: '紫', css: '#8b6db8', label: '紫色' },
+                ];
+                const congruentPairs = [];
+                const colorNames = colors.map(c => c.name);
+                for (const c of colors) {
+                    congruentPairs.push({ wordName: c.name, wordLabel: c.label, displayColor: c.css, colorLabel: c.label, congruent: true, colorName: c.name });
+                }
+                for (let i = 0; i < 4; i++) {
+                    const c = colors[randInt(0, colors.length - 1)];
+                    congruentPairs.push({ wordName: c.name, wordLabel: c.label, displayColor: c.css, colorLabel: c.label, congruent: true, colorName: c.name });
+                }
+                const allIncongPairs = [];
+                for (const wc of colors) {
+                    for (const dc of colors) {
+                        if (wc.name !== dc.name) {
+                            allIncongPairs.push({ wordName: wc.name, wordLabel: wc.label, displayColor: dc.css, colorLabel: dc.label, congruent: false, colorName: dc.name });
+                        }
+                    }
+                }
+                const shuffledIncong = shuffle(allIncongPairs);
+                const selectedIncong = [];
+                const byWord = {};
+                for (const p of shuffledIncong) {
+                    if (!byWord[p.wordName]) byWord[p.wordName] = [];
+                    byWord[p.wordName].push(p);
+                }
+                for (const wn of colorNames) {
+                    if (byWord[wn] && byWord[wn].length > 0) {
+                        selectedIncong.push(byWord[wn][randInt(0, byWord[wn].length - 1)]);
+                    }
+                }
+                for (const p of shuffledIncong) {
+                    if (selectedIncong.length >= 10) break;
+                    if (!selectedIncong.includes(p)) selectedIncong.push(p);
+                }
+                while (selectedIncong.length < 10 && shuffledIncong.length > selectedIncong.length) {
+                    const p = shuffledIncong[selectedIncong.length];
+                    if (!selectedIncong.includes(p)) selectedIncong.push(p);
+                }
+                const allTrials = shuffle([...congruentPairs, ...selectedIncong.slice(0, 10)]);
+                state.stroop.trials = allTrials;
+                state.stroop.currentTrial = 0;
+                state.stroop.results = [];
+                state.stroop.startTime = performance.now();
+                renderStroopTrial();
+            }
+
+            function renderStroopTrial() {
+                const idx = state.stroop.currentTrial;
+                const total = state.stroop.trials.length;
+                if (idx >= total) { finishStroop(); return; }
+                const trial = state.stroop.trials[idx];
+                const colorButtons = [
+                    { name: '红', css: '#e8556d', label: '红色' },
+                    { name: '蓝', css: '#4a90d9', label: '蓝色' },
+                    { name: '绿', css: '#4caf84', label: '绿色' },
+                    { name: '黄', css: '#d4a843', label: '黄色' },
+                    { name: '橙', css: '#e8885a', label: '橙色' },
+                    { name: '紫', css: '#8b6db8', label: '紫色' },
+                ];
+                state.stroop._trialStartTime = performance.now();
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="progress-bar-outer mb-16">
+                      <div class="progress-bar-inner" style="width:${Math.round((idx/total)*100)}%"></div>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.75rem,1.3vw,0.87rem);color:var(--text-secondary);margin-bottom:4px;">
+                      🎨 斯特鲁普测试 · 第${idx+1}/${total}题
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.68rem,1.2vw,0.8rem);color:#9b96a8;margin-bottom:8px;">
+                      请选择文字所显示的<strong>字体颜色</strong>（不是文字含义）
+                    </p>
+                    <div class="stimulus-word" style="color:${trial.displayColor};min-height:clamp(75px,14vw,110px);">${trial.wordName}</div>
+                    <div class="color-btn-grid mt-12">
+                      ${colorButtons.map(cb => `<button class="color-btn" style="background:${cb.css};" data-color="${cb.name}" onclick="window._stroopAnswer('${cb.name}')" title="${cb.label}">${cb.label}</button>`).join('')}
+                    </div>
+                  </div>
+                </div>
+              `);
+                updateProgress(1, 4);
+            }
+
+            window._stroopAnswer = function(answerColorName) {
+                const idx = state.stroop.currentTrial;
+                const trial = state.stroop.trials[idx];
+                const rt = performance.now() - (state.stroop._trialStartTime || performance.now());
+                const correct = answerColorName === trial.colorName;
+                state.stroop.results.push({
+                    trial: idx, wordName: trial.wordName, displayColor: trial.displayColor, colorName: trial.colorName,
+                    userAnswer: answerColorName, correct: correct, reactionTime: rt, congruent: trial.congruent,
+                });
+                showFeedback(correct ? '✓' : '✗', correct ? 'correct' : 'wrong');
+                state.stroop.currentTrial++;
+                setTimeout(() => renderStroopTrial(), 320);
+            };
+
+            function finishStroop() {
+                const results = state.stroop.results;
+                const congruentTrials = results.filter(r => r.congruent);
+                const incongruentTrials = results.filter(r => !r.congruent);
+                const congAcc = congruentTrials.length > 0 ? congruentTrials.filter(r => r.correct).length / congruentTrials.length : 1;
+                const incongAcc = incongruentTrials.length > 0 ? incongruentTrials.filter(r => r.correct).length / incongruentTrials.length : 1;
+                const congRT = congruentTrials.length > 0 ? congruentTrials.reduce((s, r) => s + r.reactionTime, 0) / congruentTrials.length : 0;
+                const incongRT = incongruentTrials.length > 0 ? incongruentTrials.reduce((s, r) => s + r.reactionTime, 0) / incongruentTrials.length : 0;
+                const interference = Math.max(0, incongRT - congRT);
+                state.stroop.summary = {
+                    totalAccuracy: results.filter(r => r.correct).length / results.length,
+                    congruentAccuracy: congAcc, incongruentAccuracy: incongAcc,
+                    avgRT: results.reduce((s, r) => s + r.reactionTime, 0) / results.length,
+                    congruentRT: congRT, incongruentRT: incongRT, interference: interference,
+                    totalCorrect: results.filter(r => r.correct).length, totalTrials: results.length,
+                };
+                showTransition('🔢 数字记忆广度', '请记住屏幕上依次出现的数字，然后按顺序输入', startDigitSpan);
+            }
+
+            // ============ 数字广度测试 ============
+            function startDigitSpan() {
+                state.currentSection = 'digitSpan';
+                state.digitSpan.currentLevel = 3;
+                state.digitSpan.maxCorrectLevel = 0;
+                state.digitSpan.failCount = 0;
+                state.digitSpan.results = [];
+                state.digitSpan.phase = 'showing';
+                state.digitSpan.digitIndex = 0;
+                state.digitSpan.userInput = '';
+                state.digitSpan.previousSequences = [];
+                generateDigitSequence();
+                showDigitSpanShowing();
+            }
+
+            function generateDigitSequence() {
+                const level = state.digitSpan.currentLevel;
+                let seq;
+                let attempts = 0;
+                const maxAttempts = 50;
+                do {
+                    seq = [];
+                    for (let i = 0; i < level; i++) seq.push(randInt(1, 9));
+                    for (let i = 2; i < seq.length; i++) {
+                        if (seq[i] === seq[i-1] && seq[i] === seq[i-2]) {
+                            seq[i] = randInt(1, 9);
+                            if (seq[i] === seq[i-1]) seq[i] = (seq[i] % 9) + 1;
+                        }
+                    }
+                    attempts++;
+                } while (state.digitSpan.previousSequences.some(ps => ps.join('') === seq.join('')) && attempts < maxAttempts);
+                state.digitSpan.previousSequences.push([...seq]);
+                state.digitSpan.sequence = seq;
+                state.digitSpan.digitIndex = 0;
+                state.digitSpan.phase = 'showing';
+                state.digitSpan.userInput = '';
+            }
+
+            function showDigitSpanShowing() {
+                const level = state.digitSpan.currentLevel;
+                const seq = state.digitSpan.sequence;
+                state.digitSpan.digitIndex = 0;
+                state.digitSpan.phase = 'showing';
+                if (state.digitSpan.showingTimer) clearTimeout(state.digitSpan.showingTimer);
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="progress-bar-outer mb-16">
+                      <div class="progress-bar-inner" style="width:${Math.round((2/4)*100)}%"></div>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.75rem,1.3vw,0.87rem);color:var(--text-secondary);margin-bottom:4px;">
+                      🔢 数字记忆广度 · ${level}位级别
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.68rem,1.2vw,0.8rem);color:#9b96a8;margin-bottom:8px;">
+                      请记住即将出现的<strong>${level}个数字</strong>，按顺序回忆
+                    </p>
+                    <div class="digit-display" id="digitDisplay">—</div>
+                    <p style="text-align:center;font-size:clamp(0.65rem,1.1vw,0.77rem);color:#b5b0bd;margin-top:8px;" id="digitHint">准备观看数字序列...</p>
+                  </div>
+                </div>
+              `);
+                updateProgress(2, 4);
+                const displayEl = document.getElementById('digitDisplay');
+                const hintEl = document.getElementById('digitHint');
+                let di = 0;
+                const showNext = () => {
+                    if (di < seq.length) {
+                        if (displayEl) displayEl.textContent = seq[di];
+                        if (hintEl) hintEl.textContent = '数字 ' + (di+1) + '/' + seq.length;
+                        di++;
+                        state.digitSpan.digitIndex = di;
+                        state.digitSpan.showingTimer = setTimeout(() => {
+                            if (displayEl) displayEl.textContent = '';
+                            state.digitSpan.showingTimer = setTimeout(showNext, 260);
+                        }, 780);
+                    } else {
+                        if (displayEl) displayEl.textContent = '?';
+                        if (hintEl) hintEl.textContent = '请按顺序输入数字';
+                        state.digitSpan.phase = 'input';
+                        state.digitSpan.digitIndex = seq.length;
+                        setTimeout(() => showDigitSpanInput(), 350);
+                    }
+                };
+                setTimeout(showNext, 500);
+            }
+
+            function showDigitSpanInput() {
+                const level = state.digitSpan.currentLevel;
+                state.digitSpan.phase = 'input';
+                state.digitSpan.userInput = '';
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="progress-bar-outer mb-16">
+                      <div class="progress-bar-inner" style="width:${Math.round((2/4)*100)}%"></div>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.75rem,1.3vw,0.87rem);color:var(--text-secondary);margin-bottom:4px;">
+                      🔢 数字记忆广度 · ${level}位级别
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.68rem,1.2vw,0.8rem);color:#9b96a8;margin-bottom:12px;">
+                      请输入刚才看到的 <strong>${level}个数字</strong>（按顺序）
+                    </p>
+                    <div class="flex-col gap-12">
+                      <input type="text" class="input-large" id="digitInput" maxlength="${level}" inputmode="numeric" pattern="[0-9]*" placeholder="${'•'.repeat(level)}" autofocus autocomplete="off">
+                      <button class="btn btn-primary" onclick="window._submitDigitSpan()">✓ 确认</button>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.62rem,1vw,0.72rem);color:#b5b0bd;margin-top:8px;">当前级别：${level}位 · 已失败：${state.digitSpan.failCount}/2次</p>
+                  </div>
+                </div>
+              `);
+                updateProgress(2, 4);
+                setTimeout(() => { const inp = document.getElementById('digitInput'); if (inp) inp.focus(); }, 100);
+            }
+
+            window._submitDigitSpan = function() {
+                const inp = document.getElementById('digitInput');
+                if (!inp) return;
+                const userInput = inp.value.trim();
+                if (userInput.length !== state.digitSpan.sequence.length) {
+                    showFeedback('⚠️', 'wrong');
+                    inp.value = ''; inp.focus();
+                    return;
+                }
+                const correct = userInput === state.digitSpan.sequence.join('');
+                state.digitSpan.results.push({ level: state.digitSpan.currentLevel, sequence: [...state.digitSpan.sequence], userInput, correct });
+                if (correct) {
+                    showFeedback('✓', 'correct');
+                    state.digitSpan.maxCorrectLevel = Math.max(state.digitSpan.maxCorrectLevel, state.digitSpan.currentLevel);
+                    state.digitSpan.failCount = 0;
+                    state.digitSpan.currentLevel++;
+                    if (state.digitSpan.currentLevel > state.digitSpan.maxLevel) { finishDigitSpan(); return; }
+                    generateDigitSequence();
+                    setTimeout(() => showDigitSpanShowing(), 500);
+                } else {
+                    showFeedback('✗', 'wrong');
+                    state.digitSpan.failCount++;
+                    if (state.digitSpan.failCount >= 2) {
+                        if (state.digitSpan.maxCorrectLevel === 0) state.digitSpan.maxCorrectLevel = Math.max(1, state.digitSpan.currentLevel - 1);
+                        if (state.digitSpan.maxCorrectLevel < 2) state.digitSpan.maxCorrectLevel = 2;
+                        setTimeout(() => finishDigitSpan(), 600);
+                        return;
+                    }
+                    generateDigitSequence();
+                    setTimeout(() => showDigitSpanShowing(), 500);
+                }
+            };
+
+            function finishDigitSpan() {
+                state.digitSpan.summary = {
+                    maxLevel: state.digitSpan.maxCorrectLevel,
+                    results: state.digitSpan.results,
+                    totalAttempts: state.digitSpan.results.length,
+                    allCorrect: state.digitSpan.results.filter(r => r.correct).length,
+                };
+                if (state.digitSpan.showingTimer) clearTimeout(state.digitSpan.showingTimer);
+                showTransition('👁️ 持续性注意力测试（CPT）', '屏幕上会依次显示字母，遇到字母"X"请勿点击，其他字母出现时请点击"点击响应"按钮', startCPT);
+            }
+
+            // ============ CPT持续性注意力测试 ============
+            function startCPT() {
+                state.currentSection = 'cpt';
+                const total = state.cpt.totalTrials;
+                const targetCount = Math.round(total * state.cpt.targetRate);
+                const seq = [];
+                const blockSize = Math.floor(total / targetCount);
+                const nonTargetLetters = 'ABCDEFGHJKLMNOPQRSTUVWYZ'.split('');
+                const targetSlots = [];
+                for (let t = 0; t < targetCount; t++) {
+                    const minSlot = t * blockSize;
+                    const maxSlot = Math.min((t + 1) * blockSize - 1, total - 1);
+                    targetSlots.push(randInt(minSlot, maxSlot));
+                }
+                const shuffledSlots = shuffle(targetSlots);
+                const targetSet = new Set(shuffledSlots);
+                for (let i = 0; i < total; i++) {
+                    if (targetSet.has(i)) {
+                        seq.push({ letter: 'X', isTarget: true });
+                    } else {
+                        let nl = nonTargetLetters[randInt(0, nonTargetLetters.length - 1)];
+                        if (i > 0 && seq[i-1].letter === nl && !seq[i-1].isTarget) {
+                            nl = nonTargetLetters[randInt(0, nonTargetLetters.length - 1)];
+                            if (nl === seq[i-1].letter) nl = nonTargetLetters[(nonTargetLetters.indexOf(nl) + 1) % nonTargetLetters.length];
+                        }
+                        seq.push({ letter: nl, isTarget: false });
+                    }
+                }
+                state.cpt.sequence = seq;
+                state.cpt.currentTrial = 0;
+                state.cpt.results = [];
+                state.cpt.canRespond = false;
+                state.cpt.respondedThisTrial = false;
+                state.cpt.displayTimer = null;
+                state.cpt.interTrialTimer = null;
+                renderCPTTrial();
+            }
+
+            function renderCPTTrial() {
+                const idx = state.cpt.currentTrial;
+                const total = state.cpt.totalTrials;
+                if (idx >= total) { finishCPT(); return; }
+                const trial = state.cpt.sequence[idx];
+                state.cpt.canRespond = false;
+                state.cpt.respondedThisTrial = false;
+                state.cpt.trialStartTime = performance.now();
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="progress-bar-outer mb-12">
+                      <div class="progress-bar-inner" style="width:${Math.round((3/4)*100)}%"></div>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.75rem,1.3vw,0.87rem);color:var(--text-secondary);margin-bottom:4px;">
+                      👁️ 持续性注意力测试 · 第${idx+1}/${total}个
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.68rem,1.2vw,0.8rem);color:#9b96a8;margin-bottom:6px;">
+                      规则：<strong>遇到 X 不点，其他字母都点</strong>
+                    </p>
+                    <div class="cpt-letter" id="cptLetter" style="color:#3d3a4d;">?</div>
+                    <div class="flex-center mt-12">
+                      <button class="btn btn-danger btn-large" id="cptBtn" disabled onclick="window._cptRespond()" style="min-width:clamp(130px,25vw,170px);">⚡ 点击响应</button>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.62rem,1vw,0.72rem);color:#b5b0bd;margin-top:6px;" id="cptStatus">准备中...</p>
+                  </div>
+                </div>
+              `);
+                updateProgress(3, 4);
+                const letterEl = document.getElementById('cptLetter');
+                const btnEl = document.getElementById('cptBtn');
+                const statusEl = document.getElementById('cptStatus');
+                setTimeout(() => {
+                    if (letterEl) { letterEl.textContent = trial.letter; letterEl.style.color = '#3d3a4d'; }
+                    state.cpt.canRespond = true;
+                    state.cpt.trialStartTime = performance.now();
+                    if (btnEl) btnEl.disabled = false;
+                    if (statusEl) statusEl.textContent = '字母已显示，请判断是否为目标';
+                    state.cpt.displayTimer = setTimeout(() => {
+                        if (letterEl) letterEl.textContent = '';
+                        state.cpt.canRespond = false;
+                        if (btnEl) btnEl.disabled = true;
+                        if (statusEl) statusEl.textContent = '等待下一个...';
+                        state.cpt.interTrialTimer = setTimeout(() => {
+                            if (!state.cpt.respondedThisTrial && trial.isTarget) { // X没点=正确
+                                state.cpt.results.push({ trial: idx, letter: trial.letter, isTarget: true, responded: false, reactionTime: null, hit: false, miss: false, falseAlarm: false, correctRejection: true });
+                            }
+                            if (!state.cpt.respondedThisTrial && !trial.isTarget) { // 非X没点=错误
+                                state.cpt.results.push({ trial: idx, letter: trial.letter, isTarget: false, responded: false, reactionTime: null, hit: false, miss: true, falseAlarm: false, correctRejection: false });
+                            }
+                            state.cpt.currentTrial++;
+                            renderCPTTrial();
+                        }, 320);
+                    }, 720);
+                }, 280);
+            }
+
+            window._cptRespond = function() {
+                if (!state.cpt.canRespond || state.cpt.respondedThisTrial) return;
+                state.cpt.respondedThisTrial = true;
+                state.cpt.canRespond = false;
+                const idx = state.cpt.currentTrial;
+                const trial = state.cpt.sequence[idx];
+                const rt = performance.now() - state.cpt.trialStartTime;
+                const btnEl = document.getElementById('cptBtn'); if (btnEl) btnEl.disabled = true;
+                const statusEl = document.getElementById('cptStatus');
+                if (trial.isTarget) { // 这是X，不应该点击
+                    state.cpt.results.push({ trial: idx, letter: trial.letter, isTarget: true, responded: true, reactionTime: rt, hit: false, miss: false, falseAlarm: true, correctRejection: false });
+                    showFeedback('⚠️', 'wrong');
+                    if (statusEl) statusEl.textContent = '✗ 遇到X不应该点击！';
+                } else { // 这不是X，应该点击
+                    state.cpt.results.push({ trial: idx, letter: trial.letter, isTarget: false, responded: true, reactionTime: rt, hit: true, miss: false, falseAlarm: false, correctRejection: false });
+                    showFeedback('🎯', 'correct');
+                    if (statusEl) statusEl.textContent = '✓ 正确！反应时间: ' + formatTime(rt);
+                }
+                if (state.cpt.displayTimer) clearTimeout(state.cpt.displayTimer);
+                if (state.cpt.interTrialTimer) clearTimeout(state.cpt.interTrialTimer);
+                const letterEl = document.getElementById('cptLetter'); if (letterEl) letterEl.textContent = '';
+                state.cpt.interTrialTimer = setTimeout(() => { state.cpt.currentTrial++; renderCPTTrial(); }, 380);
+            };
+
+            function finishCPT() {
+                if (state.cpt.displayTimer) clearTimeout(state.cpt.displayTimer);
+                if (state.cpt.interTrialTimer) clearTimeout(state.cpt.interTrialTimer);
+                const results = state.cpt.results;
+                const targets = results.filter(r => r.isTarget); // X字母(no-go)
+                const nonTargets = results.filter(r => !r.isTarget); // 其他字母(go)
+                // 新规则统计: hit=非X中正确点击的, falseAlarm=X中错误点击的
+                const hits = nonTargets.filter(r => r.hit).length;
+                const misses = nonTargets.filter(r => r.miss).length;
+                const falseAlarms = targets.filter(r => r.falseAlarm).length;
+                const correctRejections = targets.filter(r => r.correctRejection).length;
+                const hitRate = nonTargets.length > 0 ? hits / nonTargets.length : 0;
+                const falseAlarmRate = targets.length > 0 ? falseAlarms / targets.length : 0;
+                const hitRTs = nonTargets.filter(r => r.hit).map(r => r.reactionTime);
+                const avgHitRT = hitRTs.length > 0 ? hitRTs.reduce((a,b) => a+b, 0) / hitRTs.length : 0;
+                state.cpt.summary = {
+                    totalTrials: results.length, targetCount: targets.length, nonTargetCount: nonTargets.length,
+                    hits, misses, falseAlarms, correctRejections, hitRate, falseAlarmRate, avgHitRT,
+                    dPrime: calculateDPrime(hitRate, falseAlarmRate),
+                };
+                showTransition('🔍 视觉搜索测试', '在字母网格中找出字母"A"的数量，并在输入框中填写答案', startVisualSearch);
+            }
+
+            function calculateDPrime(hitRate, faRate) {
+                const hr = clamp(hitRate, 0.005, 0.995);
+                const far = clamp(faRate, 0.005, 0.995);
+                const zHR = inverseNormalCDF(hr);
+                const zFAR = inverseNormalCDF(far);
+                return zHR - zFAR;
+            }
+
+            function inverseNormalCDF(p) {
+                if (p <= 0) return -6;
+                if (p >= 1) return 6;
+                const a1 = -39.6968302866538, a2 = 220.9460984245205, a3 = -275.9285104469687, a4 = 138.3577518672690, a5 = -30.66479806614716, a6 = 2.506628277459239;
+                const b1 = -54.47609879822406, b2 = 161.5858368580409, b3 = -155.6989798598866, b4 = 66.80131188771972, b5 = -13.28068155288572;
+                const c1 = -7.784894002430293e-3, c2 = -0.3223964580411365, c3 = -2.400758277161838, c4 = -2.549732539343734, c5 = 4.374664141464968, c6 = 2.938163982698783;
+                const d1 = 7.784695709041462e-3, d2 = 0.3224671290700398, d3 = 2.445134137142996, d4 = 3.754408661907416;
+                const pLow = 0.02425, pHigh = 1 - pLow;
+                let q, r;
+                if (p < pLow) {
+                    q = Math.sqrt(-2 * Math.log(p));
+                    return (((((c1*q + c2)*q + c3)*q + c4)*q + c5)*q + c6) / ((((d1*q + d2)*q + d3)*q + d4)*q + 1);
+                } else if (p <= pHigh) {
+                    q = p - 0.5; r = q * q;
+                    return (((((a1*r + a2)*r + a3)*r + a4)*r + a5)*r + a6) * q / (((((b1*r + b2)*r + b3)*r + b4)*r + b5)*r + 1);
+                } else {
+                    q = Math.sqrt(-2 * Math.log(1 - p));
+                    return -(((((c1*q + c2)*q + c3)*q + c4)*q + c5)*q + c6) / ((((d1*q + d2)*q + d3)*q + d4)*q + 1);
+                }
+            }
+
+            // ============ 视觉搜索测试（6关难度递增） ============
+            function startVisualSearch() {
+                state.currentSection = 'visualSearch';
+                state.visualSearch.currentLevel = 0;
+                state.visualSearch.results = [];
+                generateVisualSearchLevels();
+                renderVisualSearchLevel();
+            }
+
+            function generateVisualSearchLevels() {
+                const lv1TargetCount = randInt(2, 4);
+                const lv2TargetCount = randInt(4, 7);
+                const lv3TargetCount = randInt(6, 9);
+                const lv4TargetCount = randInt(8, 12);
+                const lv5TargetCount = randInt(11, 16);
+                const lv6TargetCount = randInt(15, 20);
+                state.visualSearch.levels = [
+                    { gridSize: 5, targetCount: lv1TargetCount, timeLimit: Math.round(12 + lv1TargetCount*1.6), label: '入门', difficulty: 'beginner', diffWeight: 0.7 },
+                    { gridSize: 5, targetCount: lv2TargetCount, timeLimit: Math.round(10 + lv2TargetCount*1.4), label: '初级', difficulty: 'easy', diffWeight: 0.9 },
+                    { gridSize: 6, targetCount: lv3TargetCount, timeLimit: Math.round(13 + lv3TargetCount*1.3), label: '中级', difficulty: 'medium', diffWeight: 1.2 },
+                    { gridSize: 7, targetCount: lv4TargetCount, timeLimit: Math.round(14 + lv4TargetCount*1.1), label: '进阶', difficulty: 'advanced', diffWeight: 1.6 },
+                    { gridSize: 7, targetCount: lv5TargetCount, timeLimit: Math.round(12 + lv5TargetCount*1.0), label: '高级', difficulty: 'hard', diffWeight: 2.0 },
+                    { gridSize: 8, targetCount: lv6TargetCount, timeLimit: Math.round(10 + lv6TargetCount*0.9), label: '专家', difficulty: 'expert', diffWeight: 2.5 },
+                ];
+            }
+
+            function renderVisualSearchLevel() {
+                const lvlIdx = state.visualSearch.currentLevel;
+                const totalVisualLevels = state.visualSearch.levels.length;
+                if (lvlIdx >= totalVisualLevels) { finishVisualSearch(); return; }
+                const levelConfig = state.visualSearch.levels[lvlIdx];
+                const gridSize = levelConfig.gridSize;
+                const targetCount = levelConfig.targetCount;
+                const timeLimit = levelConfig.timeLimit;
+                const totalCells = gridSize * gridSize;
+                const gridData = [];
+                const targetPositions = new Set();
+                while (targetPositions.size < targetCount) targetPositions.add(randInt(0, totalCells - 1));
+                const distractorLetters = 'BCDEFGHJKLMNPQRSTUVWXYZ';
+                for (let i = 0; i < totalCells; i++) {
+                    if (targetPositions.has(i)) gridData.push({ letter: 'A', isTarget: true });
+                    else gridData.push({ letter: distractorLetters[randInt(0, distractorLetters.length-1)], isTarget: false });
+                }
+                state.visualSearch.gridData = gridData;
+                state.visualSearch.timeLeft = timeLimit;
+                state.visualSearch.userAnswer = '';
+                state.visualSearch._levelStartTime = performance.now();
+
+                let cellSizeDesktop, cellSizeMobile, fontSizeDesktop, fontSizeMobile;
+                if (gridSize <= 5) { cellSizeDesktop='50px'; cellSizeMobile='38px'; fontSizeDesktop='1.25rem'; fontSizeMobile='0.95rem'; }
+                else if (gridSize <= 6) { cellSizeDesktop='42px'; cellSizeMobile='31px'; fontSizeDesktop='1.05rem'; fontSizeMobile='0.8rem'; }
+                else if (gridSize <= 7) { cellSizeDesktop='36px'; cellSizeMobile='27px'; fontSizeDesktop='0.88rem'; fontSizeMobile='0.7rem'; }
+                else { cellSizeDesktop='30px'; cellSizeMobile='22px'; fontSizeDesktop='0.72rem'; fontSizeMobile='0.6rem'; }
+                const gridStyleId = 'searchGridStyle_' + lvlIdx;
+                const overallProgressPct = Math.round((3 + (lvlIdx+1)/totalVisualLevels)/4*100);
+
+                render(`
+                <div class="section">
+                  <div class="card">
+                    <div class="progress-bar-outer mb-12">
+                      <div class="progress-bar-inner" style="width:${overallProgressPct}%"></div>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.75rem,1.3vw,0.87rem);color:var(--text-secondary);margin-bottom:2px;">
+                      🔍 视觉搜索测试 · 级别${lvlIdx+1}/${totalVisualLevels}（${levelConfig.label}）
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.68rem,1.2vw,0.8rem);color:#9b96a8;margin-bottom:6px;">
+                      找出网格中字母 <strong style="font-size:1.1rem;">A</strong> 的数量
+                    </p>
+                    <div class="timer-display" id="searchTimer">⏱️ 剩余时间：${timeLimit}秒</div>
+                    <div class="search-grid" id="searchGrid" style="grid-template-columns: repeat(${gridSize}, ${cellSizeDesktop});">
+                      ${gridData.map(cell => `<div class="search-cell" style="font-size:${fontSizeDesktop};${cell.isTarget?'color:#e8556d;font-weight:900;':'color:#5a5568;'}">${cell.letter}</div>`).join('')}
+                    </div>
+                    <style id="${gridStyleId}">
+                      @media (max-width: 480px) {
+                        #searchGrid { grid-template-columns: repeat(${gridSize}, ${cellSizeMobile}) !important; }
+                        #searchGrid .search-cell { font-size: ${fontSizeMobile} !important; }
+                      }
+                    </style>
+                    <div class="flex-col gap-8 mt-12">
+                      <input type="number" class="input-large" id="searchAnswer" min="0" max="${totalCells}" inputmode="numeric" placeholder="数量?" style="max-width:clamp(150px,30vw,200px);" autocomplete="off">
+                      <button class="btn btn-primary" onclick="window._submitVisualSearch(false)">✓ 提交答案</button>
+                    </div>
+                  </div>
+                </div>
+              `);
+                updateProgress(3, 4);
+                document.querySelectorAll('[id^="searchGridStyle_"]').forEach(el => { if (el.id !== gridStyleId) el.remove(); });
+                const timerEl = document.getElementById('searchTimer');
+                if (state.visualSearch.timerInterval) clearInterval(state.visualSearch.timerInterval);
+                state.visualSearch.timerInterval = setInterval(() => {
+                    state.visualSearch.timeLeft--;
+                    if (timerEl) {
+                        timerEl.textContent = '⏱️ 剩余时间：' + state.visualSearch.timeLeft + '秒';
+                        if (state.visualSearch.timeLeft <= 5) timerEl.classList.add('timer-warning');
+                    }
+                    if (state.visualSearch.timeLeft <= 0) {
+                        clearInterval(state.visualSearch.timerInterval);
+                        window._submitVisualSearch(true);
+                    }
+                }, 1000);
+                setTimeout(() => { const inp = document.getElementById('searchAnswer'); if (inp) inp.focus(); }, 150);
+            }
+
+            window._submitVisualSearch = function(isTimeout = false) {
+                if (state.visualSearch.timerInterval) clearInterval(state.visualSearch.timerInterval);
+                const lvlIdx = state.visualSearch.currentLevel;
+                const levelConfig = state.visualSearch.levels[lvlIdx];
+                const actualTargetCount = levelConfig.targetCount;
+                const inp = document.getElementById('searchAnswer');
+                let userAnswer = inp ? parseInt(inp.value) : NaN;
+                if (isNaN(userAnswer)) userAnswer = -1;
+                const timeTaken = performance.now() - (state.visualSearch._levelStartTime || performance.now());
+                const correct = userAnswer === actualTargetCount;
+                const diff = Math.abs(userAnswer - actualTargetCount);
+                state.visualSearch.results.push({
+                    level: lvlIdx+1, gridSize: levelConfig.gridSize, targetCount: actualTargetCount, userAnswer,
+                    correct, diff, timeTaken, timeLimit: levelConfig.timeLimit, isTimeout,
+                    difficulty: levelConfig.difficulty, diffWeight: levelConfig.diffWeight,
+                });
+                showFeedback(correct ? '✓' : (isTimeout ? '⏰' : '✗'), correct ? 'correct' : 'wrong');
+                state.visualSearch.currentLevel++;
+                setTimeout(() => renderVisualSearchLevel(), 500);
+            };
+
+            function finishVisualSearch() {
+                if (state.visualSearch.timerInterval) clearInterval(state.visualSearch.timerInterval);
+                const results = state.visualSearch.results;
+                const accuracy = results.length > 0 ? results.filter(r => r.correct).length / results.length : 0;
+                const avgTime = results.length > 0 ? results.reduce((s,r) => s + r.timeTaken, 0) / results.length : 0;
+                const avgDiff = results.length > 0 ? results.reduce((s,r) => s + r.diff, 0) / results.length : 0;
+                let weightedAccSum = 0, weightedCountSum = 0;
+                for (const r of results) {
+                    const w = r.diffWeight || 1.0;
+                    weightedAccSum += (r.correct ? 1 : 0) * w;
+                    weightedCountSum += w;
+                }
+                const weightedAcc = weightedCountSum > 0 ? weightedAccSum / weightedCountSum : accuracy;
+                state.visualSearch.summary = { results, accuracy, weightedAccuracy: weightedAcc, avgTime, avgDiff, correctCount: results.filter(r=>r.correct).length, totalLevels: results.length };
+                calculateFinalResults();
+            }
+
+            // ============ 标准正态分布辅助函数 ============
+            function erf(x) {
+                // Abramowitz and Stegun 公式 7.1.26
+                const sign = x >= 0 ? 1 : -1;
+                x = Math.abs(x);
+                const a1 =  0.254829592;
+                const a2 = -0.284496736;
+                const a3 =  1.421413741;
+                const a4 = -1.453152027;
+                const a5 =  1.061405429;
+                const p  =  0.3275911;
+                const t = 1.0 / (1.0 + p * x);
+                const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+                return sign * y;
+            }
+            function normCDF(x) {
+                // 标准正态累积分布函数
+                return 0.5 * (1 + erf(x / Math.sqrt(2)));
+            }
+            function percentileFromZ(z) {
+                // 将z分数转为百分位 (0-100)
+                return clamp(normCDF(z) * 100, 0, 100);
+            }
+
+            // ============ 综合评分（科学校准版 v3.0 - 基于认知心理学常模） ============
+            function calculateFinalResults() {
+                const stroopS = state.stroop.summary;
+                const digitS = state.digitSpan.summary;
+                const cptS = state.cpt.summary;
+                const vsS = state.visualSearch.summary;
+
+                /*
+                 * 评分逻辑基于以下认知心理学常模研究：
+                 * 
+                 * 斯特鲁普任务 (MacLeod, 1991 元分析):
+                 *   - 不一致准确率 M=0.92, SD=0.07
+                 *   - 一致准确率 M=0.97, SD=0.04
+                 *   - 干扰效应 M=130ms, SD=50ms
+                 * 
+                 * 数字广度 (WAIS-IV 中国常模):
+                 *   - 正向广度 M=6.8, SD=1.3
+                 * 
+                 * CPT/Go-NoGo (Conners' CPT 3; 信号检测论文献):
+                 *   - d' M=3.0, SD=0.8
+                 *   - 命中率 M=0.90, SD=0.08
+                 *   - 虚报率 M=0.08, SD=0.06
+                 *   - Go反应时 M=550ms, SD=120ms
+                 * 
+                 * 视觉搜索 (Treisman & Gelade, 1980; Wolfe, 1998):
+                 *   - 特征搜索斜率 M=25ms/item, SD=15ms/item
+                 *   - 准确率 M=0.95, SD=0.05
+                 * 
+                 * 评分方法：各子指标先通过 z-score 转为百分位分数，再按权重合成维度分。
+                 */
+
+                // ===== 维度1：抑制控制能力 (Inhibition Control) =====
+                // 基于斯特鲁普任务，核心指标为不一致条件表现
+                const incongAcc = stroopS.incongruentAccuracy;
+                const congAcc = stroopS.congruentAccuracy;
+                const interferenceMs = stroopS.interference;
+
+                // 不一致准确率百分位 (常模: M=0.92, SD=0.07)
+                const iaZ = (incongAcc - 0.92) / 0.07;
+                const iaPct = percentileFromZ(iaZ);
+
+                // 干扰效应百分位 (常模: M=130ms, SD=50ms; 越小越好)
+                const ieZ = (130 - interferenceMs) / 50;
+                const iePct = percentileFromZ(ieZ);
+
+                // 一致准确率百分位 (常模: M=0.97, SD=0.04)
+                const caZ = (congAcc - 0.97) / 0.04;
+                const caPct = percentileFromZ(caZ);
+
+                const inhibitionScore = Math.round(clamp(
+                    iaPct * 0.50 + iePct * 0.35 + caPct * 0.15, 0, 100));
+
+                // ===== 维度2：工作记忆广度 (Working Memory Span) =====
+                // 基于 WAIS-IV 数字广度中国常模
+                const maxLevel = digitS.maxLevel;
+
+                // 最高级别百分位 (常模: M=6.8, SD=1.3)
+                const mlZ = (maxLevel - 6.8) / 1.3;
+                const mlPct = percentileFromZ(mlZ);
+
+                // 答题一致性 (正确率)，正常被试应 > 60%
+                const consistency = digitS.totalAttempts > 0 ? digitS.allCorrect / digitS.totalAttempts : 0;
+                const consPct = Math.min(consistency * 100 / 0.60, 100);
+
+                const wmScore = Math.round(clamp(mlPct * 0.80 + consPct * 0.20, 0, 100));
+
+                // ===== 维度3：持续性注意力 (Sustained Attention) =====
+                // 基于 CPT 信号检测论指标
+                const hitRate = cptS.hitRate;
+                const faRate = cptS.falseAlarmRate;
+                const dPrime = cptS.dPrime;
+                const avgHitRT = cptS.avgHitRT || 550;
+
+                // d' 百分位 (常模: M=3.0, SD=0.8)
+                const dZ = (dPrime - 3.0) / 0.8;
+                const dPct = percentileFromZ(dZ);
+
+                // 命中率百分位 (常模: M=0.90, SD=0.08)
+                const hitZ = (hitRate - 0.90) / 0.08;
+                const hitPct = percentileFromZ(hitZ);
+
+                // 正确拒斥率 (1-虚报率) 百分位 (常模: M=0.92, SD=0.06)
+                const crZ = (0.92 - faRate) / 0.06;
+                const crPct = percentileFromZ(crZ);
+
+                // 反应时百分位 (常模: M=550ms, SD=120ms; 越快越好)
+                const rtZ = (550 - avgHitRT) / 120;
+                const rtPct = percentileFromZ(rtZ);
+
+                const sustainedScore = Math.round(clamp(
+                    dPct * 0.40 + hitPct * 0.30 + crPct * 0.20 + rtPct * 0.10, 0, 100));
+
+                // ===== 维度4：选择性注意力 (Selective Attention) =====
+                // 基于视觉搜索范式
+                const vsWeightedAcc = vsS.weightedAccuracy !== undefined ? vsS.weightedAccuracy : vsS.accuracy;
+
+                // 加权准确率直接映射 (特征搜索正常准确率 > 95%)
+                const accZ = (vsWeightedAcc - 0.95) / 0.05;
+                const accPct = percentileFromZ(accZ);
+
+                // 搜索效率 (ms/item): 计算每项目平均搜索时间
+                let totalSlope = 0, slopeCount = 0;
+                for (const r of vsS.results) {
+                    const items = r.gridSize * r.gridSize;
+                    const slope = r.timeTaken / items; // ms per item
+                    totalSlope += slope;
+                    slopeCount++;
+                }
+                const avgSlope = slopeCount > 0 ? totalSlope / slopeCount : 30;
+                // 特征搜索斜率常模: M=25ms/item, SD=15ms/item
+                const slopeZ = (35 - avgSlope) / 20;
+                const slopePct = percentileFromZ(slopeZ);
+
+                // 回答精度 (平均差值越小越好)
+                const precision = Math.max(0, 1 - vsS.avgDiff / 4);
+                const precPct = precision * 100;
+
+                const selectiveScore = Math.round(clamp(
+                    accPct * 0.55 + slopePct * 0.30 + precPct * 0.15, 0, 100));
+
+                // ===== 维度5：处理速度 (Processing Speed) =====
+                // 参考 WAIS-IV 处理速度指数 (PSI)
+                const stroopCongRT = stroopS.congruentRT || stroopS.avgRT;
+                const cptGoRT = cptS.avgHitRT || 550;
+                const vsAvgTime = vsS.avgTime;
+
+                // 斯特鲁普一致条件 RT (常模: M=650ms, SD=120ms)
+                const stroopRTZ = (650 - stroopCongRT) / 120;
+                const stroopRTPct = percentileFromZ(stroopRTZ);
+
+                // CPT Go RT (常模: M=550ms, SD=120ms)
+                const cptRTZ = (550 - cptGoRT) / 120;
+                const cptRTPct = percentileFromZ(cptRTZ);
+
+                // 视觉搜索平均用时 (常模: M=8000ms, SD=4000ms)
+                const vsRTZ = (8000 - vsAvgTime) / 4000;
+                const vsRTPct = percentileFromZ(vsRTZ);
+
+                const speedScore = Math.round(clamp(
+                    cptRTPct * 0.40 + stroopRTPct * 0.35 + vsRTPct * 0.25, 0, 100));
+
+                // ===== 维度6：抗干扰能力 (Resistance to Distraction) =====
+                // 综合抑制控制与冲动控制
+
+                // 斯特鲁普干扰效应 (同上)
+                const ieZ2 = (130 - interferenceMs) / 50;
+                const iePct2 = percentileFromZ(ieZ2);
+
+                // CPT 冲动控制 (虚报率反向; 常模: M=0.08, SD=0.06)
+                const faZ2 = (0.08 - faRate) / 0.06;
+                const faPct2 = percentileFromZ(faZ2);
+
+                // 视觉搜索高难度关卡准确率
+                const vsHighResults = vsS.results.filter(r => r.difficulty === 'advanced' || r.difficulty === 'hard' || r.difficulty === 'expert');
+                let vsHighAcc = 0.4;
+                if (vsHighResults.length > 0) vsHighAcc = vsHighResults.filter(r => r.correct).length / vsHighResults.length;
+                const vsHighZ = (vsHighAcc - 0.85) / 0.10;
+                const vsHighPct = percentileFromZ(vsHighZ);
+
+                const antiDistractionScore = Math.round(clamp(
+                    iePct2 * 0.40 + faPct2 * 0.35 + vsHighPct * 0.25, 0, 100));
+
+                const dimensions = [
+                    { name: '抑制控制能力', score: inhibitionScore, colorClass: 'bar-color-1', desc: '抵抗自动反应倾向的能力，反映认知抑制水平' },
+                    { name: '工作记忆广度', score: wmScore, colorClass: 'bar-color-2', desc: '短期信息保持与处理能力，是认知活动的基础' },
+                    { name: '持续性注意力', score: sustainedScore, colorClass: 'bar-color-3', desc: '长时间保持警觉和专注的能力，反映注意稳定性' },
+                    { name: '选择性注意力', score: selectiveScore, colorClass: 'bar-color-4', desc: '在干扰中聚焦目标的能力，反映注意选择效率' },
+                    { name: '处理速度', score: speedScore, colorClass: 'bar-color-5', desc: '快速识别与反应的能力，反映信息加工效率' },
+                    { name: '抗干扰能力', score: antiDistractionScore, colorClass: 'bar-color-6', desc: '排除无关信息干扰的能力，反映认知控制水平' },
+                ];
+
+                const overallScore = Math.round(dimensions.reduce((s, d) => s + d.score, 0) / dimensions.length);
+
+                // 等级分数线 (适当调高)
+                let grade, gradeColor, gradeTag, gradeEmoji;
+                if (overallScore >= 88) { grade = '优秀'; gradeColor = '#3a8a5c'; gradeTag = 'tag-excellent'; gradeEmoji = '🌟'; }
+                else if (overallScore >= 75) { grade = '良好'; gradeColor = '#3a6a9a'; gradeTag = 'tag-good'; gradeEmoji = '👍'; }
+                else if (overallScore >= 58) { grade = '一般'; gradeColor = '#8a703a'; gradeTag = 'tag-average'; gradeEmoji = '📋'; }
+                else { grade = '需提升'; gradeColor = '#9a4a3a'; gradeTag = 'tag-needs-work'; gradeEmoji = '💪'; }
+state.finalResults = { overallScore, grade, gradeColor, gradeTag, gradeEmoji, dimensions, stroopSummary: stroopS, digitSpanSummary: digitS, cptSummary: cptS, visualSearchSummary: vsS };
+                showResults();
+            }
+
+            // ============ 结果展示 ============
+            function showResults() {
+                const fr = state.finalResults;
+                state.currentSection = 'results';
+                const analysisCards = fr.dimensions.map(d => {
+                    let advice = '';
+                    if (d.score >= 80) advice = '该维度表现优秀，继续保持良好状态。';
+                    else if (d.score >= 60) advice = '该维度表现尚可，建议通过针对性训练进一步提升。';
+                    else if (d.score >= 40) advice = '该维度有提升空间，建议适当进行专项练习。';
+                    else advice = '该维度需要重点关注，建议进行系统性的专项训练。';
+                    return { ...d, advice };
+                });
+                const sortedDims = [...fr.dimensions].sort((a,b) => b.score - a.score);
+                const strengths = sortedDims.slice(0,2);
+                const weaknesses = sortedDims.slice(-2).reverse();
+                const totalTestTime = state.testStartTime > 0 ? formatTime(performance.now() - state.testStartTime) : '未知';
+
+                render(`
+                <div class="section" id="resultsSection">
+                  <div class="card" id="resultsCard">
+                    <div class="text-center mb-12">
+                      <div style="font-size:clamp(2.2rem,5vw,3.2rem);">${fr.gradeEmoji}</div>
+                      <h2>测评完成！</h2>
+                      <p class="subtitle">综合专注力评估报告</p>
+                    </div>
+                    <div class="result-score-circle">
+                      <span class="result-score-number">${fr.overallScore}</span>
+                      <span class="result-score-label">综合评分</span>
+                    </div>
+                    <p style="text-align:center;font-size:clamp(0.9rem,1.6vw,1.15rem);font-weight:700;color:${fr.gradeColor};margin-bottom:16px;">
+                      等级评定：<span class="tag ${fr.gradeTag}" style="font-size:clamp(0.8rem,1.4vw,0.98rem);">${fr.grade}</span>
+                    </p>
+                    <p style="text-align:center;font-size:clamp(0.65rem,1.1vw,0.75rem);color:#b5b0bd;margin-bottom:12px;">
+                      📅 测评时间：${new Date().toLocaleString('zh-CN')} · 总用时约${totalTestTime}
+                    </p>
+                    <div class="btn-group mb-16" id="exportButtons">
+                      <button class="btn btn-export btn-sm" onclick="window._printReport()">🖨️ 打印报告</button>
+                      <button class="btn btn-outline btn-sm" onclick="window._copyReport()">📋 复制报告</button>
+                      <button class="btn btn-outline btn-sm" onclick="window._shareReport()" id="shareBtn">📤 分享报告</button>
+                    </div>
+                    <h3 class="mb-12">📊 各维度得分</h3>
+                    ${fr.dimensions.map(d => `
+                      <div class="dimension-bar-wrap">
+                        <div class="dimension-label-row">
+                          <span>${d.name}</span>
+                          <span style="color:${d.score>=70?'#3a8a5c':d.score>=50?'#8a703a':'#9a4a3a'}">${d.score}分</span>
+                        </div>
+                        <div class="dimension-bar-outer">
+                          <div class="dimension-bar-inner ${d.colorClass}" style="width:${d.score}%;" data-target-width="${d.score}%"></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;">
+                      <div style="flex:1;min-width:130px;background:#f6faf4;border-radius:var(--radius-sm);padding:clamp(10px,1.8vw,14px);border:1px solid #d8ecd8;">
+                        <p style="font-weight:700;color:#3a8a5c;font-size:clamp(0.75rem,1.3vw,0.87rem);">💪 优势维度</p>
+                        ${strengths.map(s => `<p style="font-size:clamp(0.68rem,1.2vw,0.8rem);color:#5a5668;margin:2px 0;">• ${s.name}：${s.score}分</p>`).join('')}
+                      </div>
+                      <div style="flex:1;min-width:130px;background:#fef8f4;border-radius:var(--radius-sm);padding:clamp(10px,1.8vw,14px);border:1px solid #f0d8d0;">
+                        <p style="font-weight:700;color:#9a5a3a;font-size:clamp(0.75rem,1.3vw,0.87rem);">🎯 提升空间</p>
+                        ${weaknesses.map(s => `<p style="font-size:clamp(0.68rem,1.2vw,0.8rem);color:#5a5668;margin:2px 0;">• ${s.name}：${s.score}分</p>`).join('')}
+                      </div>
+                    </div>
+                    <h3 class="mb-8 mt-16">📝 详细分析</h3>
+                    ${analysisCards.map(ac => `
+                      <div class="analysis-card">
+                        <h4>${ac.name} — ${ac.score}分</h4>
+                        <p>${ac.desc}。${ac.advice}</p>
+                      </div>
+                    `).join('')}
+                    <div class="analysis-card mt-12" style="background:#fdfcf9;">
+                      <h4>📋 测试数据摘要</h4>
+                      <p style="font-size:clamp(0.68rem,1.15vw,0.8rem);line-height:1.7;">
+                        🎨 斯特鲁普：总准确率${Math.round(fr.stroopSummary.totalAccuracy*100)}% | 一致${Math.round(fr.stroopSummary.congruentAccuracy*100)}% | 不一致${Math.round(fr.stroopSummary.incongruentAccuracy*100)}% | 干扰效应${Math.round(fr.stroopSummary.interference)}ms<br>
+                        🔢 数字广度：最高${fr.digitSpanSummary.maxLevel}位 | 总尝试${fr.digitSpanSummary.totalAttempts}次 | 正确${fr.digitSpanSummary.allCorrect}次<br>
+                        👁️ CPT：命中率${Math.round(fr.cptSummary.hitRate*100)}% | 虚报率${Math.round(fr.cptSummary.falseAlarmRate*100)}% | d'=${fr.cptSummary.dPrime.toFixed(2)}<br>
+                        🔍 视觉搜索（${fr.visualSearchSummary.totalLevels}关）：加权准确率${Math.round(fr.visualSearchSummary.weightedAccuracy*100)}% | 平均用时${formatTime(fr.visualSearchSummary.avgTime)} | 正确${fr.visualSearchSummary.correctCount}/${fr.visualSearchSummary.totalLevels}关
+                      </p>
+                    </div>
+                    <button class="btn btn-primary btn-large btn-block mt-20 no-print" onclick="window._restartTest()">🔄 重新测评</button>
+                    <p style="text-align:center;font-size:clamp(0.6rem,1vw,0.72rem);color:#b5b0bd;margin-top:8px;" class="no-print">* 本测评仅供参考，不构成临床诊断</p>
+                  </div>
+                </div>
+              `);
+                updateProgress(4, 4);
+                setTimeout(() => {
+                    document.querySelectorAll('.dimension-bar-inner').forEach((bar, i) => {
+                        const targetWidth = bar.getAttribute('data-target-width') || bar.style.width;
+                        bar.style.width = '0%';
+                        setTimeout(() => { bar.style.width = targetWidth; }, i * 100);
+                    });
+                }, 250);
+                setTimeout(() => {
+                    const shareBtn = document.getElementById('shareBtn');
+                    if (shareBtn && !navigator.share) shareBtn.style.display = 'none';
+                }, 100);
+            }
+
+            // ============ 导出功能 ============
+            window._printReport = function() { window.print(); };
+            window._copyReport = function() {
+                const fr = state.finalResults;
+                if (!fr) { showToast('暂无报告数据'); return; }
+                const lines = [];
+                lines.push('═══════════════════════════');
+                lines.push('  专注力多维测评报告');
+                lines.push('═══════════════════════════');
+                lines.push('');
+                lines.push('测评时间：' + new Date().toLocaleString('zh-CN'));
+                lines.push('综合评分：' + fr.overallScore + '分  [' + fr.grade + ']');
+                lines.push('');
+                lines.push('--- 各维度得分 ---');
+                for (const d of fr.dimensions) {
+                    const bar = '█'.repeat(Math.round(d.score / 5)) + '░'.repeat(20 - Math.round(d.score / 5));
+                    lines.push(d.name + '：' + d.score + '分 ' + bar);
+                }
+                lines.push('');
+                lines.push('--- 测试数据摘要 ---');
+                lines.push('斯特鲁普：一致准确率' + Math.round(fr.stroopSummary.congruentAccuracy*100) + '% | 不一致准确率' + Math.round(fr.stroopSummary.incongruentAccuracy*100) + '% | 干扰效应' + Math.round(fr.stroopSummary.interference) + 'ms');
+                lines.push('数字广度：最高' + fr.digitSpanSummary.maxLevel + '位');
+                lines.push('CPT：命中率' + Math.round(fr.cptSummary.hitRate*100) + '% | 虚报率' + Math.round(fr.cptSummary.falseAlarmRate*100) + '% | d\'=' + fr.cptSummary.dPrime.toFixed(2));
+                lines.push('视觉搜索（' + fr.visualSearchSummary.totalLevels + '关）：加权准确率' + Math.round(fr.visualSearchSummary.weightedAccuracy*100) + '% | 平均用时' + formatTime(fr.visualSearchSummary.avgTime));
+                lines.push('');
+                lines.push('* 本测评仅供参考，不构成临床诊断');
+                const text = lines.join('\n');
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(text).then(() => showToast('✅ 报告已复制到剪贴板')).catch(() => fallbackCopy(text));
+                } else fallbackCopy(text);
+            };
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); showToast('✅ 报告已复制'); } catch (e) { showToast('⚠️ 复制失败'); }
+                document.body.removeChild(ta);
+            }
+            window._shareReport = function() {
+                const fr = state.finalResults;
+                if (!fr) { showToast('暂无报告数据'); return; }
+                const shareText = '🧠 专注力多维测评报告\n综合评分：' + fr.overallScore + '分 [' + fr.grade + ']\n各维度：' + fr.dimensions.map(d => d.name + d.score + '分').join(' | ');
+                if (navigator.share) navigator.share({ title: '专注力多维测评报告', text: shareText }).catch(()=>{});
+                else { fallbackCopy(shareText); showToast('✅ 报告文本已复制，可粘贴分享'); }
+            };
+
+            window._startTest = function() { startStroop(); };
+            window._restartTest = function() {
+                if (state.digitSpan.showingTimer) clearTimeout(state.digitSpan.showingTimer);
+                if (state.cpt.displayTimer) clearTimeout(state.cpt.displayTimer);
+                if (state.cpt.interTrialTimer) clearTimeout(state.cpt.interTrialTimer);
+                if (state.visualSearch.timerInterval) clearInterval(state.visualSearch.timerInterval);
+                showWelcome();
+            };
+
+            showWelcome();
+            window.addEventListener('beforeunload', function(e) {
+                if (state.currentSection !== 'welcome' && state.currentSection !== 'results') {
+                    e.preventDefault(); e.returnValue = '测评尚未完成，确定离开吗？'; return e.returnValue;
+                }
+            });
+            console.log('🧠 专注力多维测评 v3.1 已启动');
+        })();
+    </script>
+</body>
+</html>

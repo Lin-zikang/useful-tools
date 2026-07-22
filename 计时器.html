@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>计时器</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #ff9a9e, #fad0c4 40%, #fbc2eb);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        h1 {
+            font-size: clamp(32px, 12vw, 56px);
+            color: #ffffff;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .timer-container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 32px;
+            padding: 32px 20px 36px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+            color: #f9f9f9;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(145deg, #ff6b6b, #ff9f7f);
+            border-color: transparent;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+            color: white;
+        }
+
+        #showTime {
+            font-size: clamp(44px, 15vw, 72px);
+            color: #ffffff;
+            font-weight: 800;
+            margin-bottom: 18px;
+            margin-top: 8px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 18px rgba(255, 255, 255, 0.7);
+            transition: color 0.2s, text-shadow 0.2s;
+            line-height: 1.2;
+        }
+
+        /* 超时状态颜色 (醒目橙红) */
+        #showTime.overtime {
+            color: #ffaa33;
+            text-shadow: 0 0 25px #ff8800, 0 0 10px #ff4400;
+        }
+
+        .status-text {
+            font-size: clamp(13px, 3.5vw, 16px);
+            color: #e0e0e0;
+            margin-bottom: 18px;
+            background: rgba(255,255,255,0.08);
+            padding: 8px 16px;
+            border-radius: 60px;
+            display: inline-block;
+        }
+
+        .countdown-settings {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            font-size: 15px;
+            color: #f1f1f1;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.3);
+            border-radius: 60px;
+            padding: 12px 16px;
+        }
+
+        .countdown-settings label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 30px;
+        }
+
+        .countdown-settings input {
+            width: 70px;
+            padding: 10px 8px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            outline: none;
+            text-align: center;
+        }
+
+        .countdown-settings input:focus {
+            border-color: #ff9f7f;
+            box-shadow: 0 0 12px #ff9f7f;
+        }
+
+        .countdown-settings button {
+            background: #ff9f7f;
+            border: none;
+            border-radius: 60px;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.15s;
+            min-width: 80px;
+        }
+
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 20px 0 16px;
+        }
+
+        #startBn,
+        #restBn {
+            min-width: 130px;
+            height: 54px;
+            padding: 0 20px;
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: 600;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+            letter-spacing: 1px;
+        }
+
+        #startBn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        #restBn {
+            background: #4a4a4a;
+            color: white;
+        }
+
+        #startBn:hover,
+        #restBn:hover,
+        .countdown-settings button:hover {
+            transform: translateY(-2px) scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        #startBn:active,
+        #restBn:active,
+        .countdown-settings button:active {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 手机小屏时按钮更饱满 */
+        @media (max-width: 420px) {
+            .timer-container {
+                padding: 24px 16px;
+            }
+            .countdown-settings {
+                gap: 8px;
+            }
+            .btn-row {
+                gap: 12px;
+            }
+            #startBn, #restBn {
+                min-width: 110px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>⏱️ 计时器</h1>
+
+    <div class="timer-container">
+        <div class="mode-switch">
+            <button id="upMode" class="mode-btn active">正计时</button>
+            <button id="downMode" class="mode-btn">倒计时</button>
+        </div>
+
+        <div id="countdownSettings" class="countdown-settings hidden">
+            <label>
+                <span>分</span>
+                <input id="minsInput" type="number" min="0" max="599" value="1">
+            </label>
+            <label>
+                <span>秒</span>
+                <input id="secsInput" type="number" min="0" max="59" value="0">
+            </label>
+            <button id="setCountdown">设置</button>
+        </div>
+
+        <div id="showTime">00:00:00</div>
+        <div class="status-text" id="statusText">⚫ 当前模式：正计时</div>
+
+        <div class="btn-row">
+            <button id="startBn">启动</button>
+            <button id="restBn">复位</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- DOM 元素 ----------
+            var showTime = document.getElementById("showTime");
+            var startBn = document.getElementById("startBn");
+            var restBn = document.getElementById("restBn");
+            var upModeBtn = document.getElementById("upMode");
+            var downModeBtn = document.getElementById("downMode");
+            var countdownSettings = document.getElementById("countdownSettings");
+            var minsInput = document.getElementById("minsInput");
+            var secsInput = document.getElementById("secsInput");
+            var setCountdownBtn = document.getElementById("setCountdown");
+            var statusText = document.getElementById("statusText");
+
+            // ---------- 核心变量 ----------
+            var bool = false;               // 是否正在运行
+            var pauseTime = 0;               // 累计暂停时间
+            var pauseDate = null;             // 暂停开始时间戳
+            var mode = 'up';                  // 'up' 正计时, 'down' 倒计时
+            var totalCountdown = 60 * 1000;    // 倒计时总毫秒 (默认1分钟)
+            var initCountdown = 60 * 1000;     // 设定的倒计时初始值
+
+            // ------- 超时相关 -------
+            var overtimeActive = false;       // 是否处于超时状态 (倒计时归零后的正计时)
+            var overtimeNotified = false;     // 确保结束时只通知/响铃一次
+
+            // ------- 声音防重 -------
+            var lastPlayedSecond = -1;         // 上一次播放提示音的秒数 (用于最后5秒)
+
+            // ------- 音频上下文 (单例) -------
+            var audioCtx = null;
+
+            // ------- 通知权限请求 -------
+            if (window.Notification && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+
+            // ---------- 初始化事件 ----------
+            startBn.addEventListener("click", clickHandler);
+            restBn.addEventListener("click", clickHandler);
+            upModeBtn.addEventListener("click", function() { setMode('up'); });
+            downModeBtn.addEventListener("click", function() { setMode('down'); });
+            setCountdownBtn.addEventListener("click", applyCountdown);
+
+            // 预热音频 (用户手势时创建并挂起，提高兼容性)
+            function initAudio() {
+                if (audioCtx) return;
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log("Web Audio 不支持");
+                }
+            }
+
+            // 播放短音 (频率、时长、音量)
+            function playBeep(freq, durationSec, volume) {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        return;
+                    }
+                }
+
+                var playSound = function() {
+                    if (!audioCtx) return;
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq || 800;
+                    gain.gain.value = volume || 0.2;
+                    osc.connect(gain).connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + (durationSec || 0.1));
+                };
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(playSound).catch(function(e) {});
+                } else if (audioCtx.state === 'running') {
+                    playSound();
+                } else {
+                    // closed 之类重新建
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    audioCtx.resume().then(playSound).catch(function(e) {});
+                }
+            }
+
+            // 连续播放5声 (倒计时结束专用)  —— 每声加长，间隔0.7秒
+            function playFiveBeeps() {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        // 每声持续0.3秒，频率880Hz，音量适中
+                        playBeep(880, 0.3, 0.3);
+                    }, i * 700); // 间隔700ms (0.7秒)
+                }
+            }
+
+            // 发送系统通知
+            function sendNotification(title, body) {
+                if (!window.Notification) return;
+                if (Notification.permission === 'granted') {
+                    new Notification(title, { body: body, icon: 'https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/48x48/quality/90!/format/png' });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(perm => {
+                        if (perm === 'granted') {
+                            new Notification(title, { body: body, icon: '...' });
+                        }
+                    });
+                }
+            }
+
+            // ---------- 刷新显示 (16ms循环) ----------
+            setInterval(animation, 16);
+
+            function animation() {
+                if (!bool) return;
+
+                var now = new Date().getTime();
+                var elapsed = now - time - pauseTime;  // 已经过毫秒 (从启动开始净计时)
+
+                if (mode === 'up') {
+                    // 正常正计时
+                    if (elapsed < 0) elapsed = 0;
+                    showTime.innerHTML = formatTime(elapsed);
+                    showTime.classList.remove('overtime');
+                    if (statusText.innerHTML.includes('超时')) {
+                        statusText.innerHTML = '⚫ 当前模式：正计时';
+                    }
+                } 
+                else {  // mode === 'down'
+                    var remaining = totalCountdown - elapsed;
+
+                    // 处理倒计时结束 -> 进入超时状态
+                    if (remaining <= 0) {
+                        // 首次进入超时: 播放结束五连响+通知, 标记overtimeActive
+                        if (!overtimeActive) {
+                            overtimeActive = true;
+                            // 确保只触发一次通知和五连响
+                            if (!overtimeNotified) {
+                                overtimeNotified = true;
+                                playFiveBeeps();          // 🔔 响铃5下 (加长版，间隔0.7秒)
+                                sendNotification('倒计时结束', '开始超时计时 ⏱️');
+                            }
+                            showTime.classList.add('overtime');
+                            statusText.innerHTML = '⏰ 当前模式：倒计时 · 超时中';
+                        }
+
+                        // 超时计时: 经过时间 - 总倒计时时长
+                        var overtimeElapsed = elapsed - totalCountdown;
+                        if (overtimeElapsed < 0) overtimeElapsed = 0;
+                        showTime.innerHTML = formatTime(overtimeElapsed);
+                        // 已经超时，不再处理最后5秒声音
+                    } 
+                    else {
+                        // 正常倒计时显示
+                        showTime.innerHTML = formatTime(remaining);
+                        showTime.classList.remove('overtime');
+                        if (overtimeActive) {
+                            overtimeActive = false;       // 清除超时状态
+                        }
+
+                        // ---------- 最后5秒提示音 (每秒一响，保持短促) ----------
+                        var remainingSec = Math.floor(remaining / 1000);   // 整秒数
+                        if (remainingSec <= 5 && remainingSec >= 1) {
+                            if (lastPlayedSecond !== remainingSec) {
+                                lastPlayedSecond = remainingSec;
+                                playBeep(880, 0.12, 0.25);   // 短促“嘀”
+                            }
+                        } else {
+                            lastPlayedSecond = -1;   // 重置，以便重新进入5秒范围
+                        }
+                    }
+                }
+            }
+
+            // 格式化 mm:ss:cs
+            function formatTime(ms) {
+                if (ms < 0) ms = 0;
+                var minutes = Math.floor(ms / 60000);
+                var seconds = Math.floor((ms % 60000) / 1000);
+                var centiseconds = Math.floor((ms % 1000) / 10);
+                return (minutes < 10 ? "0" + minutes : minutes) + ":" +
+                       (seconds < 10 ? "0" + seconds : seconds) + ":" +
+                       (centiseconds < 10 ? "0" + centiseconds : centiseconds);
+            }
+
+            // ---------- 切换模式 ----------
+            function setMode(newMode) {
+                if (mode === newMode) return;
+                mode = newMode;
+
+                // 停止所有计时，重置状态
+                bool = false;
+                startBn.innerHTML = "启动";
+                pauseTime = 0;
+                pauseDate = null;
+                time = 0;
+                overtimeActive = false;
+                overtimeNotified = false;   // 新模式重置通知标记
+                lastPlayedSecond = -1;
+                showTime.classList.remove('overtime');
+
+                if (mode === 'up') {
+                    countdownSettings.classList.add('hidden');
+                    upModeBtn.classList.add('active');
+                    downModeBtn.classList.remove('active');
+                    showTime.innerHTML = "00:00:00";
+                    statusText.innerHTML = '⚫ 当前模式：正计时';
+                } else {
+                    countdownSettings.classList.remove('hidden');
+                    downModeBtn.classList.add('active');
+                    upModeBtn.classList.remove('active');
+                    // 确保有有效的倒计时值
+                    if (!initCountdown || initCountdown <= 0) {
+                        initCountdown = 60 * 1000;
+                        totalCountdown = initCountdown;
+                    } else {
+                        totalCountdown = initCountdown;
+                    }
+                    showTime.innerHTML = formatTime(totalCountdown);
+                    statusText.innerHTML = '⚫ 当前模式：倒计时';
+                }
+            }
+
+            // ---------- 设置倒计时时长 ----------
+            function applyCountdown() {
+                var mins = parseInt(minsInput.value, 10) || 0;
+                var secs = parseInt(secsInput.value, 10) || 0;
+                if (mins < 0) mins = 0;
+                if (secs < 0) secs = 0;
+                if (secs > 59) secs = 59;
+
+                var totalMs = (mins * 60 + secs) * 1000;
+                
+                // 新增：禁止设置为0
+                if (totalMs <= 0) {
+                    alert("请输入大于0的时间（分钟或秒不能全为0）");
+                    return; // 不更新倒计时
+                }
+
+                initCountdown = totalMs;
+                totalCountdown = totalMs;
+
+                // 复位计时状态
+                bool = false;
+                startBn.innerHTML = "启动";
+                pauseTime = 0;
+                pauseDate = null;
+                time = 0;
+                overtimeActive = false;
+                overtimeNotified = false;
+                lastPlayedSecond = -1;
+                showTime.classList.remove('overtime');
+
+                showTime.innerHTML = formatTime(totalCountdown);
+                statusText.innerHTML = '⚫ 当前模式：倒计时';
+            }
+
+            // ---------- 按钮事件 (启动/暂停 / 复位) ----------
+            function clickHandler(e) {
+                var btn = e.target || e.srcElement;
+
+                // 用户点击时预热音频
+                initAudio();
+
+                if (btn === startBn) {
+                    bool = !bool;
+
+                    if (bool) {
+                        startBn.innerHTML = "暂停";
+
+                        if (pauseDate) {
+                            pauseTime += (new Date().getTime() - pauseDate);
+                            pauseDate = null;
+                        }
+
+                        if (!time) {
+                            time = new Date().getTime();
+                        }
+                    } else {
+                        startBn.innerHTML = "启动";
+                        pauseDate = new Date().getTime();
+                    }
+                    return;
+                }
+
+                if (btn === restBn) {
+                    // 复位逻辑
+                    startBn.innerHTML = "启动";
+                    pauseTime = 0;
+                    pauseDate = null;
+                    bool = false;
+                    time = 0;
+
+                    overtimeActive = false;
+                    overtimeNotified = false;
+                    lastPlayedSecond = -1;
+                    showTime.classList.remove('overtime');
+
+                    if (mode === 'up') {
+                        showTime.innerHTML = "00:00:00";
+                        statusText.innerHTML = '⚫ 当前模式：正计时';
+                    } else {
+                        totalCountdown = initCountdown;
+                        showTime.innerHTML = formatTime(totalCountdown);
+                        statusText.innerHTML = '⚫ 当前模式：倒计时';
+                    }
+                }
+            }
+
+            // 定义time基准变量
+            var time = 0;
+
+            // 初始化显示
+            setMode('up');
+
+            // 输入框默认值
+            minsInput.value = 1;
+            secsInput.value = 0;
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>手速测试器</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <!-- 手机端适配 + 禁止缩放，防止连点放大 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;  /* 不要滚轮 */
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+            color: white;
+            touch-action: manipulation; /* 减少双击缩放 */
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 页面容器 */
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .page.active {
+            display: flex;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 模式选择页 */
+        #index h1 {
+            font-size: 2.6rem;
+            text-shadow: 0 0 20px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+
+        .mode-block {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            backdrop-filter: blur(6px);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .mode-block h2 {
+            margin-bottom: 10px;
+        }
+
+        /* 测试区域 */
+        .click-area {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 800px;
+            flex: 1;
+            min-height: 45vh;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 关键：禁用手势操作，避免双击缩放干扰连点 */
+            touch-action: none;
+        }
+
+        .click-area:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .click-area.clicked {
+            transform: scale(0.98);
+            box-shadow: 0 0 35px rgba(76,175,80,0.7);
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* 数据展示 */
+        .stats {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            gap: 10px;
+        }
+
+        .stats-item {
+            background: rgba(0,0,0,0.25);
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .stats-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .stats-number {
+            display: inline-block;
+            font-size: 26px;
+            margin-left: 4px;
+            transition: transform 0.15s ease;
+        }
+
+        .stats-number.highlight {
+            transform: scale(1.3);
+        }
+
+        /* 全屏提示（通用：结束/倒计时） */
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            z-index: 999;
+            animation: flash 0.4s ease;
+        }
+
+        @keyframes flash {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 输入样式 */
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            width: 220px;
+            border-radius: 999px;
+            border: none;
+            text-align: center;
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+        }
+
+        button:active {
+            transform: translateY(1px) scale(0.97);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        /* 结果页 */
+        #result p {
+            margin: 10px 0;
+        }
+
+        /* 手机端适配 */
+        @media (max-width: 768px) {
+            #index h1 {
+                font-size: 2.1rem;
+            }
+
+            .stats {
+                font-size: 18px;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stats-number {
+                font-size: 22px;
+            }
+
+            .click-area {
+                padding: 20px;
+                min-height: 50vh;
+            }
+
+            input, button {
+                width: 80%;
+                max-width: 320px;
+            }
+
+            .mode-block {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 模式选择页 -->
+    <div class="page active" id="index">
+        <div>
+            <h1>手速测试器</h1>
+            <div class="mode-block">
+                <h2>时间模式</h2>
+                <p>在指定时间内尽可能多点击</p>
+                <input type="number" id="timeInput" placeholder="测试时间（秒）">
+                <br>
+                <button onclick="startTest('time')">开始测试</button>
+            </div>
+            <div class="mode-block">
+                <h2>次数模式</h2>
+                <p>用最短时间完成指定点击次数</p>
+                <input type="number" id="countInput" placeholder="目标点击次数">
+                <br>
+                <button onclick="startTest('count')">开始测试</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 测试页 -->
+    <div class="page" id="test">
+        <div class="stats">
+            <div class="stats-item">
+                <div class="stats-label">点击次数</div>
+                <span id="clickCount" class="stats-number">0</span>
+            </div>
+            <div class="stats-item">
+                <div class="stats-label" id="timeLabel">用时</div>
+                <span id="timeLeft" class="stats-number">0</span><span>s</span>
+            </div>
+        </div>
+        <div class="click-area" id="clickArea">
+            <h2>疯狂点击这里！</h2>
+        </div>
+    </div>
+
+    <!-- 结果页 -->
+    <div class="page" id="result">
+        <h1>测试结果</h1>
+        <div style="margin: 30px; font-size: 22px">
+            <p>总点击次数：<span id="resultCount">0</span></p>
+            <p>总用时：<span id="resultTime">0</span> 秒</p>
+            <p>每秒点击：<span id="resultCPS">0</span> 次/秒</p>
+        </div>
+        <button onclick="location.reload()">再测一次</button>
+    </div>
+
+    <!-- 倒计时提示：3 2 1 开始 -->
+    <div class="fullscreen" id="countdownOverlay"></div>
+
+    <!-- 结束提示 -->
+    <div class="fullscreen" id="endAlert">结束！</div>
+
+<script>
+    let mode = null;
+    let startTime = null;
+    let clickCount = 0;
+    let timer = null;
+    let targetValue = 0;
+    let timeDisplayTimer = null;
+    let countdownTimer = null; // 倒计时定时器
+
+    // 页面切换，始终居中
+    function switchPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function startTest(selectedMode) {
+        mode = selectedMode;
+        targetValue = mode === 'time'
+            ? parseInt(document.getElementById('timeInput').value)
+            : parseInt(document.getElementById('countInput').value);
+
+        if (!targetValue || targetValue <= 0) {
+            alert("请输入有效的数值！");
+            return;
+        }
+
+        // 初始化数据，但不立刻开始计时、不切到 test 页
+        clickCount = 0;
+        startTime = null;
+        document.getElementById('clickCount').textContent = '0';
+
+        const timeLeftEl = document.getElementById('timeLeft');
+        const timeLabel = document.getElementById('timeLabel');
+
+        if (mode === 'time') {
+            timeLabel.textContent = '剩余时间';
+            timeLeftEl.textContent = targetValue.toFixed(1);
+        } else {
+            timeLabel.textContent = '已用时间';
+            timeLeftEl.textContent = '0.0';
+        }
+
+        // 清理上次的计时器
+        clearInterval(timer);
+        clearInterval(timeDisplayTimer);
+        clearInterval(countdownTimer);
+
+        // 全屏倒计时：3 2 1 开始
+        const countdownEl = document.getElementById('countdownOverlay');
+        const seq = ['3', '2', '1', '开始'];
+        let index = 0;
+
+        countdownEl.style.display = 'flex';
+        countdownEl.textContent = seq[index];
+
+        countdownTimer = setInterval(() => {
+            index++;
+            if (index < seq.length) {
+                countdownEl.textContent = seq[index];
+            } else {
+                clearInterval(countdownTimer);
+                countdownEl.style.display = 'none';
+
+                // 倒计时结束后，切到测试页
+                switchPage('test');
+
+                // 再延迟 0.25 秒，才真正开始计时/点击生效
+                setTimeout(() => {
+                    beginRealTest();
+                }, 250);
+            }
+        }, 1000);
+    }
+
+    // 真正开始计时/计次
+    function beginRealTest() {
+        startTime = Date.now();
+
+        const timeLeftEl = document.getElementById('timeLeft');
+        const timeLabel = document.getElementById('timeLabel');
+
+        clearInterval(timer);
+        clearInterval(timeDisplayTimer);
+
+        if (mode === 'time') {
+            timeLabel.textContent = '剩余时间';
+            timeLeftEl.textContent = targetValue.toFixed(1);
+
+            // 时间模式：倒计时
+            timer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed >= targetValue) {
+                    endTest();
+                } else {
+                    timeLeftEl.textContent = (targetValue - elapsed).toFixed(1);
+                }
+            }, 100);
+        }
+
+        if (mode === 'count') {
+            timeLabel.textContent = '已用时间';
+            timeLeftEl.textContent = '0.0';
+
+            // 次数模式：显示已用时间
+            timeDisplayTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timeLeftEl.textContent = elapsed.toFixed(1);
+            }, 100);
+        }
+    }
+
+    // 核心点击逻辑（被 pointer/touch/mouse 触发）
+    function handleClick() {
+        // 还没开始测试时点击不计数（包括倒计时和 0.25s 延迟阶段）
+        if (!mode || !startTime) return;
+
+        clickCount++;
+        updateDisplay();
+
+        // 点击特效
+        const area = document.getElementById('clickArea');
+        area.classList.add('clicked');
+        setTimeout(() => area.classList.remove('clicked'), 100);
+
+        if (mode === 'count' && clickCount >= targetValue) {
+            endTest();
+        }
+    }
+
+    function updateDisplay() {
+        const countEl = document.getElementById('clickCount');
+        countEl.textContent = clickCount;
+        countEl.classList.add('highlight');
+        setTimeout(() => countEl.classList.remove('highlight'), 150);
+    }
+
+    function endTest() {
+        clearInterval(timer);
+        clearInterval(timeDisplayTimer);
+        clearInterval(countdownTimer);
+
+        const totalTime = (Date.now() - startTime) / 1000;
+
+        // 显示全屏提示
+        const alertEl = document.getElementById('endAlert');
+        alertEl.style.display = 'flex';
+        setTimeout(() => {
+            alertEl.style.display = 'none';
+            showResult(totalTime);
+        }, 800);
+    }
+
+    function showResult(totalTime) {
+        switchPage('result');
+
+        document.getElementById('resultCount').textContent = clickCount;
+        document.getElementById('resultTime').textContent = totalTime.toFixed(2);
+        document.getElementById('resultCPS').textContent =
+            (clickCount / totalTime).toFixed(2);
+    }
+
+    // ==== 使用 Pointer / Touch / Mouse 直接触发 handleClick，避免移动端 click 延迟 ====
+    const clickArea = document.getElementById('clickArea');
+
+    if (window.PointerEvent) {
+        // 优先使用 PointerEvent（现代浏览器）
+        clickArea.addEventListener('pointerdown', function (e) {
+            // 鼠标只响应左键
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            e.preventDefault(); // 阻止可能的点击延迟和默认行为
+            handleClick();
+        });
+    } else {
+        // 老设备兼容：touchstart + mousedown
+        clickArea.addEventListener('touchstart', function (e) {
+            e.preventDefault();
+            handleClick();
+        }, { passive: false });
+
+        clickArea.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            handleClick();
+        });
+    }
+
+    // 额外处理双击缩放（特别是 iOS），防止双击放大页面
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, { passive: false });
+</script>
+</body>
+</html>

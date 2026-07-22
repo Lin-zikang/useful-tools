@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>摩斯密码转换器</title>
+  <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+  <meta name="description" content="支持中文/英文/符号/Emoji 的摩斯密码转换器：文字 → 摩斯 / 摩斯 → 文字，移动端与桌面端自适应。" />
+  <style>
+    :root{
+      --bg: #0b1220;
+      --bg2:#0e1730;
+      --card:#111b31cc;
+      --card-solid:#111b31;
+      --text:#eaf0ff;
+      --muted:#a9b7d6;
+      --border:#223055;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --primary:#4f7cff;
+      --primary2:#6b5cff;
+      --danger:#ff5571;
+      --ok:#2dd4bf;
+      --warn:#fbbf24;
+
+      --radius: 16px;
+      --radius-sm: 12px;
+      --space: 14px;
+      --space-lg: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB",
+              "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji",
+              "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root{
+        --bg:#f6f8ff;
+        --bg2:#eef2ff;
+        --card:#ffffffcc;
+        --card-solid:#ffffff;
+        --text:#0b1220;
+        --muted:#4a5568;
+        --border:#e2e8f0;
+        --shadow: 0 14px 30px rgba(2,6,23,.12);
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(79,124,255,.25), transparent 55%),
+        radial-gradient(900px 500px at 80% 0%, rgba(107,92,255,.22), transparent 50%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+    }
+
+    .wrap{
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .hero{
+      padding: 28px 16px 18px;
+    }
+
+    .hero-inner{
+      max-width: 1100px;
+      margin: 0 auto;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 16px;
+      flex-wrap:wrap;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+
+    h1{
+      margin:0;
+      font-weight: 800;
+      letter-spacing:.2px;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height:1.15;
+    }
+
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height:1.5;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(79,124,255,.18), rgba(107,92,255,.12));
+      border: 1px solid rgba(79,124,255,.25);
+      color: var(--text);
+      font-size: 12px;
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .container{
+      width:100%;
+      max-width:1100px;
+      margin: 0 auto;
+      padding: 0 16px 28px;
+      flex:1;
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+
+    .card-top{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+    }
+
+    .segmented{
+      display:inline-flex;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .segmented input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .segmented label{
+      cursor:pointer;
+      user-select:none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--muted);
+      transition: .15s ease;
+      white-space:nowrap;
+    }
+    .segmented input:checked + label{
+      background: linear-gradient(135deg, rgba(79,124,255,.95), rgba(107,92,255,.9));
+      color: white;
+      box-shadow: 0 8px 18px rgba(79,124,255,.25);
+    }
+
+    .right-tools{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      user-select:none;
+    }
+    .toggle input{accent-color: var(--primary);}
+    .toggle span{font-size:12px;color:var(--muted);}
+
+    .io{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    @media (min-width: 980px){
+      .io{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .panel{
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,.03);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height: 320px;
+    }
+
+    .panel-head{
+      padding: 12px 12px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+
+    .panel-title{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+    }
+    .panel-title label{
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .panel-title small{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .panel-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    textarea{
+      width:100%;
+      flex:1;
+      padding: 12px;
+      border: none;
+      outline:none;
+      resize: vertical;
+      min-height: 180px;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    textarea.mono{
+      font-family: var(--mono);
+      letter-spacing: .2px;
+    }
+
+    .panel-foot{
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+
+    .btnrow{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button{
+      appearance:none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor:pointer;
+      transition: .15s ease;
+      user-select:none;
+    }
+    button:hover{ transform: translateY(-1px); border-color: rgba(79,124,255,.55); }
+    button:active{ transform: translateY(0px); }
+
+    .btn-primary{
+      border: none;
+      background: linear-gradient(135deg, rgba(79,124,255,.95), rgba(107,92,255,.92));
+      color:#fff;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(79,124,255,.18);
+    }
+    .btn-ghost{
+      background: transparent;
+    }
+    .btn-danger{
+      border-color: rgba(255,85,113,.5);
+      color: var(--danger);
+    }
+    .btn-ok{
+      border-color: rgba(45,212,191,.45);
+      color: var(--ok);
+    }
+
+    .meta{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .pill{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+
+    .status{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.5;
+      display:none;
+    }
+    .status.show{ display:block; }
+    .status.ok{ border-color: rgba(45,212,191,.4); color: var(--ok); }
+    .status.warn{ border-color: rgba(251,191,36,.4); color: var(--warn); }
+    .status.err{ border-color: rgba(255,85,113,.45); color: var(--danger); }
+
+    details{
+      border-top: 1px solid var(--border);
+      padding: 0 14px;
+      background: rgba(255,255,255,.02);
+    }
+    summary{
+      cursor:pointer;
+      padding: 12px 0;
+      user-select:none;
+      color: var(--text);
+      font-weight: 700;
+      list-style:none;
+    }
+    summary::-webkit-details-marker{display:none;}
+    summary:before{
+      content:"▸";
+      display:inline-block;
+      margin-right: 10px;
+      color: var(--muted);
+      transform: translateY(-1px);
+      transition: transform .15s ease;
+    }
+    details[open] summary:before{ transform: rotate(90deg) translateX(1px); }
+
+    .settings{
+      padding: 0 0 14px;
+      display:grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px){
+      .settings{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .field label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .field input, .field select{
+      width:100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline:none;
+      font-size: 13px;
+    }
+    .field input:focus, .field select:focus{
+      border-color: rgba(79,124,255,.55);
+      box-shadow: 0 0 0 3px rgba(79,124,255,.12);
+    }
+
+    .range{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+    .range input[type="range"]{ width:100%; }
+    .range .val{
+      min-width: 44px;
+      text-align:right;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .help{
+      padding: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .help code{
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+    }
+    .help .ex{
+      margin-top: 10px;
+      border: 1px dashed rgba(79,124,255,.35);
+      background: rgba(79,124,255,.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      overflow:auto;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .table-wrap{
+      padding: 0 0 14px;
+    }
+    .table-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (min-width: 720px){
+      .table-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+    .chip{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      min-height: 54px;
+    }
+    .chip .k{
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .chip .v{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-align:right;
+      word-break: break-all;
+    }
+
+    .footer{
+      padding: 18px 6px 0;
+      text-align:center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="title">
+          <h1>摩斯密码转换器</h1>
+          <p class="subtitle">支持中文 / 英文 / 符号 / Emoji。选择方向后即可一键互转（移动端与桌面端自适应）。</p>
+        </div>
+        <div class="badge" id="modeBadge">当前：文字 → 摩斯</div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card" aria-label="摩斯密码转换器">
+
+        <div class="card-top">
+          <div class="segmented" role="tablist" aria-label="转换方向">
+            <input type="radio" id="modeEncode" name="mode" value="encode" checked />
+            <label for="modeEncode" role="tab" aria-controls="panelInput">文字 → 摩斯</label>
+
+            <input type="radio" id="modeDecode" name="mode" value="decode" />
+            <label for="modeDecode" role="tab" aria-controls="panelInput">摩斯 → 文字</label>
+          </div>
+
+          <div class="right-tools">
+            <label class="toggle" title="开启后，输入/设置改变会自动转换">
+              <input type="checkbox" id="autoRun" />
+              <span>实时转换</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="io" id="panelInput">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <label id="inputLabel" for="input">输入（文字）</label>
+                <small id="inputHint">支持中文/英文/符号，空格会当作“单词分隔”。</small>
+              </div>
+              <div class="panel-actions">
+                <button class="btn-ghost" type="button" id="btnExample">示例</button>
+                <button class="btn-ghost btn-danger" type="button" id="btnClear">清空</button>
+              </div>
+            </div>
+
+            <textarea id="input" placeholder="例如：你好 世界 / SOS / Hello World" spellcheck="false"></textarea>
+
+            <div class="panel-foot">
+              <div class="btnrow">
+                <button class="btn-primary" type="button" id="btnConvert">转换</button>
+                <button type="button" id="btnSwap">交换方向</button>
+                <button type="button" id="btnPlay">播放摩斯</button>
+              </div>
+              <div class="meta">
+                <span class="pill" id="inCount">输入：0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <label id="outputLabel" for="output">输出（摩斯）</label>
+                <small id="outputHint">输出支持复制；解码方向会输出文字（中文可还原）。</small>
+              </div>
+              <div class="panel-actions">
+                <button class="btn-ghost btn-ok" type="button" id="btnCopy">复制输出</button>
+              </div>
+            </div>
+
+            <textarea id="output" class="mono" placeholder="转换结果会出现在这里" readonly></textarea>
+
+            <div class="panel-foot">
+              <div class="meta">
+                <span class="pill" id="outCount">输出：0</span>
+                <span class="pill" id="optSummary">点(.) 划(-) 字符分隔(空格) 单词分隔(/)</span>
+              </div>
+            </div>
+
+            <div class="status" id="status" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <details>
+          <summary>高级设置</summary>
+          <div class="settings" aria-label="高级设置">
+            <div class="field">
+              <label for="dot">点（dot）符号</label>
+              <input id="dot" value="." maxlength="2" />
+            </div>
+            <div class="field">
+              <label for="dash">划（dash）符号</label>
+              <input id="dash" value="-" maxlength="2" />
+            </div>
+
+            <div class="field">
+              <label for="charSep">字符分隔（字母/汉字之间）</label>
+              <input id="charSep" value=" " />
+            </div>
+            <div class="field">
+              <label for="wordSep">单词分隔（词与词之间）</label>
+              <input id="wordSep" value=" / " />
+            </div>
+
+            <div class="field">
+              <label>播放速度（WPM，越大越快）</label>
+              <div class="range">
+                <input type="range" id="wpm" min="5" max="40" value="15" />
+                <span class="val" id="wpmVal">15</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="caseOut">解码输出大小写</label>
+              <select id="caseOut">
+                <option value="upper" selected>大写（推荐，符合常见摩斯习惯）</option>
+                <option value="keep">不强制（保持表内字符原样）</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>使用说明（含中文）</summary>
+          <div class="help">
+            <ol>
+              <li>先在顶部选择方向：<code>文字 → 摩斯</code> 或 <code>摩斯 → 文字</code>。</li>
+              <li>输入内容后点击 <code>转换</code>（或开启 <code>实时转换</code>）。</li>
+              <li>需要发给别人时，可点击 <code>复制输出</code>。</li>
+            </ol>
+
+            <p><strong>中文怎么转换？</strong> 由于标准国际摩斯主要覆盖拉丁字母/数字/常见标点，中文/Emoji 等“非表内字符”会自动走<strong>Unicode 扩展编码</strong>：</p>
+            <ul>
+              <li>把字符转成 Unicode 码点（十进制），再转为二进制。</li>
+              <li>二进制的 <code>0</code> 用“点”表示，<code>1</code> 用“划”表示。</li>
+              <li>因此中文是可逆的：用相同设置解码即可还原。</li>
+            </ul>
+
+            <div class="ex" id="helpExample"></div>
+
+            <p style="margin:10px 0 0;">提示：如果你更改了点/划/分隔符，解码时也要用相同设置，否则可能“解码失败”或出现乱码。</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>摩斯对照表（A-Z / 0-9 / 常用标点）</summary>
+          <div class="table-wrap">
+            <div class="table-grid" id="morseTable"></div>
+          </div>
+        </details>
+
+      </section>
+
+      <div class="footer">© useful-tools.top · 摩斯密码转换器（支持中文）</div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      // ====== Morse bits table (0=dot, 1=dash) ======
+      const MORSE_BITS = {
+        "A":"01","B":"1000","C":"1010","D":"100","E":"0","F":"0010","G":"110","H":"0000","I":"00","J":"0111",
+        "K":"101","L":"0100","M":"11","N":"10","O":"111","P":"0110","Q":"1101","R":"010","S":"000","T":"1",
+        "U":"001","V":"0001","W":"011","X":"1001","Y":"1011","Z":"1100",
+        "0":"11111","1":"01111","2":"00111","3":"00011","4":"00001","5":"00000","6":"10000","7":"11000","8":"11100","9":"11110",
+        ".":"010101",",":"110011","?":"001100","'":"011110","!":"101011","/":"10010","(":"10110",")":"101101",
+        "&":"01000",":":"111000",";":"101010","=":"10001","+":"01010","-":"100001","_":"001101","\"":"010010",
+        "$":"0001001","@":"011010"
+      };
+
+      const BITS_TO_CHAR = {};
+      for (const [ch, bits] of Object.entries(MORSE_BITS)) {
+        BITS_TO_CHAR[bits] = ch;
+      }
+
+      // ====== DOM ======
+      const el = {
+        modeEncode: document.getElementById("modeEncode"),
+        modeDecode: document.getElementById("modeDecode"),
+        modeBadge: document.getElementById("modeBadge"),
+
+        inputLabel: document.getElementById("inputLabel"),
+        outputLabel: document.getElementById("outputLabel"),
+        inputHint: document.getElementById("inputHint"),
+        outputHint: document.getElementById("outputHint"),
+
+        input: document.getElementById("input"),
+        output: document.getElementById("output"),
+
+        dot: document.getElementById("dot"),
+        dash: document.getElementById("dash"),
+        charSep: document.getElementById("charSep"),
+        wordSep: document.getElementById("wordSep"),
+        wpm: document.getElementById("wpm"),
+        wpmVal: document.getElementById("wpmVal"),
+        caseOut: document.getElementById("caseOut"),
+
+        autoRun: document.getElementById("autoRun"),
+
+        btnConvert: document.getElementById("btnConvert"),
+        btnSwap: document.getElementById("btnSwap"),
+        btnPlay: document.getElementById("btnPlay"),
+        btnCopy: document.getElementById("btnCopy"),
+        btnClear: document.getElementById("btnClear"),
+        btnExample: document.getElementById("btnExample"),
+
+        status: document.getElementById("status"),
+        inCount: document.getElementById("inCount"),
+        outCount: document.getElementById("outCount"),
+        optSummary: document.getElementById("optSummary"),
+
+        helpExample: document.getElementById("helpExample"),
+        morseTable: document.getElementById("morseTable")
+      };
+
+      let currentMode = "encode"; // encode | decode
+
+      // ====== Utils ======
+      const escapeRegExp = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const setStatus = (type, msg) => {
+        if (!msg) {
+          el.status.className = "status";
+          el.status.textContent = "";
+          return;
+        }
+        el.status.className = "status show " + (type || "");
+        el.status.textContent = msg;
+      };
+
+      const toVisible = (s) => (s === " " ? "空格" : s);
+
+      const getOptions = () => {
+        const dot = (el.dot.value || ".").trim() || ".";
+        const dash = (el.dash.value || "-").trim() || "-";
+
+        // 注意：分隔符允许为空（会变得难解析），这里给个兜底
+        const charSep = (el.charSep.value ?? " ");
+        const wordSep = (el.wordSep.value ?? " / ");
+
+        const wpm = Math.min(40, Math.max(5, parseInt(el.wpm.value, 10) || 15));
+
+        return { dot, dash, charSep, wordSep, wpm, caseOut: el.caseOut.value };
+      };
+
+      const validateOptions = (opt) => {
+        if (!opt.dot || !opt.dash) {
+          return "点/划符号不能为空。";
+        }
+        if (opt.dot === opt.dash) {
+          return "点（dot）与划（dash）不能相同。";
+        }
+        // 为了播放功能稳定，建议点/划为单字符
+        if (opt.dot.length !== 1 || opt.dash.length !== 1) {
+          return "建议点/划使用单字符（例如 . 和 -），否则“播放摩斯”可能不准确。";
+        }
+        return "";
+      };
+
+      const bitsToMorse = (bits, dot, dash) => bits.replace(/0/g, dot).replace(/1/g, dash);
+
+      const morseToBits = (morse, dot, dash) => {
+        if (!morse) return "";
+        if (dot === dash) return null;
+
+        // split/join 方式避免正则转义问题（支持多字符也能工作）
+        let bits = morse.split(dot).join("0");
+        bits = bits.split(dash).join("1");
+        bits = bits.replace(/\s+/g, "");
+
+        return /^[01]+$/.test(bits) ? bits : null;
+      };
+
+      // ====== Core: encode / decode ======
+      const encodeText = (text, opt) => {
+        const s = (text ?? "").toString();
+        if (!s.trim()) return "";
+
+        const words = s.trim().split(/\s+/);
+        const encodedWords = words.map((word) => {
+          const parts = [];
+          for (const ch of word) {
+            const key = ch.toUpperCase();
+            const bits = (MORSE_BITS[key] ?? ch.codePointAt(0).toString(2));
+            parts.push(bitsToMorse(bits, opt.dot, opt.dash));
+          }
+          return parts.join(opt.charSep);
+        });
+        return encodedWords.join(opt.wordSep);
+      };
+
+      const decodeMorse = (morse, opt) => {
+        const input = (morse ?? "").toString().trim();
+        if (!input) return "";
+
+        const wordToken = (opt.wordSep || "").trim(); // 用 trim 后的 token 做分词（兼容 “ / ” 与 “/”）
+        const wordParts = wordToken
+          ? input.split(new RegExp("\\s*" + escapeRegExp(wordToken) + "\\s*"))
+          : [input];
+
+        const decodedWords = [];
+
+        for (const raw of wordParts) {
+          const part = raw.trim();
+          if (!part) continue;
+
+          let letterParts;
+          if (!opt.charSep || /^\s+$/.test(opt.charSep)) {
+            letterParts = part.split(/\s+/);
+          } else {
+            letterParts = part.split(opt.charSep).map((x) => x.trim());
+          }
+
+          const letters = [];
+          for (const code of letterParts) {
+            if (!code) continue;
+
+            const bits = morseToBits(code, opt.dot, opt.dash);
+            if (!bits) {
+              letters.push("�");
+              continue;
+            }
+
+            const tableChar = BITS_TO_CHAR[bits];
+            if (tableChar) {
+              letters.push(opt.caseOut === "upper" ? tableChar.toUpperCase() : tableChar);
+              continue;
+            }
+
+            // Unicode 扩展：把 01 串当成二进制码点
+            const cp = parseInt(bits, 2);
+            if (!Number.isFinite(cp) || cp < 0 || cp > 0x10FFFF) {
+              letters.push("�");
+              continue;
+            }
+            letters.push(String.fromCodePoint(cp));
+          }
+
+          decodedWords.push(letters.join(""));
+        }
+
+        // 单词间用一个空格拼回去
+        return decodedWords.join(" ");
+      };
+
+      // ====== Playback ======
+      let stopPlayback = null;
+
+      const parseMorseWords = (morse, opt) => {
+        const s = (morse ?? "").toString().trim();
+        if (!s) return [];
+
+        const wordToken = (opt.wordSep || "").trim();
+        const wordParts = wordToken
+          ? s.split(new RegExp("\\s*" + escapeRegExp(wordToken) + "\\s*"))
+          : [s];
+
+        const words = [];
+        for (const raw of wordParts) {
+          const part = raw.trim();
+          if (!part) continue;
+
+          let letters;
+          if (!opt.charSep || /^\s+$/.test(opt.charSep)) {
+            letters = part.split(/\s+/);
+          } else {
+            letters = part.split(opt.charSep).map((x) => x.trim());
+          }
+
+          const cleaned = letters
+            .filter(Boolean)
+            .map((x) => {
+              // 只保留 dot/dash
+              const keep = [];
+              for (const c of x) {
+                if (c === opt.dot || c === opt.dash) keep.push(c);
+              }
+              return keep.join("");
+            })
+            .filter(Boolean);
+
+          if (cleaned.length) words.push(cleaned);
+        }
+
+        return words;
+      };
+
+      const playMorse = (morse, opt) => {
+        const warn = validateOptions(opt);
+        if (warn) {
+          setStatus("warn", warn);
+          return;
+        }
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) {
+          setStatus("err", "当前浏览器不支持 Web Audio，无法播放。");
+          return;
+        }
+
+        const words = parseMorseWords(morse, opt);
+        if (!words.length) {
+          setStatus("warn", "没有可播放的摩斯内容（请先转换或检查分隔符/点划设置）。");
+          return;
+        }
+
+        // 停止上一次播放
+        if (typeof stopPlayback === "function") stopPlayback();
+
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = 600;
+
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const unit = 1.2 / opt.wpm; // 常用经验值：dot = 1.2 / WPM
+        let t = ctx.currentTime + 0.05;
+
+        const tone = (durUnits) => {
+          gain.gain.setValueAtTime(1, t);
+          t += durUnits * unit;
+          gain.gain.setValueAtTime(0, t);
+        };
+        const gap = (durUnits) => { t += durUnits * unit; };
+
+        // 标准间隔：点=1、划=3、符号间=1、字符间=3、单词间=7
+        for (let wi = 0; wi < words.length; wi++) {
+          const letters = words[wi];
+
+          for (let li = 0; li < letters.length; li++) {
+            const pattern = letters[li];
+
+            for (let si = 0; si < pattern.length; si++) {
+              const sym = pattern[si];
+              if (sym === opt.dot) {
+                tone(1);
+                gap(1);
+              } else if (sym === opt.dash) {
+                tone(3);
+                gap(1);
+              }
+            }
+            // 已经在最后一个符号后 gap(1) 了，补到字符间 3：再加 2
+            gap(2);
+          }
+
+          // 已经补了字符间 3，补到单词间 7：再加 4
+          gap(4);
+        }
+
+        osc.start();
+        osc.stop(t);
+
+        stopPlayback = () => {
+          try { osc.stop(); } catch {}
+          try { ctx.close(); } catch {}
+          stopPlayback = null;
+        };
+
+        osc.onended = () => {
+          try { ctx.close(); } catch {}
+          stopPlayback = null;
+        };
+
+        setStatus("ok", `正在播放…（速度：${opt.wpm} WPM）`);
+      };
+
+      // ====== UI helpers ======
+      const updateCounts = () => {
+        el.inCount.textContent = "输入：" + (el.input.value.length || 0);
+        el.outCount.textContent = "输出：" + (el.output.value.length || 0);
+      };
+
+      const updateOptSummary = (opt) => {
+        const wordToken = (opt.wordSep || "").trim() || "(无)";
+        el.optSummary.textContent = `点(${toVisible(opt.dot)}) 划(${toVisible(opt.dash)}) 字符分隔(${toVisible(opt.charSep)}) 单词分隔(${toVisible(wordToken)})`;
+      };
+
+      const setMode = (mode) => {
+        currentMode = mode;
+
+        if (mode === "encode") {
+          el.modeBadge.textContent = "当前：文字 → 摩斯";
+          el.inputLabel.textContent = "输入（文字）";
+          el.outputLabel.textContent = "输出（摩斯）";
+          el.inputHint.textContent = "支持中文/英文/符号，空格会当作“单词分隔”。";
+          el.outputHint.textContent = "输出支持复制；中文会用 Unicode 扩展编码（可逆）。";
+          el.output.classList.add("mono");
+          el.btnPlay.textContent = "播放摩斯（输出）";
+          el.input.placeholder = "例如：你好 世界 / SOS / Hello World";
+          el.output.placeholder = "转换结果会出现在这里（摩斯）";
+        } else {
+          el.modeBadge.textContent = "当前：摩斯 → 文字";
+          el.inputLabel.textContent = "输入（摩斯）";
+          el.outputLabel.textContent = "输出（文字）";
+          el.inputHint.textContent = "请使用当前设置的点/划/分隔符；常见格式：字符用空格，单词用 / 。";
+          el.outputHint.textContent = "若包含中文扩展编码，可还原为中文（前提：设置一致）。";
+          el.output.classList.remove("mono");
+          el.btnPlay.textContent = "播放摩斯（输入）";
+          el.input.placeholder = "例如：.... . .-.. .-.. --- / .-- --- .-. .-.. -..";
+          el.output.placeholder = "解码后的文字会出现在这里";
+        }
+
+        // 更新说明示例（固定示例，直观说明中文）
+        const example = [
+          "中文扩展示例（默认点=., 划=-）：",
+          "“中” 的 Unicode：U+4E2D",
+          "二进制：100111000101101",
+          "扩展摩斯：-..---...-.--.-",
+          "",
+          "标准摩斯示例：",
+          "HELLO WORLD → .... . .-.. .-.. --- / .-- --- .-. .-.. -..",
+        ].join("\\n");
+        el.helpExample.textContent = example;
+
+        setStatus("", "");
+        updateCounts();
+      };
+
+      const renderMorseTable = (opt) => {
+        // 让对照表跟随 dot/dash 设置变化
+        const entries = [
+          ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+          ..."0123456789".split(""),
+          ".", ",", "?", "'", "!", "/", "(", ")", "&", ":", ";", "=", "+", "-", "_", "\"", "$", "@"
+        ];
+
+        el.morseTable.innerHTML = "";
+        for (const ch of entries) {
+          const bits = MORSE_BITS[ch];
+          const code = bitsToMorse(bits, opt.dot, opt.dash);
+
+          const div = document.createElement("div");
+          div.className = "chip";
+
+          const k = document.createElement("div");
+          k.className = "k";
+          k.textContent = ch;
+
+          const v = document.createElement("div");
+          v.className = "v";
+          v.textContent = code;
+
+          div.appendChild(k);
+          div.appendChild(v);
+          el.morseTable.appendChild(div);
+        }
+      };
+
+      const convertNow = () => {
+        const opt = getOptions();
+        const optWarn = validateOptions(opt);
+
+        updateOptSummary(opt);
+        el.wpmVal.textContent = String(opt.wpm);
+
+        if (optWarn) {
+          // 不阻断转换，只提示
+          setStatus("warn", optWarn);
+        } else {
+          setStatus("", "");
+        }
+
+        const input = el.input.value;
+        let out = "";
+
+        try {
+          out = currentMode === "encode"
+            ? encodeText(input, opt)
+            : decodeMorse(input, opt);
+
+          el.output.value = out;
+          updateCounts();
+
+          if (!input.trim()) {
+            setStatus("warn", "请输入内容后再转换。");
+          } else if (!out) {
+            setStatus("warn", "转换结果为空：请检查输入是否正确，以及分隔符/点划设置。");
+          } else if (!optWarn) {
+            setStatus("ok", "转换完成。");
+          }
+        } catch (err) {
+          console.error(err);
+          setStatus("err", "转换失败：请检查输入与设置。");
+        }
+
+        renderMorseTable(opt);
+      };
+
+      const debounce = (fn, delay = 180) => {
+        let t = null;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...args), delay);
+        };
+      };
+      const convertDebounced = debounce(() => {
+        if (el.autoRun.checked) convertNow();
+      }, 220);
+
+      const copyText = async (text) => {
+        const s = String(text ?? "");
+        if (!s) {
+          setStatus("warn", "没有可复制的内容。");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(s);
+          setStatus("ok", "已复制到剪贴板。");
+        } catch {
+          // fallback
+          const ta = document.createElement("textarea");
+          ta.value = s;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand("copy");
+            setStatus("ok", "已复制到剪贴板。");
+          } catch {
+            setStatus("err", "复制失败：请手动选择并复制。");
+          } finally {
+            document.body.removeChild(ta);
+          }
+        }
+      };
+
+      // ====== Events ======
+      el.modeEncode.addEventListener("change", () => { if (el.modeEncode.checked) setMode("encode"); });
+      el.modeDecode.addEventListener("change", () => { if (el.modeDecode.checked) setMode("decode"); });
+
+      el.btnConvert.addEventListener("click", convertNow);
+
+      el.btnSwap.addEventListener("click", () => {
+        const temp = el.input.value;
+        el.input.value = el.output.value;
+        el.output.value = temp;
+
+        // 切换方向
+        if (currentMode === "encode") {
+          el.modeDecode.checked = true;
+          setMode("decode");
+        } else {
+          el.modeEncode.checked = true;
+          setMode("encode");
+        }
+
+        if (el.autoRun.checked) convertNow();
+        updateCounts();
+      });
+
+      el.btnPlay.addEventListener("click", () => {
+        const opt = getOptions();
+        updateOptSummary(opt);
+
+        const morse = (currentMode === "encode") ? el.output.value : el.input.value;
+        playMorse(morse, opt);
+      });
+
+      el.btnCopy.addEventListener("click", () => copyText(el.output.value));
+
+      el.btnClear.addEventListener("click", () => {
+        el.input.value = "";
+        el.output.value = "";
+        setStatus("", "");
+        updateCounts();
+      });
+
+      el.btnExample.addEventListener("click", () => {
+        if (currentMode === "encode") {
+          el.input.value = "你好 世界! SOS";
+        } else {
+          el.input.value = ".... . .-.. .-.. --- / .-- --- .-. .-.. -..";
+        }
+        if (el.autoRun.checked) convertNow();
+        updateCounts();
+      });
+
+      // Auto run hooks
+      ["input", "change"].forEach(evt => {
+        el.input.addEventListener(evt, convertDebounced);
+        el.dot.addEventListener(evt, convertDebounced);
+        el.dash.addEventListener(evt, convertDebounced);
+        el.charSep.addEventListener(evt, convertDebounced);
+        el.wordSep.addEventListener(evt, convertDebounced);
+        el.caseOut.addEventListener(evt, convertDebounced);
+      });
+
+      el.wpm.addEventListener("input", () => {
+        el.wpmVal.textContent = el.wpm.value;
+      });
+
+      el.autoRun.addEventListener("change", () => {
+        if (el.autoRun.checked) convertNow();
+      });
+
+      // Initial
+      setMode("encode");
+      const opt0 = getOptions();
+      updateOptSummary(opt0);
+      renderMorseTable(opt0);
+      updateCounts();
+    })();
+  </script>
+</body>
+</html>

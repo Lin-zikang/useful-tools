@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#171522" />
+  <title>俄罗斯方块</title>
+  <link
+    rel="icon"
+    href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png"
+    type="image/png"
+  />
+  <style>
+    :root {
+      --bg-1: #11101a;
+      --bg-2: #231c33;
+      --panel: #e7d7ad;
+      --panel-dark: #433b33;
+      --ink: #221f21;
+      --accent: #d34b3f;
+      --accent-2: #e5a84a;
+      --screen: #8c9b72;
+      --screen-dark: #263229;
+      --grid: rgba(27, 42, 32, .16);
+      --shadow: rgba(0,0,0,.5);
+      --cell: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      color: var(--ink);
+      font-family: "Courier New", "Microsoft YaHei", monospace;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(255,255,255,.08), transparent 24%),
+        radial-gradient(circle at 80% 85%, rgba(211,75,63,.12), transparent 28%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 5px),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .18;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0, rgba(255,255,255,.05) 1px, transparent 1px, transparent 3px);
+      mix-blend-mode: overlay;
+      animation: scan 8s linear infinite;
+    }
+
+    @keyframes scan { to { transform: translateY(12px); } }
+
+    .shell {
+      width: min(1160px, 96vw);
+      margin: 2vh auto;
+      background: var(--panel);
+      border: 8px solid #302b28;
+      border-radius: 22px;
+      box-shadow:
+        0 26px 60px var(--shadow),
+        inset 0 0 0 5px #f3e8ca,
+        inset 0 -12px 0 rgba(82,65,49,.15);
+      padding: clamp(12px, 2vw, 24px);
+      position: relative;
+      isolation: isolate;
+    }
+
+    .shell::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 2px dashed rgba(73,55,40,.32);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 2px 10px 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 42px);
+      letter-spacing: .08em;
+      color: #2d2725;
+      text-shadow: 2px 2px 0 #fff3cf, 4px 4px 0 rgba(71,52,40,.18);
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: #766453;
+      font-size: clamp(11px, 1.5vw, 14px);
+      letter-spacing: .12em;
+    }
+
+    .lamp-row { display: flex; gap: 8px; }
+    .lamp {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #5d463d;
+      border: 2px solid #332c28;
+      box-shadow: inset 0 2px 2px rgba(255,255,255,.22);
+    }
+    .lamp.on {
+      background: #d64d3f;
+      box-shadow: 0 0 12px rgba(214,77,63,.8), inset 0 2px 2px rgba(255,255,255,.4);
+    }
+
+    .layout {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+      gap: clamp(14px, 2vw, 26px);
+      align-items: center;
+    }
+
+    .side {
+      display: grid;
+      gap: 14px;
+      align-content: center;
+      min-width: 0;
+    }
+
+    .card {
+      background: #d7c89f;
+      border: 4px solid #51473f;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: inset 0 0 0 3px #f1e4bf, 0 6px 0 rgba(65,52,42,.18);
+      min-width: 0;
+    }
+
+    .card h2 {
+      font-size: 14px;
+      margin: 0 0 9px;
+      color: #443830;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      border-bottom: 2px dotted rgba(67,56,48,.35);
+      padding-bottom: 6px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat {
+      background: #958f69;
+      color: #18221b;
+      padding: 8px;
+      border: 3px solid #3b4235;
+      box-shadow: inset 0 0 10px rgba(24,34,27,.22);
+      text-align: center;
+      min-width: 0;
+    }
+    .stat span { display: block; font-size: 10px; opacity: .75; }
+    .stat strong { display: block; font-size: 23px; line-height: 1.1; white-space: nowrap; }
+
+    .screen-frame {
+      padding: 10px;
+      border-radius: 12px;
+      background: #3e3731;
+      border: 5px solid #282521;
+      box-shadow: inset 0 0 0 3px #766b5d, 0 12px 0 rgba(0,0,0,.16);
+      position: relative;
+      justify-self: center;
+    }
+
+    .screen-wrap {
+      position: relative;
+      border: 5px solid #18221b;
+      background: var(--screen);
+      box-shadow: inset 0 0 28px rgba(24,34,27,.48);
+      overflow: hidden;
+    }
+
+    canvas#game {
+      display: block;
+      width: calc(var(--cell) * 10);
+      height: calc(var(--cell) * 20);
+      max-width: 54vw;
+      max-height: 72vh;
+      image-rendering: pixelated;
+      background:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        var(--screen);
+      background-size: 10% 5%, 10% 5%, auto;
+    }
+
+    .crt-glare {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(115deg, rgba(255,255,255,.14), transparent 22%, transparent 70%, rgba(255,255,255,.05));
+      mix-blend-mode: screen;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(35,47,37,.76);
+      color: #e7efcf;
+      text-align: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .overlay h3 { margin: 0 0 8px; font-size: 30px; letter-spacing: .12em; }
+    .overlay p { margin: 0; font-size: 13px; opacity: .92; line-height: 1.7; }
+
+    .next-box { display: grid; place-items: center; }
+    #next {
+      width: 128px;
+      height: 128px;
+      image-rendering: pixelated;
+      background: #958f69;
+      border: 3px solid #3b4235;
+      max-width: 100%;
+    }
+
+    .legend { display: grid; gap: 7px; font-size: 12px; color: #5a4b40; }
+    .legend div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px dashed rgba(70,55,45,.25);
+      padding-bottom: 5px;
+    }
+    kbd {
+      background: #473d36;
+      color: #f2e6c7;
+      border: 2px solid #2b2521;
+      border-radius: 5px;
+      padding: 2px 6px;
+      min-width: 32px;
+      text-align: center;
+      box-shadow: 0 2px 0 #1d1916;
+      white-space: nowrap;
+    }
+
+    .rules-mini {
+      margin: 0;
+      padding-left: 18px;
+      color: #57493e;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .rules-note {
+      margin: 9px 0 0;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(70,55,45,.3);
+      color: #6f4a36;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+    .button-row .wide { grid-column: 1 / -1; }
+
+    button {
+      font: inherit;
+      border: 3px solid #3a302b;
+      border-radius: 9px;
+      color: #fff1d4;
+      background: #bb4339;
+      padding: 10px 8px;
+      min-height: 44px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #6b2c29, inset 0 2px 0 rgba(255,255,255,.25);
+      transition: transform .08s ease, filter .15s ease;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active, button.pressed { transform: translateY(4px); box-shadow: 0 1px 0 #6b2c29; }
+    button.secondary {
+      background: #80704e;
+      box-shadow: 0 5px 0 #4b422f, inset 0 2px 0 rgba(255,255,255,.22);
+    }
+    button:focus-visible {
+      outline: 3px solid #fff2b8;
+      outline-offset: 3px;
+    }
+
+    .mobile-controls {
+      display: none;
+      margin-top: 16px;
+      grid-template-columns: minmax(0, 1.45fr) minmax(110px, .72fr);
+      gap: 12px;
+      position: relative;
+      z-index: 4;
+      touch-action: none;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, 56px);
+      gap: 7px;
+    }
+    .dpad .rotate-ccw { grid-column: 1; grid-row: 1; }
+    .dpad .rotate-cw { grid-column: 3; grid-row: 1; }
+    .dpad .left { grid-column: 1; grid-row: 2; }
+    .dpad .down { grid-column: 2; grid-row: 2; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+    .dpad .rotate-ccw,
+    .dpad .rotate-cw {
+      background: #d28a3e;
+      box-shadow: 0 5px 0 #815421, inset 0 2px 0 rgba(255,255,255,.2);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+    .actions .drop { background: #c75545; }
+    .actions .pause-touch {
+      background: #6e654b;
+      box-shadow: 0 5px 0 #49432f, inset 0 2px 0 rgba(255,255,255,.2);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: max(7%, env(safe-area-inset-top));
+      transform: translate(-50%, -20px);
+      opacity: 0;
+      color: #fff4d0;
+      background: rgba(35,31,30,.92);
+      border: 2px solid #e3b45a;
+      padding: 10px 18px;
+      border-radius: 7px;
+      font-weight: bold;
+      letter-spacing: .12em;
+      pointer-events: none;
+      z-index: 30;
+      transition: .25s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,.32);
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .guide-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      background: rgba(16,14,22,.78);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+    .guide-modal.show { opacity: 1; pointer-events: auto; }
+    .guide-modal[hidden] { display: none; }
+
+    .guide-panel {
+      width: min(590px, 100%);
+      max-height: min(720px, 92svh);
+      overflow: auto;
+      position: relative;
+      background: #dfd0a8;
+      border: 7px solid #342e29;
+      border-radius: 18px;
+      padding: clamp(18px, 4vw, 30px);
+      box-shadow:
+        0 24px 70px rgba(0,0,0,.62),
+        inset 0 0 0 4px #f5e8c2,
+        inset 0 -10px 0 rgba(82,65,49,.14);
+    }
+    .guide-panel::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 2px dashed rgba(73,55,40,.28);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .guide-close {
+      position: absolute;
+      z-index: 2;
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      min-height: 42px;
+      padding: 0;
+      font-size: 22px;
+      line-height: 1;
+      background: #6e654b;
+      box-shadow: 0 4px 0 #49432f;
+    }
+    .guide-kicker {
+      position: relative;
+      z-index: 1;
+      color: #8b493a;
+      font-weight: bold;
+      font-size: 12px;
+      letter-spacing: .18em;
+    }
+    .guide-panel h2 {
+      position: relative;
+      z-index: 1;
+      margin: 8px 48px 12px 0;
+      color: #302923;
+      font-size: clamp(24px, 5vw, 36px);
+      text-shadow: 2px 2px 0 #fff0c9;
+    }
+    .guide-content {
+      position: relative;
+      z-index: 1;
+      color: #51453b;
+      font-size: 14px;
+      line-height: 1.75;
+      min-height: 230px;
+    }
+    .guide-content p { margin: 0 0 12px; }
+    .guide-content ul { margin: 8px 0 12px; padding-left: 20px; }
+    .guide-content strong { color: #8d3d34; }
+    .guide-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin: 12px 0;
+    }
+    .guide-chip {
+      background: #968f69;
+      color: #172119;
+      border: 3px solid #3d4336;
+      padding: 9px;
+      text-align: center;
+      box-shadow: inset 0 0 10px rgba(24,34,27,.2);
+    }
+    .guide-chip b { display: block; font-size: 18px; }
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      background: rgba(149,143,105,.34);
+    }
+    .score-table th,
+    .score-table td {
+      border: 2px solid rgba(61,67,54,.55);
+      padding: 7px;
+      text-align: center;
+    }
+    .guide-progress {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 7px;
+      margin: 15px 0 12px;
+    }
+    .guide-dot {
+      height: 8px;
+      flex: 1;
+      background: #9a8e70;
+      border: 1px solid #51473f;
+    }
+    .guide-dot.active { background: #c54a3f; }
+    .guide-actions {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .shake { animation: shake .25s linear; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 900px) {
+      body { display: block; }
+      .shell {
+        width: min(720px, 96vw);
+        margin: 12px auto;
+      }
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 11px;
+        align-items: start;
+      }
+      .side.left { order: 1; }
+      .screen-frame { order: 2; }
+      .side.right {
+        order: 3;
+        grid-template-columns: minmax(120px, .55fr) minmax(190px, 1fr);
+        align-items: stretch;
+      }
+      .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .legend-card,
+      .rules-card { display: none; }
+      canvas#game {
+        width: min(76vw, 360px);
+        height: auto;
+        max-width: none;
+        max-height: 64svh;
+        aspect-ratio: 1 / 2;
+      }
+      .mobile-controls {
+        display: grid;
+        position: sticky;
+        bottom: 0;
+        margin: 12px -4px -4px;
+        padding: 10px max(10px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+        background: rgba(215,200,159,.96);
+        border: 4px solid #51473f;
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 3px #f1e4bf, 0 -8px 24px rgba(0,0,0,.18);
+      }
+    }
+
+    @media (max-width: 600px) {
+      :root { --cell: 22px; }
+      .shell {
+        width: 100%;
+        min-height: 100svh;
+        margin: 0;
+        border-width: 5px;
+        border-radius: 0;
+        padding: 9px;
+        padding-top: max(9px, env(safe-area-inset-top));
+      }
+      .shell::after { inset: 5px; border-radius: 5px; }
+      header { padding: 2px 6px 8px; }
+      .brand h1 { font-size: clamp(22px, 8vw, 32px); }
+      .brand p { display: none; }
+      .lamp-row { gap: 5px; }
+      .lamp { width: 11px; height: 11px; }
+      .layout { gap: 8px; }
+      .screen-frame { padding: 6px; border-width: 3px; }
+      .screen-wrap { border-width: 3px; }
+      canvas#game {
+        width: min(84vw, 310px);
+        max-height: none;
+      }
+      .side.left,
+      .side.right { width: 100%; gap: 8px; }
+      .side.right { grid-template-columns: minmax(96px, .55fr) minmax(0, 1fr); }
+      .card { padding: 7px; border-width: 3px; border-radius: 8px; }
+      .card h2 { font-size: 10px; margin-bottom: 6px; padding-bottom: 3px; }
+      .stats { gap: 4px; }
+      .stat { padding: 5px 2px; border-width: 2px; }
+      .stat span { font-size: 8px; }
+      .stat strong { font-size: clamp(14px, 4.7vw, 19px); }
+      #next { width: min(24vw, 90px); height: min(24vw, 90px); }
+      .button-row { gap: 5px; }
+      .button-row button { padding: 6px 3px; min-height: 39px; font-size: 10px; }
+      .mobile-controls {
+        grid-template-columns: minmax(0, 1.55fr) minmax(88px, .65fr);
+        gap: 7px;
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+      .dpad { grid-template-rows: repeat(2, 50px); gap: 5px; }
+      .actions { gap: 5px; }
+      .mobile-controls button { min-height: 46px; padding: 6px 3px; font-size: 12px; }
+      .overlay { padding: 14px; }
+      .overlay h3 { font-size: 21px; }
+      .overlay p { font-size: 11px; }
+      .guide-panel { border-width: 5px; border-radius: 12px; padding: 18px 15px; }
+      .guide-panel::after { inset: 7px; }
+      .guide-content { min-height: 250px; font-size: 13px; }
+      .guide-grid { gap: 6px; }
+      .guide-chip { padding: 7px 4px; font-size: 11px; }
+      .guide-chip b { font-size: 15px; }
+    }
+
+    @media (max-width: 370px) {
+      canvas#game { width: min(82vw, 286px); }
+      .side.right { grid-template-columns: 88px minmax(0, 1fr); }
+      #next { width: 76px; height: 76px; }
+      .mobile-controls { grid-template-columns: minmax(0, 1.6fr) 82px; }
+      .dpad { grid-template-rows: repeat(2, 46px); }
+      .stat strong { font-size: 14px; }
+    }
+
+    @media (max-width: 900px) and (max-height: 650px) and (orientation: landscape) {
+      .shell { margin: 0 auto; width: 100%; padding: 7px 10px; }
+      header { padding-bottom: 5px; }
+      .brand p { display: none; }
+      .layout { gap: 7px; }
+      canvas#game { height: 67svh; width: auto; max-height: none; }
+      .side.right { grid-template-columns: minmax(95px, .45fr) 1fr; }
+      .mobile-controls {
+        position: relative;
+        margin-top: 7px;
+        padding: 6px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      }
+      .dpad { grid-template-rows: repeat(2, 42px); }
+      .mobile-controls button { min-height: 40px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+    }
+  </style>
+
+
+  <style id="viewport-fit-overrides">
+    /* 单屏优先布局：主体不滚动，教程弹层按需显示 */
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 0;
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
+      display: grid;
+      place-items: center;
+    }
+
+    .shell {
+      width: min(1160px, calc(100vw - 16px));
+      height: min(900px, calc(100svh - 16px));
+      height: min(900px, calc(100dvh - 16px));
+      min-height: 0;
+      margin: 0;
+      padding: clamp(10px, 1.6vmin, 18px);
+      border-width: clamp(5px, .75vmin, 8px);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .shell::after { inset: 7px; }
+
+    header {
+      flex: 0 0 auto;
+      min-height: 0;
+      padding: 0 8px clamp(7px, 1vh, 11px);
+    }
+
+    .brand h1 { font-size: clamp(22px, 3.4vw, 38px); }
+    .brand p { font-size: clamp(10px, 1.15vw, 13px); }
+
+    .layout {
+      flex: 1 1 auto;
+      min-height: 0;
+      grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+      gap: clamp(10px, 1.55vw, 22px);
+      align-items: center;
+    }
+
+    .side {
+      max-height: 100%;
+      gap: clamp(8px, 1.2vh, 12px);
+      overflow: hidden;
+    }
+
+    .card {
+      padding: clamp(8px, 1.2vmin, 11px);
+      border-width: 3px;
+      border-radius: 10px;
+      box-shadow: inset 0 0 0 2px #f1e4bf, 0 4px 0 rgba(65,52,42,.18);
+    }
+
+    .card h2 {
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      font-size: clamp(10px, 1.15vw, 13px);
+    }
+
+    .rules-card { display: none !important; }
+
+    .stats { gap: 6px; }
+    .stat { padding: 6px 4px; border-width: 2px; }
+    .stat strong { font-size: clamp(17px, 2.1vw, 22px); }
+
+    .legend {
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 8px;
+      font-size: 10px;
+    }
+
+    .legend div {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      padding: 3px 0 4px;
+    }
+
+    .legend kbd {
+      min-width: 0;
+      padding: 1px 4px;
+      border-width: 1px;
+      font-size: 10px;
+      box-shadow: 0 1px 0 #1d1916;
+    }
+
+    .screen-frame {
+      height: min(100%, 680px);
+      width: auto;
+      max-height: 100%;
+      padding: 7px;
+      border-width: 4px;
+      border-radius: 10px;
+    }
+
+    .screen-wrap {
+      width: auto;
+      height: 100%;
+      border-width: 4px;
+    }
+
+    canvas#game {
+      width: auto;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      aspect-ratio: 1 / 2;
+    }
+
+    #next {
+      width: clamp(82px, 10.5vw, 116px);
+      height: clamp(82px, 10.5vw, 116px);
+      border-width: 2px;
+    }
+
+    .button-row { gap: 6px; }
+    .button-row button {
+      min-height: 38px;
+      padding: 7px 5px;
+      border-width: 2px;
+      font-size: clamp(10px, 1vw, 12px);
+      box-shadow: 0 4px 0 #6b2c29, inset 0 2px 0 rgba(255,255,255,.22);
+    }
+    .button-row button.secondary {
+      box-shadow: 0 4px 0 #4b422f, inset 0 2px 0 rgba(255,255,255,.2);
+    }
+
+    .mobile-controls { flex: 0 0 auto; }
+
+    /* 中小屏竖向：棋盘与紧凑信息轨并排，控制台固定占一行 */
+    @media (max-width: 900px) and (orientation: portrait),
+           (max-width: 700px) and (min-height: 651px) {
+      :root {
+        --side-rail: clamp(106px, 26vw, 170px);
+        --touch-panel-h: 108px;
+      }
+
+      body { display: grid; }
+
+      .shell {
+        width: calc(100vw - 8px);
+        height: calc(100svh - 8px);
+        height: calc(100dvh - 8px);
+        padding: 8px;
+        border-width: 5px;
+        border-radius: 14px;
+      }
+
+      .shell::after { inset: 5px; border-radius: 7px; }
+
+      header {
+        padding: 0 5px 6px;
+        gap: 8px;
+      }
+
+      .brand h1 { font-size: clamp(21px, 6vw, 30px); }
+      .brand p { font-size: 9px; margin-top: 1px; }
+      .lamp-row { gap: 5px; }
+      .lamp { width: 10px; height: 10px; border-width: 1px; }
+
+      .layout {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--side-rail);
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+          "screen stats"
+          "screen tools";
+        gap: 7px;
+        align-items: start;
+      }
+
+      .screen-frame {
+        grid-area: screen;
+        order: initial;
+        align-self: center;
+        justify-self: center;
+        height: min(calc(100svh - 184px), calc((100vw - var(--side-rail) - 40px) * 2));
+        height: min(calc(100dvh - 184px), calc((100vw - var(--side-rail) - 40px) * 2));
+        max-height: 100%;
+        width: auto;
+        padding: 5px;
+        border-width: 3px;
+      }
+
+      .screen-wrap {
+        width: auto;
+        height: 100%;
+        border-width: 3px;
+      }
+
+      canvas#game {
+        width: auto;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+      }
+
+      .side.left {
+        grid-area: stats;
+        order: initial;
+        align-self: start;
+      }
+
+      .side.right {
+        grid-area: tools;
+        order: initial;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 7px;
+        align-content: start;
+      }
+
+      .legend-card,
+      .rules-card { display: none !important; }
+
+      .card {
+        padding: 6px;
+        border-width: 2px;
+        border-radius: 7px;
+        box-shadow: inset 0 0 0 2px #f1e4bf, 0 3px 0 rgba(65,52,42,.18);
+      }
+
+      .card h2 {
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+        font-size: 9px;
+        letter-spacing: .12em;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        min-height: 26px;
+        padding: 3px 5px;
+        text-align: left;
+      }
+
+      .stat span { font-size: 8px; }
+      .stat strong { font-size: clamp(13px, 3.5vw, 18px); }
+
+      #next {
+        width: min(calc(var(--side-rail) - 18px), 100px);
+        height: min(calc(var(--side-rail) - 18px), 100px);
+      }
+
+      .button-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .button-row .wide { grid-column: auto; }
+
+      .button-row button {
+        min-height: 31px;
+        padding: 4px 2px;
+        border-width: 2px;
+        font-size: 9px;
+        box-shadow: 0 3px 0 #6b2c29, inset 0 1px 0 rgba(255,255,255,.22);
+      }
+
+      .button-row button.secondary {
+        box-shadow: 0 3px 0 #4b422f, inset 0 1px 0 rgba(255,255,255,.2);
+      }
+
+      .mobile-controls {
+        display: grid;
+        position: static;
+        width: 100%;
+        height: var(--touch-panel-h);
+        margin: 7px 0 0;
+        padding: 7px;
+        grid-template-columns: minmax(0, 1.55fr) minmax(90px, .65fr);
+        gap: 6px;
+        background: rgba(215,200,159,.98);
+        border: 3px solid #51473f;
+        border-radius: 9px;
+        box-shadow: inset 0 0 0 2px #f1e4bf, 0 -3px 12px rgba(0,0,0,.14);
+      }
+
+      .dpad {
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        gap: 5px;
+      }
+
+      .actions { gap: 5px; }
+
+      .mobile-controls button {
+        min-height: 0;
+        height: 100%;
+        padding: 3px;
+        border-width: 2px;
+        border-radius: 7px;
+        font-size: 12px;
+        box-shadow: 0 3px 0 #6b2c29, inset 0 1px 0 rgba(255,255,255,.22);
+      }
+
+      .mobile-controls .secondary,
+      .mobile-controls .pause-touch {
+        box-shadow: 0 3px 0 #49432f, inset 0 1px 0 rgba(255,255,255,.2);
+      }
+    }
+
+    @media (max-width: 600px) and (orientation: portrait) {
+      :root {
+        --side-rail: clamp(94px, 29vw, 118px);
+        --touch-panel-h: 103px;
+      }
+
+      .shell {
+        width: 100vw;
+        height: 100svh;
+        height: 100dvh;
+        padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+        border-width: 4px;
+        border-radius: 0;
+      }
+
+      .shell::after { inset: 4px; border-radius: 3px; }
+      header { padding: 0 4px 5px; }
+      .brand h1 { font-size: clamp(20px, 7.1vw, 28px); }
+      .brand p { display: none; }
+
+      .layout { gap: 5px; }
+
+      .screen-frame {
+        height: min(calc(100svh - 174px), calc((100vw - var(--side-rail) - 30px) * 2));
+        height: min(calc(100dvh - 174px), calc((100vw - var(--side-rail) - 30px) * 2));
+        padding: 4px;
+      }
+
+      .screen-wrap { border-width: 2px; }
+      .card { padding: 5px; }
+      .card h2 { font-size: 8px; }
+      .stat { min-height: 23px; padding: 2px 4px; }
+      .stat strong { font-size: clamp(12px, 4vw, 16px); }
+      #next {
+        width: min(calc(var(--side-rail) - 14px), 86px);
+        height: min(calc(var(--side-rail) - 14px), 86px);
+      }
+      .button-row button { min-height: 28px; font-size: 8px; }
+
+      .mobile-controls {
+        margin-top: 5px;
+        padding: 5px;
+        grid-template-columns: minmax(0, 1.6fr) minmax(78px, .62fr);
+        gap: 5px;
+        border-width: 2px;
+        border-radius: 7px;
+      }
+
+      .dpad, .actions { gap: 4px; }
+      .mobile-controls button { font-size: 11px; }
+      .overlay { padding: 10px; }
+      .overlay h3 { font-size: 18px; margin-bottom: 5px; }
+      .overlay p { font-size: 10px; line-height: 1.5; }
+    }
+
+    @media (max-width: 340px) and (orientation: portrait) {
+      :root { --side-rail: 90px; --touch-panel-h: 98px; }
+      .brand h1 { font-size: 20px; }
+      .lamp-row { display: none; }
+      .screen-frame {
+        height: min(calc(100svh - 164px), calc((100vw - var(--side-rail) - 25px) * 2));
+        height: min(calc(100dvh - 164px), calc((100vw - var(--side-rail) - 25px) * 2));
+      }
+      .card h2 { letter-spacing: .08em; }
+      .button-row button { min-height: 26px; }
+    }
+
+
+
+    /* 较高的平板横屏：保留三栏，并在底部放置触控台 */
+    @media (max-width: 900px) and (min-height: 651px) and (orientation: landscape) {
+      .shell {
+        width: calc(100vw - 10px);
+        height: calc(100svh - 10px);
+        height: calc(100dvh - 10px);
+        padding: 8px 10px;
+        border-width: 5px;
+        border-radius: 14px;
+      }
+
+      header { padding: 0 5px 6px; }
+      .brand h1 { font-size: clamp(23px, 4vw, 31px); }
+      .brand p { display: none; }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: "stats screen tools";
+        gap: 8px;
+        min-height: 0;
+        align-items: center;
+      }
+
+      .side.left { grid-area: stats; order: initial; align-self: center; }
+      .side.right {
+        grid-area: tools;
+        order: initial;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 7px;
+        align-self: center;
+      }
+
+      .legend-card,
+      .rules-card { display: none !important; }
+
+      .screen-frame {
+        grid-area: screen;
+        order: initial;
+        height: 100%;
+        max-height: 100%;
+        padding: 5px;
+        border-width: 3px;
+      }
+
+      .screen-wrap { width: auto; height: 100%; border-width: 3px; }
+      canvas#game { width: auto; height: 100%; max-width: none; max-height: none; }
+
+      .stats { grid-template-columns: 1fr 1fr; gap: 4px; }
+      .stat { padding: 4px 2px; }
+      .stat strong { font-size: clamp(14px, 2.2vw, 18px); }
+      #next { width: 82px; height: 82px; }
+      .button-row button { min-height: 29px; padding: 3px; font-size: 8px; }
+
+      .mobile-controls {
+        display: grid;
+        position: static;
+        width: 100%;
+        height: 105px;
+        margin: 7px 0 0;
+        padding: 6px;
+        grid-template-columns: minmax(0, 1.55fr) minmax(110px, .65fr);
+        gap: 6px;
+        background: rgba(215,200,159,.98);
+        border: 3px solid #51473f;
+        border-radius: 9px;
+        box-shadow: inset 0 0 0 2px #f1e4bf, 0 -3px 12px rgba(0,0,0,.14);
+      }
+
+      .dpad { grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 5px; }
+      .actions { gap: 5px; }
+      .mobile-controls button {
+        min-height: 0;
+        height: 100%;
+        padding: 3px;
+        border-width: 2px;
+        font-size: 12px;
+        box-shadow: 0 3px 0 #6b2c29, inset 0 1px 0 rgba(255,255,255,.2);
+      }
+      .mobile-controls .secondary,
+      .mobile-controls .pause-touch {
+        box-shadow: 0 3px 0 #49432f, inset 0 1px 0 rgba(255,255,255,.18);
+      }
+    }
+
+        /* 手机横屏：控制台移到棋盘右侧，避免纵向叠加 */
+    @media (max-width: 900px) and (max-height: 650px) and (orientation: landscape) {
+      :root { --land-control-w: clamp(170px, 28vw, 230px); }
+
+      .shell {
+        width: 100vw;
+        height: 100svh;
+        height: 100dvh;
+        margin: 0;
+        padding: max(5px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+        border-width: 4px;
+        border-radius: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) var(--land-control-w);
+        grid-template-rows: auto minmax(0, 1fr);
+        column-gap: 7px;
+      }
+
+      .shell::after { inset: 4px; border-radius: 3px; }
+
+      header {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        padding: 0 4px 4px;
+      }
+
+      .brand h1 { font-size: clamp(19px, 3.7vw, 27px); }
+      .brand p { display: none; }
+      .lamp { width: 9px; height: 9px; }
+
+      .layout {
+        grid-column: 1;
+        grid-row: 2;
+        display: grid;
+        grid-template-columns: clamp(74px, 13.5vw, 118px) auto clamp(74px, 13.5vw, 118px);
+        grid-template-rows: minmax(0, 1fr);
+        grid-template-areas: "stats screen tools";
+        gap: 5px;
+        min-width: 0;
+        min-height: 0;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .side.left { grid-area: stats; order: initial; align-self: center; }
+      .side.right {
+        grid-area: tools;
+        order: initial;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+        align-self: center;
+      }
+
+      .legend-card,
+      .rules-card { display: none !important; }
+
+      .screen-frame {
+        grid-area: screen;
+        order: initial;
+        height: calc(100svh - 48px);
+        height: calc(100dvh - 48px);
+        max-height: 100%;
+        width: auto;
+        padding: 3px;
+        border-width: 3px;
+      }
+
+      .screen-wrap { width: auto; height: 100%; border-width: 2px; }
+      canvas#game { width: auto; height: 100%; max-width: none; max-height: none; }
+
+      .card { padding: 4px; border-width: 2px; }
+      .card h2 { margin-bottom: 3px; padding-bottom: 2px; font-size: 8px; }
+      .stats { grid-template-columns: 1fr; gap: 2px; }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 21px;
+        padding: 2px 3px;
+      }
+      .stat span { font-size: 7px; }
+      .stat strong { font-size: clamp(11px, 2.1vw, 15px); }
+
+      #next {
+        width: min(10.5vw, 68px);
+        height: min(10.5vw, 68px);
+      }
+
+      .button-row { grid-template-columns: 1fr; gap: 3px; }
+      .button-row .wide { grid-column: auto; }
+      .button-row button {
+        min-height: 24px;
+        padding: 2px 1px;
+        font-size: 7px;
+        border-width: 1px;
+        box-shadow: 0 2px 0 #6b2c29;
+      }
+      .button-row button.secondary { box-shadow: 0 2px 0 #4b422f; }
+
+      .mobile-controls {
+        grid-column: 2;
+        grid-row: 2;
+        display: grid;
+        position: static;
+        align-self: stretch;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 6px;
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 44px;
+        gap: 6px;
+        background: rgba(215,200,159,.98);
+        border: 3px solid #51473f;
+        border-radius: 9px;
+        box-shadow: inset 0 0 0 2px #f1e4bf;
+      }
+
+      .dpad {
+        grid-template-rows: repeat(2, minmax(36px, 1fr));
+        gap: 5px;
+      }
+
+      .actions {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+        gap: 5px;
+      }
+
+      .mobile-controls button {
+        min-height: 0;
+        height: 100%;
+        padding: 2px;
+        border-width: 2px;
+        border-radius: 7px;
+        font-size: 11px;
+        box-shadow: 0 3px 0 #6b2c29, inset 0 1px 0 rgba(255,255,255,.2);
+      }
+      .mobile-controls .secondary,
+      .mobile-controls .pause-touch {
+        box-shadow: 0 3px 0 #49432f, inset 0 1px 0 rgba(255,255,255,.18);
+      }
+    }
+
+    /* 极矮桌面窗口也保持完整，进一步压缩辅助区 */
+    @media (min-width: 901px) and (max-height: 620px) {
+      .shell { padding: 8px 12px; }
+      header { padding-bottom: 5px; }
+      .brand p { display: none; }
+      .layout { gap: 10px; grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr); }
+      .legend { gap: 2px 6px; }
+      .legend div { padding: 2px 0; }
+      .card { padding: 6px; }
+      .card h2 { margin-bottom: 4px; }
+      .screen-frame { height: auto; max-height: none; }
+      .screen-wrap { height: auto; }
+      canvas#game {
+        width: auto;
+        height: min(68vw, calc(100svh - 118px), 560px);
+        height: min(68vw, calc(100dvh - 118px), 560px);
+      }
+      #next { width: 76px; height: 76px; }
+      .button-row button { min-height: 31px; padding: 4px; }
+    }
+
+
+
+    @media (max-height: 650px) and (orientation: landscape) {
+      .guide-panel {
+        width: min(760px, calc(100vw - 12px));
+        max-height: calc(100svh - 10px);
+        max-height: calc(100dvh - 10px);
+        padding: 10px 14px;
+        border-width: 4px;
+        border-radius: 10px;
+      }
+      .guide-panel::after { inset: 6px; }
+      .guide-close {
+        top: 7px;
+        right: 7px;
+        width: 34px;
+        min-height: 34px;
+        font-size: 18px;
+      }
+      .guide-kicker { font-size: 9px; }
+      .guide-panel h2 {
+        margin: 3px 38px 5px 0;
+        font-size: clamp(20px, 5vh, 25px);
+      }
+      .guide-content {
+        min-height: 0;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .guide-content p { margin-bottom: 5px; }
+      .guide-content ul { margin: 3px 0 5px; }
+      .guide-grid { margin: 5px 0; gap: 5px; }
+      .guide-chip { padding: 4px; }
+      .guide-chip b { font-size: 14px; }
+      .score-table { margin: 4px 0; }
+      .score-table th,
+      .score-table td { padding: 3px; border-width: 1px; }
+      .guide-progress { margin: 7px 0 6px; }
+      .guide-actions { gap: 6px; }
+      .guide-actions button { min-height: 31px; padding: 3px; }
+    }
+
+
+    .guide-modal {
+      overflow: hidden;
+      padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    }
+
+    .guide-panel {
+      max-height: calc(100svh - 16px);
+      max-height: calc(100dvh - 16px);
+      overscroll-behavior: contain;
+    }
+
+    /* 手机竖屏：放大右侧状态、预览与系统控制三块，其余布局保持不变 */
+    @media (max-width: 900px) and (orientation: portrait) {
+      :root {
+        --side-rail: clamp(132px, 32vw, 172px);
+      }
+
+      .layout {
+        grid-template-columns: minmax(0, 1fr) var(--side-rail);
+      }
+
+      .side.left,
+      .side.right {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .side.right {
+        height: 100%;
+        min-height: 0;
+        grid-template-rows: minmax(0, 1fr) auto;
+        align-content: stretch;
+        gap: 9px;
+      }
+
+      .side.left > .card,
+      .side.right > .card {
+        padding: 8px;
+        border-width: 3px;
+        border-radius: 9px;
+        box-shadow: inset 0 0 0 2px #f1e4bf, 0 4px 0 rgba(65,52,42,.18);
+      }
+
+      .side.left > .card h2,
+      .side.right > .card h2 {
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        font-size: 10px;
+        letter-spacing: .12em;
+      }
+
+      .side.left .stats {
+        gap: 5px;
+      }
+
+      .side.left .stat {
+        min-height: 30px;
+        padding: 4px 7px;
+      }
+
+      .side.left .stat span {
+        font-size: 9px;
+      }
+
+      .side.left .stat strong {
+        font-size: clamp(15px, 3.8vw, 20px);
+      }
+
+      .side.right .next-card {
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
+      }
+
+      .side.right .next-box {
+        flex: 1 1 auto;
+        min-height: 0;
+        place-content: center;
+      }
+
+      #next {
+        width: min(calc(var(--side-rail) - 28px), 122px, 19svh);
+        height: min(calc(var(--side-rail) - 28px), 122px, 19svh);
+      }
+
+      .side.right .button-row {
+        gap: 6px;
+      }
+
+      .side.right .button-row button {
+        min-height: 35px;
+        padding: 6px 4px;
+        font-size: 10px;
+      }
+    }
+
+    /* 超窄手机保留足够棋盘宽度，同时仍比原版右栏更醒目 */
+    @media (max-width: 360px) and (orientation: portrait) {
+      :root {
+        --side-rail: clamp(106px, 32vw, 118px);
+      }
+
+      .side.left > .card,
+      .side.right > .card {
+        padding: 6px;
+        border-width: 2px;
+      }
+
+      .side.left > .card h2,
+      .side.right > .card h2 {
+        margin-bottom: 4px;
+        font-size: 9px;
+      }
+
+      .side.left .stat {
+        min-height: 25px;
+        padding: 3px 5px;
+      }
+
+      .side.left .stat strong {
+        font-size: 14px;
+      }
+
+      #next {
+        width: min(calc(var(--side-rail) - 20px), 92px, 16svh);
+        height: min(calc(var(--side-rail) - 20px), 92px, 16svh);
+      }
+
+      .side.right .button-row button {
+        min-height: 30px;
+        padding: 4px 2px;
+        font-size: 9px;
+      }
+    }
+  </style>
+
+</head>
+<body>
+  <div class="toast" id="toast" role="status" aria-live="polite">LEVEL UP!</div>
+
+  <div class="guide-modal" id="guideModal" hidden>
+    <section class="guide-panel" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+      <button class="guide-close" id="guideClose" type="button" aria-label="关闭规则说明">×</button>
+      <div class="guide-kicker">PLAYER MANUAL · 新手手册</div>
+      <h2 id="guideTitle">欢迎上机</h2>
+      <div class="guide-content" id="guideContent"></div>
+      <div class="guide-progress" id="guideProgress" aria-label="教程进度"></div>
+      <div class="guide-actions">
+        <button class="secondary" id="guidePrev" type="button">上一步</button>
+        <button id="guideNext" type="button">下一步</button>
+      </div>
+    </section>
+  </div>
+
+  <main class="shell" id="shell">
+    <header>
+      <div class="brand">
+        <h1>俄罗斯方块</h1>
+        <p>RETRO BLOCK SYSTEM · MODERN RULESET</p>
+      </div>
+      <div class="lamp-row" aria-label="状态指示灯">
+        <i class="lamp on" id="lamp1"></i><i class="lamp" id="lamp2"></i><i class="lamp" id="lamp3"></i>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="side left">
+        <div class="card">
+          <h2>状态面板</h2>
+          <div class="stats">
+            <div class="stat"><span>得分</span><strong id="score">000000</strong></div>
+            <div class="stat"><span>等级</span><strong id="level">01</strong></div>
+            <div class="stat"><span>消行</span><strong id="lines">000</strong></div>
+            <div class="stat"><span>最高</span><strong id="best">000000</strong></div>
+          </div>
+        </div>
+
+        <div class="card legend-card">
+          <h2>键盘操作</h2>
+          <div class="legend">
+            <div><span>左右移动</span><kbd>← →</kbd></div>
+            <div><span>加速下落</span><kbd>↓</kbd></div>
+            <div><span>顺时针旋转</span><kbd>↑ / X</kbd></div>
+            <div><span>逆时针旋转</span><kbd>Z</kbd></div>
+            <div><span>硬降</span><kbd>Space</kbd></div>
+            <div><span>暂停</span><kbd>P / Esc</kbd></div>
+          </div>
+        </div>
+
+        <div class="card rules-card">
+          <h2>基本规则</h2>
+          <ul class="rules-mini">
+            <li>填满一横行即可消除。</li>
+            <li>每累计10行提升1级。</li>
+            <li>软降每格+1分，硬降每格+2分。</li>
+            <li>单/双/三/四消：100/300/500/800 × 等级。</li>
+          </ul>
+          <p class="rules-note">方块触底后有约0.5秒调整时间；移动或旋转可有限次数重置落锁计时。</p>
+        </div>
+      </aside>
+
+      <div class="screen-frame" id="screenFrame">
+        <div class="screen-wrap">
+          <canvas id="game" width="280" height="560" aria-label="俄罗斯方块游戏区"></canvas>
+          <div class="crt-glare"></div>
+          <div class="overlay show" id="overlay">
+            <div>
+              <h3 id="overlayTitle">准备开始</h3>
+              <p id="overlayText">点击画面或“开始游戏”<br>首次游玩可先打开“规则 / 教程”</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side right">
+        <div class="card next-card">
+          <h2>下一个</h2>
+          <div class="next-box"><canvas id="next" width="128" height="128"></canvas></div>
+        </div>
+
+        <div class="card control-card">
+          <h2>系统控制</h2>
+          <div class="button-row">
+            <button id="startBtn" type="button">开始游戏</button>
+            <button class="secondary" id="pauseBtn" type="button">暂停</button>
+            <button class="secondary wide" id="guideBtn" type="button">规则 / 教程</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="mobile-controls" aria-label="触控操作区">
+      <div class="dpad">
+        <button class="rotate-ccw" data-action="rotateCCW" type="button" aria-label="逆时针旋转">↺</button>
+        <button class="rotate-cw" data-action="rotateCW" type="button" aria-label="顺时针旋转">↻</button>
+        <button class="left secondary" data-action="left" type="button" aria-label="左移">◀</button>
+        <button class="down secondary" data-action="down" type="button" aria-label="软降">▼</button>
+        <button class="right secondary" data-action="right" type="button" aria-label="右移">▶</button>
+      </div>
+      <div class="actions">
+        <button class="drop" data-action="drop" type="button">硬降</button>
+        <button class="pause-touch" data-action="pause" type="button">暂停</button>
+      </div>
+    </section>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+
+  const COLS = 10;
+  const VISIBLE_ROWS = 20;
+  const HIDDEN_ROWS = 2;
+  const ROWS = VISIBLE_ROWS + HIDDEN_ROWS;
+  const BLOCK = 28;
+  const LOCK_DELAY = 500;
+  const MAX_LOCK_RESETS = 12;
+  const DAS = 170;
+  const ARR = 55;
+  const SCORE_TABLE = [0, 100, 300, 500, 800];
+
+  const COLORS = {
+    I: '#294f46', J: '#32475f', L: '#9a5a34', O: '#9b7c2f',
+    S: '#4e6d3d', T: '#6b4c6c', Z: '#8a3f3b', GHOST: 'rgba(31,48,37,.20)'
+  };
+
+  const SHAPES = {
+    I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    J: [[1,0,0],[1,1,1],[0,0,0]],
+    L: [[0,0,1],[1,1,1],[0,0,0]],
+    O: [[1,1],[1,1]],
+    S: [[0,1,1],[1,1,0],[0,0,0]],
+    T: [[0,1,0],[1,1,1],[0,0,0]],
+    Z: [[1,1,0],[0,1,1],[0,0,0]]
+  };
+
+  const NORMAL_KICKS = [
+    [0,0], [-1,0], [1,0], [-2,0], [2,0],
+    [0,-1], [-1,-1], [1,-1], [0,-2]
+  ];
+  const I_KICKS = [
+    [0,0], [-2,0], [2,0], [-1,0], [1,0],
+    [0,-1], [-2,-1], [2,-1], [0,-2]
+  ];
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const nextCanvas = document.getElementById('next');
+  const nextCtx = nextCanvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const linesEl = document.getElementById('lines');
+  const bestEl = document.getElementById('best');
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const guideBtn = document.getElementById('guideBtn');
+  const toast = document.getElementById('toast');
+  const shell = document.getElementById('shell');
+  const lamps = [document.getElementById('lamp1'), document.getElementById('lamp2'), document.getElementById('lamp3')];
+
+  const guideModal = document.getElementById('guideModal');
+  const guideTitle = document.getElementById('guideTitle');
+  const guideContent = document.getElementById('guideContent');
+  const guideProgress = document.getElementById('guideProgress');
+  const guidePrev = document.getElementById('guidePrev');
+  const guideNext = document.getElementById('guideNext');
+  const guideClose = document.getElementById('guideClose');
+
+  ctx.imageSmoothingEnabled = false;
+  nextCtx.imageSmoothingEnabled = false;
+
+  const storage = {
+    get(key, fallback = null) {
+      try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : value;
+      } catch (_) {
+        return fallback;
+      }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, String(value)); } catch (_) {}
+    }
+  };
+
+  let board, current, nextPiece;
+  let score = 0, lines = 0, level = 1;
+  let best = Number(storage.get('retroTetrisBest', '0')) || 0;
+  let running = false, paused = false, gameOver = false;
+  let lastTime = 0, dropCounter = 0;
+  let lockCounter = 0, lockResets = 0, hasTouchedGround = false;
+  let clearFlash = [];
+  let particles = [];
+  let bag = [];
+  let animationId = null;
+  let guideStep = 0;
+  let lastFocusedBeforeGuide = null;
+  const repeaters = new Map();
+
+  const guidePages = [
+    {
+      title: '目标：整理与消除',
+      html: `
+        <p>让七种方块在 <strong>10 × 20</strong> 的屏幕中落下。填满任意一条横行，它就会被清除，上方方块随之下落。</p>
+        <div class="guide-grid">
+          <div class="guide-chip"><b>10 行</b>升 1 级</div>
+          <div class="guide-chip"><b>7-BAG</b>公平随机</div>
+        </div>
+        <p>方块堆入屏幕顶部的隐藏缓冲区后游戏结束。合理保留凹槽，并为长条方块准备四行空间。</p>`
+    },
+    {
+      title: '移动与旋转',
+      html: `
+        <div class="guide-grid">
+          <div class="guide-chip"><b>←　→</b>左右移动</div>
+          <div class="guide-chip"><b>↓</b>软降</div>
+          <div class="guide-chip"><b>↑ / X</b>顺时针</div>
+          <div class="guide-chip"><b>Z</b>逆时针</div>
+          <div class="guide-chip"><b>Space</b>硬降</div>
+          <div class="guide-chip"><b>P / Esc</b>暂停</div>
+        </div>
+        <p>手机端使用底部控制台。长按左右键或软降键会以统一速度连续输入，不依赖设备的键盘重复设置。</p>`
+    },
+    {
+      title: '幽灵、落锁与墙踢',
+      html: `
+        <p>淡色轮廓是<strong>幽灵落点</strong>，表示当前方块直落后的最终位置；右侧屏幕显示下一个方块。</p>
+        <ul>
+          <li>普通触底后有约 <strong>0.5 秒</strong> 调整时间。</li>
+          <li>触底后移动或旋转可重置计时，但每个方块最多重置 ${MAX_LOCK_RESETS} 次。</li>
+          <li>旋转失败时会尝试向左右及向上轻微“墙踢”。</li>
+          <li>硬降会立即锁定，适合确认位置后快速落下。</li>
+        </ul>`
+    },
+    {
+      title: '计分规则',
+      html: `
+        <table class="score-table">
+          <thead><tr><th>动作</th><th>基础分</th></tr></thead>
+          <tbody>
+            <tr><td>软降 1 格</td><td>1</td></tr>
+            <tr><td>硬降 1 格</td><td>2</td></tr>
+            <tr><td>消 1 / 2 / 3 / 4 行</td><td>100 / 300 / 500 / 800 × 等级</td></tr>
+          </tbody>
+        </table>
+        <p>速度随等级提高，最低自动下落间隔为90毫秒；落锁延迟保持独立，因此高等级仍有稳定的落地调整窗口。</p>`
+    }
+  ];
+
+  bestEl.textContent = pad(best, 6);
+
+  function emptyBoard() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(''));
+  }
+
+  function pad(value, length) {
+    const safe = Number.isFinite(value) ? value : 0;
+    return String(Math.max(0, Math.floor(safe))).padStart(length, '0');
+  }
+
+  function refillBag() {
+    bag = Object.keys(SHAPES);
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+  }
+
+  function randomType() {
+    if (!bag.length) refillBag();
+    return bag.pop();
+  }
+
+  function getTopPadding(matrix) {
+    let n = 0;
+    for (const row of matrix) {
+      if (row.some(Boolean)) break;
+      n++;
+    }
+    return n;
+  }
+
+  function positionAtSpawn(piece) {
+    piece.x = Math.floor((COLS - piece.matrix[0].length) / 2);
+    piece.y = HIDDEN_ROWS - getTopPadding(piece.matrix);
+    piece.rotation = 0;
+  }
+
+  function makePiece(type = randomType()) {
+    const piece = {
+      type,
+      matrix: SHAPES[type].map(row => row.slice()),
+      x: 0,
+      y: 0,
+      rotation: 0
+    };
+    positionAtSpawn(piece);
+    return piece;
+  }
+
+  function resetLockState() {
+    lockCounter = 0;
+    lockResets = 0;
+    hasTouchedGround = false;
+  }
+
+  function resetGame() {
+    board = emptyBoard();
+    bag = [];
+    score = 0;
+    lines = 0;
+    level = 1;
+    current = makePiece();
+    nextPiece = makePiece();
+    running = true;
+    paused = false;
+    gameOver = false;
+    dropCounter = 0;
+    resetLockState();
+    clearFlash = [];
+    particles = [];
+    updateStats();
+    drawNext();
+    hideOverlay();
+    startBtn.textContent = '重新开始';
+    pauseBtn.textContent = '暂停';
+    setTouchPauseLabel('暂停');
+    setLamps(0);
+    lastTime = performance.now();
+  }
+
+  function setLamps(mode) {
+    lamps.forEach((lamp, i) => lamp.classList.toggle('on', i === mode || (mode === 3 && i < 3)));
+  }
+
+  function setTouchPauseLabel(text) {
+    document.querySelectorAll('[data-action="pause"]').forEach(button => {
+      button.textContent = text;
+    });
+  }
+
+  function updateStats() {
+    scoreEl.textContent = pad(score, 6);
+    levelEl.textContent = pad(level, 2);
+    linesEl.textContent = pad(lines, 3);
+    bestEl.textContent = pad(best, 6);
+  }
+
+  function dropInterval() {
+    return Math.max(90, 900 - (level - 1) * 70);
+  }
+
+  function collide(piece, offsetX = 0, offsetY = 0, matrix = piece.matrix) {
+    for (let y = 0; y < matrix.length; y++) {
+      for (let x = 0; x < matrix[y].length; x++) {
+        if (!matrix[y][x]) continue;
+        const bx = piece.x + x + offsetX;
+        const by = piece.y + y + offsetY;
+        if (bx < 0 || bx >= COLS || by >= ROWS) return true;
+        if (by >= 0 && board[by][bx]) return true;
+      }
+    }
+    return false;
+  }
+
+  function isGrounded() {
+    return Boolean(current) && collide(current, 0, 1);
+  }
+
+  function afterPlayerTransform() {
+    const groundedNow = isGrounded();
+    if (hasTouchedGround && lockResets < MAX_LOCK_RESETS) {
+      lockCounter = 0;
+      lockResets++;
+    } else if (!hasTouchedGround) {
+      lockCounter = 0;
+    }
+    if (groundedNow) hasTouchedGround = true;
+  }
+
+  function merge() {
+    if (!current || gameOver) return;
+    let overflow = false;
+
+    current.matrix.forEach((row, y) => row.forEach((value, x) => {
+      if (!value) return;
+      const by = current.y + y;
+      const bx = current.x + x;
+      if (by < 0) {
+        overflow = true;
+      } else if (by < ROWS && bx >= 0 && bx < COLS) {
+        board[by][bx] = current.type;
+      }
+    }));
+
+    clearLinesAndSpawn(overflow);
+  }
+
+  function clearLinesAndSpawn(overflow = false) {
+    const full = [];
+    for (let y = ROWS - 1; y >= 0; y--) {
+      if (board[y].every(Boolean)) full.push(y);
+    }
+
+    if (full.length) {
+      const visibleFull = full.filter(y => y >= HIDDEN_ROWS);
+      clearFlash = visibleFull.map(y => ({ y: y - HIDDEN_ROWS, ttl: 180 }));
+      createLineParticles(visibleFull.map(y => y - HIDDEN_ROWS));
+
+      const cleared = Math.min(4, full.length);
+      const gained = (SCORE_TABLE[cleared] || 0) * level;
+      score += gained;
+      lines += full.length;
+      const oldLevel = level;
+      level = Math.floor(lines / 10) + 1;
+
+      if (level > oldLevel) showToast('LEVEL ' + level);
+      if (full.length === 4) {
+        showToast('TETRIS + ' + gained);
+        shell.classList.remove('shake');
+        void shell.offsetWidth;
+        shell.classList.add('shake');
+      }
+
+      full.sort((a, b) => b - a).forEach(y => board.splice(y, 1));
+      for (let i = 0; i < full.length; i++) {
+        board.unshift(Array(COLS).fill(''));
+      }
+
+      updateBest();
+      updateStats();
+    }
+
+    const hiddenOccupied = board.slice(0, HIDDEN_ROWS).some(row => row.some(Boolean));
+    if (overflow || hiddenOccupied) {
+      endGame();
+      return;
+    }
+
+    current = nextPiece;
+    positionAtSpawn(current);
+    nextPiece = makePiece();
+    resetLockState();
+    dropCounter = 0;
+    drawNext();
+
+    if (collide(current)) endGame();
+  }
+
+  function updateBest() {
+    if (score > best) {
+      best = score;
+      storage.set('retroTetrisBest', best);
+    }
+  }
+
+  function move(dx) {
+    if (!canPlay()) return false;
+    if (collide(current, dx, 0)) return false;
+    current.x += dx;
+    afterPlayerTransform();
+    return true;
+  }
+
+  function softDrop() {
+    if (!canPlay()) return false;
+    if (!collide(current, 0, 1)) {
+      current.y++;
+      score += 1;
+      updateBest();
+      updateStats();
+      dropCounter = 0;
+      if (isGrounded()) hasTouchedGround = true;
+      else lockCounter = 0;
+      return true;
+    }
+
+    hasTouchedGround = true;
+    dropCounter = 0;
+    return false;
+  }
+
+  function hardDrop() {
+    if (!canPlay()) return;
+    let dist = 0;
+    while (!collide(current, 0, dist + 1)) dist++;
+    current.y += dist;
+    score += dist * 2;
+    updateBest();
+    updateStats();
+    merge();
+    dropCounter = 0;
+  }
+
+  function rotateMatrix(matrix, direction) {
+    if (direction > 0) {
+      return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+    }
+    return matrix[0].map((_, i) => matrix.map(row => row[row.length - 1 - i]));
+  }
+
+  function rotate(direction = 1) {
+    if (!canPlay() || current.type === 'O') return false;
+    const rotated = rotateMatrix(current.matrix, direction);
+    const kicks = current.type === 'I' ? I_KICKS : NORMAL_KICKS;
+
+    for (const [kickX, kickY] of kicks) {
+      if (!collide(current, kickX, kickY, rotated)) {
+        current.matrix = rotated;
+        current.x += kickX;
+        current.y += kickY;
+        current.rotation = (current.rotation + (direction > 0 ? 1 : 3)) % 4;
+        afterPlayerTransform();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function ghostY() {
+    let gy = current.y;
+    while (!collide(current, 0, gy - current.y + 1)) gy++;
+    return gy;
+  }
+
+  function canPlay() {
+    return running && !paused && !gameOver && !isGuideOpen();
+  }
+
+  function pauseToggle() {
+    if (!running || gameOver || isGuideOpen()) return;
+    paused = !paused;
+    const label = paused ? '继续' : '暂停';
+    pauseBtn.textContent = label;
+    setTouchPauseLabel(label);
+
+    if (paused) {
+      showOverlay('已暂停', '按 P / Esc 或点击“继续”返回游戏');
+      setLamps(1);
+    } else {
+      hideOverlay();
+      lastTime = performance.now();
+      setLamps(0);
+    }
+  }
+
+  function endGame() {
+    gameOver = true;
+    running = false;
+    updateBest();
+    updateStats();
+    showOverlay('游戏结束', `最终得分 ${pad(score, 1)}<br>点击画面或“重新开始”再来一局`);
+    setLamps(2);
+    pauseBtn.textContent = '暂停';
+    setTouchPauseLabel('暂停');
+  }
+
+  function showOverlay(title, text) {
+    overlayTitle.textContent = title;
+    overlayText.innerHTML = text;
+    overlay.classList.add('show');
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove('show');
+  }
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove('show'), 900);
+  }
+
+  function drawCell(context, x, y, type, size = BLOCK, alpha = 1) {
+    const color = COLORS[type] || COLORS.GHOST;
+    const px = x * size;
+    const py = y * size;
+    context.save();
+    context.globalAlpha = alpha;
+    context.fillStyle = color;
+    context.fillRect(px + 1, py + 1, size - 2, size - 2);
+    context.fillStyle = 'rgba(255,255,255,.22)';
+    context.fillRect(px + 3, py + 3, size - 6, 3);
+    context.fillRect(px + 3, py + 3, 3, size - 6);
+    context.fillStyle = 'rgba(15,25,18,.28)';
+    context.fillRect(px + 3, py + size - 6, size - 6, 3);
+    context.fillRect(px + size - 6, py + 3, 3, size - 6);
+    context.strokeStyle = 'rgba(18,29,21,.55)';
+    context.lineWidth = 1;
+    context.strokeRect(px + .5, py + .5, size - 1, size - 1);
+    context.restore();
+  }
+
+  function drawMatrix(matrix, offsetX, logicalY, type, alpha = 1) {
+    matrix.forEach((row, y) => row.forEach((value, x) => {
+      const screenY = logicalY + y - HIDDEN_ROWS;
+      if (value && screenY >= 0 && screenY < VISIBLE_ROWS) {
+        drawCell(ctx, offsetX + x, screenY, type, BLOCK, alpha);
+      }
+    }));
+  }
+
+  function drawGridTexture() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(33,50,38,.12)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * BLOCK + .5, 0);
+      ctx.lineTo(x * BLOCK + .5, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= VISIBLE_ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * BLOCK + .5);
+      ctx.lineTo(canvas.width, y * BLOCK + .5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#8c9b72';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGridTexture();
+
+    for (let y = HIDDEN_ROWS; y < ROWS; y++) {
+      board[y].forEach((type, x) => {
+        if (type) drawCell(ctx, x, y - HIDDEN_ROWS, type);
+      });
+    }
+
+    if (current && !gameOver) {
+      drawMatrix(current.matrix, current.x, ghostY(), current.type, .2);
+      drawMatrix(current.matrix, current.x, current.y, current.type, 1);
+    }
+
+    for (const flash of clearFlash) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, flash.ttl / 180);
+      ctx.fillStyle = '#eef5ca';
+      ctx.fillRect(0, flash.y * BLOCK, canvas.width, BLOCK);
+      ctx.restore();
+    }
+
+    for (const particle of particles) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, particle.life / 500);
+      ctx.fillStyle = particle.color;
+      ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+      ctx.restore();
+    }
+  }
+
+  function drawNext() {
+    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    nextCtx.fillStyle = '#958f69';
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (!nextPiece) return;
+
+    const matrix = nextPiece.matrix;
+    const occupiedRows = matrix
+      .map((row, index) => row.some(Boolean) ? index : -1)
+      .filter(index => index >= 0);
+    const occupiedCols = [];
+    for (let x = 0; x < matrix[0].length; x++) {
+      if (matrix.some(row => row[x])) occupiedCols.push(x);
+    }
+
+    const minY = Math.min(...occupiedRows);
+    const maxY = Math.max(...occupiedRows);
+    const minX = Math.min(...occupiedCols);
+    const maxX = Math.max(...occupiedCols);
+    const size = 24;
+    const width = (maxX - minX + 1) * size;
+    const height = (maxY - minY + 1) * size;
+    const originPxX = Math.floor((nextCanvas.width - width) / 2);
+    const originPxY = Math.floor((nextCanvas.height - height) / 2);
+
+    matrix.forEach((row, y) => row.forEach((value, x) => {
+      if (!value) return;
+      const drawX = (originPxX / size) + (x - minX);
+      const drawY = (originPxY / size) + (y - minY);
+      drawCell(nextCtx, drawX, drawY, nextPiece.type, size, 1);
+    }));
+  }
+
+  function createLineParticles(rows) {
+    for (const row of rows) {
+      for (let i = 0; i < 24; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: row * BLOCK + Math.random() * BLOCK,
+          vx: (Math.random() - .5) * 3,
+          vy: -Math.random() * 2 - .5,
+          life: 420 + Math.random() * 180,
+          size: 2 + Math.random() * 4,
+          color: i % 2 ? '#eef5ca' : '#25352a'
+        });
+      }
+    }
+  }
+
+  function updateEffects(delta) {
+    clearFlash.forEach(flash => flash.ttl -= delta);
+    clearFlash = clearFlash.filter(flash => flash.ttl > 0);
+    particles.forEach(particle => {
+      particle.x += particle.vx * delta / 16;
+      particle.y += particle.vy * delta / 16;
+      particle.vy += .05 * delta / 16;
+      particle.life -= delta;
+    });
+    particles = particles.filter(particle => particle.life > 0);
+  }
+
+  function gameLoop(time = 0) {
+    const delta = Math.min(50, time - lastTime || 0);
+    lastTime = time;
+
+    if (canPlay()) {
+      if (isGrounded()) {
+        hasTouchedGround = true;
+        lockCounter += delta;
+        if (lockCounter >= LOCK_DELAY) merge();
+      } else {
+        if (!hasTouchedGround) lockCounter = 0;
+        dropCounter += delta;
+        if (dropCounter >= dropInterval()) {
+          current.y++;
+          dropCounter = 0;
+          if (isGrounded()) hasTouchedGround = true;
+        }
+      }
+    }
+
+    updateEffects(delta);
+    draw();
+    animationId = requestAnimationFrame(gameLoop);
+  }
+
+  function handleAction(action) {
+    const actions = {
+      left: () => move(-1),
+      right: () => move(1),
+      down: softDrop,
+      rotateCW: () => rotate(1),
+      rotateCCW: () => rotate(-1),
+      drop: hardDrop,
+      pause: pauseToggle
+    };
+    if (actions[action]) actions[action]();
+  }
+
+  function stopRepeater(key) {
+    const repeater = repeaters.get(key);
+    if (!repeater) return;
+    clearTimeout(repeater.timeout);
+    clearInterval(repeater.interval);
+    repeaters.delete(key);
+  }
+
+  function stopAllRepeaters() {
+    [...repeaters.keys()].forEach(stopRepeater);
+    document.querySelectorAll('.pressed').forEach(button => button.classList.remove('pressed'));
+  }
+
+  function startRepeater(key, action, delay = DAS, interval = ARR) {
+    if (repeaters.has(key)) return;
+    handleAction(action);
+    const repeater = { timeout: null, interval: null };
+    repeater.timeout = setTimeout(() => {
+      handleAction(action);
+      repeater.interval = setInterval(() => handleAction(action), interval);
+    }, delay);
+    repeaters.set(key, repeater);
+  }
+
+  const keyControls = {
+    ArrowLeft: { action: 'left', repeat: true },
+    ArrowRight: { action: 'right', repeat: true },
+    ArrowDown: { action: 'down', repeat: true, interval: 45 },
+    ArrowUp: { action: 'rotateCW' },
+    KeyX: { action: 'rotateCW' },
+    KeyZ: { action: 'rotateCCW' },
+    Space: { action: 'drop' },
+    KeyP: { action: 'pause' },
+    Escape: { action: 'pause' }
+  };
+
+  document.addEventListener('keydown', event => {
+    const control = keyControls[event.code];
+    if (!control) return;
+    event.preventDefault();
+
+    if (isGuideOpen()) {
+      if (event.code === 'Escape') closeGuide();
+      return;
+    }
+    if (event.repeat) return;
+
+    if (control.repeat) {
+      startRepeater(event.code, control.action, DAS, control.interval || ARR);
+    } else {
+      handleAction(control.action);
+    }
+  }, { passive: false });
+
+  document.addEventListener('keyup', event => stopRepeater(event.code));
+  window.addEventListener('blur', stopAllRepeaters);
+
+  startBtn.addEventListener('click', resetGame);
+  pauseBtn.addEventListener('click', pauseToggle);
+  guideBtn.addEventListener('click', () => openGuide(0));
+
+  overlay.addEventListener('click', () => {
+    if (isGuideOpen()) return;
+    if (!running || gameOver) resetGame();
+    else if (paused) pauseToggle();
+  });
+
+  document.querySelectorAll('[data-action]').forEach(button => {
+    let repeatTimer = null;
+    let repeatInterval = null;
+    const action = button.dataset.action;
+    const repeatable = ['left', 'right', 'down'].includes(action);
+
+    const stop = () => {
+      button.classList.remove('pressed');
+      clearTimeout(repeatTimer);
+      clearInterval(repeatInterval);
+      repeatTimer = null;
+      repeatInterval = null;
+    };
+
+    const start = event => {
+      event.preventDefault();
+      if (isGuideOpen()) return;
+      button.classList.add('pressed');
+      if (button.setPointerCapture) button.setPointerCapture(event.pointerId);
+      handleAction(action);
+
+      if (repeatable) {
+        repeatTimer = setTimeout(() => {
+          handleAction(action);
+          repeatInterval = setInterval(
+            () => handleAction(action),
+            action === 'down' ? 45 : ARR
+          );
+        }, DAS);
+      }
+    };
+
+    button.addEventListener('pointerdown', start);
+    button.addEventListener('pointerup', stop);
+    button.addEventListener('pointercancel', stop);
+    button.addEventListener('lostpointercapture', stop);
+    button.addEventListener('contextmenu', event => event.preventDefault());
+  });
+
+  function isGuideOpen() {
+    return guideModal.classList.contains('show');
+  }
+
+  function renderGuide() {
+    const page = guidePages[guideStep];
+    guideTitle.textContent = page.title;
+    guideContent.innerHTML = page.html;
+    guideProgress.innerHTML = guidePages
+      .map((_, index) => `<span class="guide-dot${index === guideStep ? ' active' : ''}"></span>`)
+      .join('');
+    guidePrev.disabled = guideStep === 0;
+    guidePrev.style.visibility = guideStep === 0 ? 'hidden' : 'visible';
+    guideNext.textContent = guideStep === guidePages.length - 1
+      ? (running && paused ? '返回游戏' : '开始游戏')
+      : '下一步';
+  }
+
+  function openGuide(step = 0) {
+    if (canPlay()) pauseToggle();
+    stopAllRepeaters();
+    guideStep = Math.max(0, Math.min(step, guidePages.length - 1));
+    lastFocusedBeforeGuide = document.activeElement;
+    guideModal.hidden = false;
+    requestAnimationFrame(() => guideModal.classList.add('show'));
+    renderGuide();
+    storage.set('retroTetrisGuideSeen', '1');
+    setTimeout(() => guideClose.focus(), 0);
+  }
+
+  function closeGuide(startAfterClose = false) {
+    if (!isGuideOpen()) return;
+    guideModal.classList.remove('show');
+    setTimeout(() => {
+      guideModal.hidden = true;
+      if (lastFocusedBeforeGuide && lastFocusedBeforeGuide.focus) lastFocusedBeforeGuide.focus();
+      if (startAfterClose) {
+        if (!running || gameOver) resetGame();
+        else if (paused) pauseToggle();
+      }
+    }, 180);
+  }
+
+  guidePrev.addEventListener('click', () => {
+    if (guideStep > 0) {
+      guideStep--;
+      renderGuide();
+    }
+  });
+
+  guideNext.addEventListener('click', () => {
+    if (guideStep < guidePages.length - 1) {
+      guideStep++;
+      renderGuide();
+    } else {
+      closeGuide(true);
+    }
+  });
+
+  guideClose.addEventListener('click', () => closeGuide(false));
+  guideModal.addEventListener('pointerdown', event => {
+    if (event.target === guideModal) closeGuide(false);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && canPlay()) pauseToggle();
+    if (document.hidden) stopAllRepeaters();
+  });
+
+  board = emptyBoard();
+  current = makePiece('T');
+  nextPiece = makePiece('I');
+  drawNext();
+  draw();
+  cancelAnimationFrame(animationId);
+  gameLoop(performance.now());
+
+  if (!storage.get('retroTetrisGuideSeen')) {
+    setTimeout(() => openGuide(0), 260);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转Base64</title>
+	<link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #00c6ff, #0072ff); /* 蓝色渐变背景 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.7);
+        }
+        input[type="file"] {
+            font-size: 1.2em;
+            background-color: #00c6ff;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        input[type="file"]:hover {
+            transform: scale(1.1);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            background-color: #222;
+            color: #fff;
+            border: none;
+            resize: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #0072ff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+            transition: transform 0.3s ease;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>图片转Base64</h1>
+        <input type="file" id="imageInput" accept="image/*">
+        <br>
+        <textarea id="base64Output" placeholder="Base64字符串将在这里显示" readonly></textarea>
+        <br>
+        <button class="btn hidden" id="copyBtn">复制Base64</button>
+    </div>
+
+    <script>
+        const copyBtn = document.getElementById('copyBtn');
+        const base64Output = document.getElementById('base64Output');
+        const imageInput = document.getElementById('imageInput');
+
+        // 当文件选择变化时
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    base64Output.value = reader.result;
+                    // 显示复制按钮
+                    copyBtn.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                // 如果没有选择文件，隐藏复制按钮
+                base64Output.value = '';
+                copyBtn.classList.add('hidden');
+            }
+        });
+
+        // 复制Base64按钮功能
+        copyBtn.addEventListener('click', function() {
+            base64Output.select();
+            document.execCommand('copy');
+            alert('Base64已复制到剪贴板!');
+        });
+    </script>
+</body>
+</html>

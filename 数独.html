@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数独练习器</title>
+    <link rel="icon" href="https://user-assets.sxlcdn.com/images/1209238/FlWuslNmGTHt1EipxUtq2GI6zqnN.png?imageMogr2/strip/auto-orient/thumbnail/1200x9000%3E/quality/90!/format/png" type="image/png">
+    <!-- 复古像素风字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: radial-gradient(circle at top, #5b3c88 0, #140b33 40%, #02000a 100%);
+            color: #f8f8f8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 扫描线复古效果 */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(
+                rgba(255, 255, 255, 0.06) 1px,
+                transparent 1px
+            );
+            background-size: 100% 3px;
+            mix-blend-mode: soft-light;
+            opacity: 0.35;
+            z-index: -2;
+        }
+
+        /* 轻微抖动动画（老电视感） */
+        @keyframes crt-wobble {
+            0%, 100% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.01) translate(0.7px, -0.7px); }
+        }
+
+        /* 漏光边缘 */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: -20px;
+            pointer-events: none;
+            background: radial-gradient(circle at 0 0, rgba(255, 0, 150, 0.35), transparent 55%),
+                        radial-gradient(circle at 100% 0, rgba(0, 255, 200, 0.35), transparent 55%),
+                        radial-gradient(circle at 0 100%, rgba(0, 150, 255, 0.25), transparent 55%);
+            mix-blend-mode: screen;
+            opacity: 0.65;
+            z-index: -3;
+        }
+
+        .container {
+            margin: 20px;
+            padding: 20px 20px 16px;
+            background: radial-gradient(circle at top, #191931 0, #111121 60%, #090812 100%);
+            border-radius: 18px;
+            box-shadow:
+                0 0 0 2px rgba(0, 255, 170, 0.35),
+                0 0 20px rgba(0, 255, 170, 0.55),
+                0 0 40px rgba(255, 0, 153, 0.35),
+                0 26px 60px rgba(0, 0, 0, 0.95);
+            width: min(95vw, 620px);
+            position: relative;
+            animation: crt-wobble 9s ease-in-out infinite;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        h1 {
+            color: #00ffbf;
+            font-size: 22px;
+            margin: 0 0 18px;
+            text-align: center;
+            text-shadow:
+                0 0 4px #00ffbf,
+                0 0 14px rgba(0, 255, 191, 0.9);
+            letter-spacing: 3px;
+            animation: titleGlow 1.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% {
+                text-shadow:
+                    0 0 3px #00ffbf,
+                    0 0 8px rgba(0, 255, 191, 0.7);
+            }
+            100% {
+                text-shadow:
+                    0 0 7px #00ffbf,
+                    0 0 20px rgba(0, 255, 191, 1);
+            }
+        }
+
+        .controls {
+            margin-top: 2px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 9px 12px;
+            font-size: 10px;
+            cursor: pointer;
+            border: 1px solid #00ffbf;
+            border-radius: 7px;
+            background: radial-gradient(circle at top, rgba(0, 0, 0, 0.9), rgba(5, 25, 25, 0.95));
+            color: #e0fff9;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow:
+                0 0 4px rgba(0, 255, 191, 0.8),
+                0 0 11px rgba(0, 255, 191, 0.3);
+            transition: transform 0.12s ease,
+                        box-shadow 0.12s ease,
+                        background 0.12s ease,
+                        border-color 0.12s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 120%;
+            height: 100%;
+            background: linear-gradient(120deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent);
+            transform: skewX(-20deg);
+            opacity: 0;
+        }
+
+        button:hover::after {
+            animation: shine 0.7s ease-out;
+        }
+
+        @keyframes shine {
+            0%   { left: -120%; opacity: 0; }
+            30%  { opacity: 1; }
+            100% { left: 120%; opacity: 0; }
+        }
+
+        button:hover {
+            background: radial-gradient(circle at top, rgba(0, 255, 191, 0.12), rgba(0, 0, 0, 0.95));
+            transform: translateY(-1px) scale(1.02);
+            box-shadow:
+                0 0 10px rgba(0, 255, 191, 0.9),
+                0 0 18px rgba(0, 255, 191, 0.6);
+            border-color: #7bffdf;
+        }
+
+        button:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow:
+                0 0 4px rgba(0, 255, 191, 0.7),
+                0 0 10px rgba(0, 0, 0, 0.9);
+        }
+
+        /* 超大正方形9×9宫格 */
+        .sudoku {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            gap: 1px;
+            background-color: #050510;
+            border: 4px solid #00ffbf;
+            border-radius: 10px;
+            width: min(90vw, 540px);
+            aspect-ratio: 1 / 1;  /* 宫格本身严格正方形 */
+            margin: 10px auto 6px;
+            box-shadow:
+                0 0 10px rgba(0, 255, 191, 0.8),
+                0 0 24px rgba(0, 255, 191, 0.5),
+                0 0 40px rgba(255, 0, 150, 0.4);
+            position: relative;
+            overflow: hidden;
+            animation: boardGlow 2.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes boardGlow {
+            0% {
+                box-shadow:
+                    0 0 6px rgba(0, 255, 191, 0.7),
+                    0 0 16px rgba(0, 255, 191, 0.4),
+                    0 0 24px rgba(255, 0, 150, 0.2);
+            }
+            100% {
+                box-shadow:
+                    0 0 12px rgba(0, 255, 191, 1),
+                    0 0 28px rgba(0, 255, 191, 0.8),
+                    0 0 46px rgba(255, 0, 150, 0.45);
+            }
+        }
+
+        .sudoku::before {
+            /* 中心淡淡光环 */
+            content: "";
+            position: absolute;
+            inset: 10%;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow:
+                0 0 40px rgba(0, 255, 191, 0.15),
+                inset 0 0 24px rgba(0, 0, 0, 0.95);
+            pointer-events: none;
+        }
+
+        .cell {
+            background-color: #131325;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: transform 0.12s ease,
+                        box-shadow 0.12s ease,
+                        background-color 0.12s ease,
+                        filter 0.12s ease;
+            aspect-ratio: 1 / 1;  /* 每个格子也是正方形 */
+            position: relative;
+        }
+
+        .cell:hover {
+            transform: scale(1.04);
+            background-color: #1f2140;
+            box-shadow: 0 0 8px rgba(0, 255, 191, 0.55);
+            filter: brightness(1.08);
+        }
+
+        .cell.input-error {
+            background-color: #4b1125;
+            box-shadow:
+                0 0 6px rgba(255, 64, 129, 1),
+                inset 0 0 8px rgba(0, 0, 0, 0.95);
+        }
+
+        .cell.input-error::after {
+            content: "!";
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 9px;
+            color: #ff9bbf;
+            text-shadow: 0 0 4px rgba(255, 64, 129, 0.9);
+        }
+
+        .cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: clamp(20px, 3.2vw, 32px);
+            background: transparent;
+            color: #fefefe;
+            caret-color: #00ffbf;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        .cell input:focus {
+            outline: none;
+            background-color: rgba(0, 255, 191, 0.18);
+            transform: scale(1.08);
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        .grid-3-right {
+            border-right: 2px solid #00ffbf;
+        }
+
+        .grid-3-bottom {
+            border-bottom: 2px solid #00ffbf;
+        }
+
+        .original-number {
+            background-color: #25253a;
+            font-weight: bold;
+            color: #8fe9ff;
+            text-shadow: 0 0 3px rgba(143, 233, 255, 0.9);
+            pointer-events: none;
+        }
+
+        .message {
+            margin-top: 8px;
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 10px;
+            min-height: 22px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.55);
+            color: #ffeb3b;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message.success {
+            color: #00ffbf;
+            text-shadow: 0 0 4px rgba(0, 255, 191, 0.9);
+            box-shadow: 0 0 10px rgba(0, 255, 191, 0.5);
+        }
+
+        .message.error {
+            color: #ff6b9c;
+            text-shadow: 0 0 4px rgba(255, 107, 156, 0.9);
+            box-shadow: 0 0 10px rgba(255, 107, 156, 0.45);
+        }
+
+        .message.info {
+            color: #ffeb3b;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.45);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 96vw;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>数独练习器</h1>
+
+    <div class="controls">
+        <button onclick="generateNewGame()">新游戏</button>
+        <button id="check-btn" onclick="checkSolution()">检查答案</button>
+        <button onclick="showSolution()">显示答案</button>
+    </div>
+
+    <div class="sudoku" id="sudoku"></div>
+    <div class="message" id="message"></div>
+</div>
+
+<script>
+    let solution = [];
+    let currentPuzzle = [];
+    let startTime = Date.now();
+    let hasWon = false;          // 是否已经通关
+    let isBoardLocked = false;   // 是否暂时锁盘（错误提示时）
+
+    const GAME_KEY = 'retroSudokuGameState_v2';
+
+    function createSudokuBoard() {
+        const sudoku = document.getElementById('sudoku');
+        sudoku.innerHTML = '';
+
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+
+                if (j % 3 === 2 && j !== 8) cell.classList.add('grid-3-right');
+                if (i % 3 === 2 && i !== 8) cell.classList.add('grid-3-bottom');
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = 1;
+                input.max = 9;
+
+                input.addEventListener('input', function () {
+                    // 锁盘时禁止输入
+                    if (hasWon || isBoardLocked) {
+                        this.value = this.valueBeforeLock || '';
+                        return;
+                    }
+                    this.value = this.value.replace(/[^1-9]/g, '');
+                    if (this.value.length > 1) this.value = this.value.slice(0, 1);
+                    cell.classList.remove('input-error');
+                    saveGameState();
+                });
+
+                // 记录最后一次合法值，用于锁盘时恢复
+                input.addEventListener('focus', function () {
+                    this.valueBeforeLock = this.value;
+                });
+
+                cell.appendChild(input);
+                sudoku.appendChild(cell);
+            }
+        }
+    }
+
+    function lockAllCells() {
+        const cells = document.getElementsByClassName('cell');
+        for (let i = 0; i < 81; i++) {
+            const input = cells[i].firstChild;
+            input.readOnly = true;
+        }
+    }
+
+    function unlockEditableCells() {
+        const cells = document.getElementsByClassName('cell');
+        for (let i = 0; i < 81; i++) {
+            const row = Math.floor(i / 9);
+            const col = i % 9;
+            const input = cells[i].firstChild;
+            // 仅原题给定数字保持锁定，其他可编辑
+            if (currentPuzzle[row][col] !== 0) {
+                input.readOnly = true;
+            } else {
+                input.readOnly = false;
+            }
+        }
+    }
+
+    function resetCheckButton() {
+        const btn = document.getElementById('check-btn');
+        if (!btn) return;
+        btn.textContent = '检查答案';
+        btn.onclick = checkSolution;
+    }
+
+    function setCheckButtonToContinueChallenge() {
+        const btn = document.getElementById('check-btn');
+        if (!btn) return;
+        btn.textContent = '继续挑战';
+        btn.onclick = continueChallenge;
+    }
+
+    function setCheckButtonToFinished() {
+        const btn = document.getElementById('check-btn');
+        if (!btn) return;
+        btn.textContent = '已通关';
+        btn.onclick = function () {
+            showMessage('本局已经通关，如需继续请点击「新游戏」。', 'info');
+        };
+    }
+
+    function isValidInGrid(grid, row, col, num) {
+        for (let x = 0; x < 9; x++) {
+            if (grid[row][x] === num) return false;
+            if (grid[x][col] === num) return false;
+        }
+
+        const startRow = row - (row % 3);
+        const startCol = col - (col % 3);
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (grid[startRow + i][startCol + j] === num) return false;
+            }
+        }
+        return true;
+    }
+
+    function generateSolution() {
+        solution = Array(9).fill(null).map(() => Array(9).fill(0));
+        fillSolution(0, 0);
+    }
+
+    function fillSolution(row, col) {
+        if (row === 9) return true;
+        if (col === 9) return fillSolution(row + 1, 0);
+
+        const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        shuffle(nums);
+
+        for (let num of nums) {
+            if (isValidInGrid(solution, row, col, num)) {
+                solution[row][col] = num;
+                if (fillSolution(row, col + 1)) return true;
+                solution[row][col] = 0;
+            }
+        }
+        return false;
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // 计算解的数量（剪枝，超过 1 个就提前返回）
+    function countSolutions(grid) {
+        let count = 0;
+
+        function solve() {
+            let row = -1, col = -1;
+            outer:
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    if (grid[i][j] === 0) {
+                        row = i;
+                        col = j;
+                        break outer;
+                    }
+                }
+            }
+
+            if (row === -1) {
+                count++;
+                return;
+            }
+
+            for (let num = 1; num <= 9 && count < 2; num++) {
+                if (isValidInGrid(grid, row, col, num)) {
+                    grid[row][col] = num;
+                    solve();
+                    grid[row][col] = 0;
+                }
+            }
+        }
+
+        solve();
+        return count;
+    }
+
+    // 生成唯一解 + 中等难度题目
+    function generatePuzzle() {
+        generateSolution();
+        currentPuzzle = solution.map(row => [...row]);
+
+        const indices = [];
+        for (let i = 0; i < 81; i++) indices.push(i);
+        shuffle(indices);
+
+        let clues = 81;
+        const minClues = 28;   // 中等难度，数字偏少
+
+        for (let idx of indices) {
+            const row = Math.floor(idx / 9);
+            const col = idx % 9;
+
+            const backup = currentPuzzle[row][col];
+            if (backup === 0) continue;
+
+            currentPuzzle[row][col] = 0;
+            clues--;
+
+            const gridCopy = currentPuzzle.map(r => [...r]);
+            const solCount = countSolutions(gridCopy);
+
+            // 若不唯一或低于最少给数，则撤回
+            if (solCount !== 1 || clues < minClues) {
+                currentPuzzle[row][col] = backup;
+                clues++;
+            }
+        }
+    }
+
+    function initializeGame() {
+        const cells = document.getElementsByClassName('cell');
+
+        for (let i = 0; i < 81; i++) {
+            const row = Math.floor(i / 9);
+            const col = i % 9;
+            const input = cells[i].firstChild;
+
+            cells[i].classList.remove('input-error');
+            input.classList.remove('original-number');
+
+            const value = currentPuzzle[row][col];
+            if (value !== 0) {
+                input.value = value;
+                input.classList.add('original-number');
+            } else {
+                input.value = '';
+            }
+        }
+
+        hasWon = false;
+        isBoardLocked = false;
+        unlockEditableCells();
+        resetCheckButton();
+    }
+
+    function generateNewGame() {
+        showMessage('已生成新题目，复古挑战开始！', 'info');
+        startTime = Date.now();
+        generatePuzzle();
+        initializeGame();
+        saveGameState();
+    }
+
+    function continueChallenge() {
+        // 去掉所有红色标记，解锁可编辑格子
+        const cells = document.getElementsByClassName('cell');
+        for (let i = 0; i < 81; i++) {
+            cells[i].classList.remove('input-error');
+        }
+        isBoardLocked = false;
+        unlockEditableCells();
+        resetCheckButton();
+        showMessage('红色提示已清除，继续挑战！', 'info');
+        saveGameState();
+    }
+
+    function checkSolution() {
+        if (hasWon) {
+            showMessage('本局已经通关，如需继续请点击「新游戏」。', 'info');
+            setCheckButtonToFinished();
+            return;
+        }
+
+        const cells = document.getElementsByClassName('cell');
+        let isCorrect = true;
+        let errorCount = 0;
+
+        // 每次检查前先保证按钮是“检查答案”状态
+        resetCheckButton();
+
+        // 先清空之前错误高亮
+        for (let i = 0; i < 81; i++) {
+            cells[i].classList.remove('input-error');
+        }
+
+        for (let i = 0; i < 81; i++) {
+            const row = Math.floor(i / 9);
+            const col = i % 9;
+            const cell = cells[i];
+            const input = cell.firstChild;
+
+            const userVal = input.value === '' ? 0 : parseInt(input.value, 10);
+
+            if (userVal === 0 || userVal !== solution[row][col]) {
+                isCorrect = false;
+                errorCount++;
+                cell.classList.add('input-error');
+            }
+        }
+
+        if (!isCorrect) {
+            showMessage(`还有 ${errorCount} 个格子有问题，先看看标红的格子。`, 'error');
+            // 检查失败：锁盘 + 按钮变「继续挑战」
+            isBoardLocked = true;
+            lockAllCells();
+            setCheckButtonToContinueChallenge();
+        } else {
+            showMessage('恭喜你！全部填对，复古通关！', 'success');
+            hasWon = true;
+            isBoardLocked = true;
+            lockAllCells();    // 胜利后锁盘，不可修改
+            setCheckButtonToFinished();
+        }
+
+        saveGameState();
+    }
+
+    function showSolution() {
+        const cells = document.getElementsByClassName('cell');
+
+        for (let i = 0; i < 81; i++) {
+            const row = Math.floor(i / 9);
+            const col = i % 9;
+            const input = cells[i].firstChild;
+
+            input.value = solution[row][col];
+            cells[i].classList.remove('input-error');
+
+            if (currentPuzzle[row][col] !== 0) {
+                input.classList.add('original-number');
+            } else {
+                input.classList.remove('original-number');
+            }
+        }
+
+        // 是否允许修改取决于当前状态：
+        // 锁盘中（错误提示或已经胜利） -> 继续锁盘
+        // 正常进行中 -> 仍可修改
+        if (hasWon || isBoardLocked) {
+            lockAllCells();
+        } else {
+            unlockEditableCells();
+        }
+
+        showMessage('已显示答案，可以对照学习。', 'info');
+        saveGameState();
+    }
+
+    function saveGameState() {
+        try {
+            const cells = document.getElementsByClassName('cell');
+            const inputs = Array(9).fill(null).map(() => Array(9).fill(0));
+
+            for (let i = 0; i < 81; i++) {
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                const input = cells[i].firstChild;
+                const val = input.value === '' ? 0 : parseInt(input.value, 10);
+                inputs[row][col] = isNaN(val) ? 0 : val;
+            }
+
+            const state = {
+                solution,
+                puzzle: currentPuzzle,
+                inputs,
+                startTime,
+                hasWon,
+                isBoardLocked
+            };
+
+            localStorage.setItem(GAME_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.error('保存游戏失败：', e);
+        }
+    }
+
+    function loadGameState() {
+        try {
+            const saved = localStorage.getItem(GAME_KEY);
+            if (!saved) return false;
+
+            const state = JSON.parse(saved);
+            if (!state || !state.solution || !state.puzzle || !state.inputs) return false;
+
+            solution = state.solution;
+            currentPuzzle = state.puzzle;
+            startTime = state.startTime || Date.now();
+            hasWon = !!state.hasWon;
+            isBoardLocked = !!state.isBoardLocked;
+
+            const cells = document.getElementsByClassName('cell');
+
+            for (let i = 0; i < 81; i++) {
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                const input = cells[i].firstChild;
+                const given = currentPuzzle[row][col];
+                const val = state.inputs[row][col];
+
+                cells[i].classList.remove('input-error');
+                input.classList.remove('original-number');
+
+                if (given !== 0) {
+                    input.value = given;
+                    input.classList.add('original-number');
+                } else {
+                    input.value = val || '';
+                }
+            }
+
+            if (hasWon || isBoardLocked) {
+                lockAllCells();
+            } else {
+                unlockEditableCells();
+            }
+
+            if (hasWon) {
+                setCheckButtonToFinished();
+            } else if (isBoardLocked) {
+                setCheckButtonToContinueChallenge();
+            } else {
+                resetCheckButton();
+            }
+
+            showMessage('已从本地恢复上次未完成的题目。', 'info');
+            return true;
+        } catch (e) {
+            console.error('读取游戏失败：', e);
+            return false;
+        }
+    }
+
+    function showMessage(text, type) {
+        const msg = document.getElementById('message');
+        msg.textContent = text || '';
+        msg.classList.remove('success', 'error', 'info', 'show');
+
+        if (text) {
+            if (type) msg.classList.add(type);
+            msg.classList.add('show');
+        }
+    }
+
+    window.addEventListener('load', () => {
+        createSudokuBoard();
+        const restored = loadGameState();
+
+        if (!restored) {
+            generateNewGame();
+        }
+    });
+</script>
+</body>
+</html>
