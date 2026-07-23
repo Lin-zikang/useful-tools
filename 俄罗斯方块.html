@@ -1461,6 +1461,76 @@
     }
   </style>
 
+
+
+  <style id="mobile-layout-overlap-fix">
+    /* 手机竖屏：预览画布始终限制在卡片内部，避免覆盖系统控制区 */
+    @media (max-width: 900px) and (orientation: portrait) {
+      .side.right .next-card {
+        overflow: hidden;
+      }
+
+      .side.right .next-box {
+        overflow: hidden;
+        container-type: size;
+      }
+
+      .side.right #next {
+        width: min(100cqw, 100cqh, calc(var(--side-rail) - 28px), 122px);
+        height: min(100cqw, 100cqh, calc(var(--side-rail) - 28px), 122px);
+      }
+    }
+
+    /* 较矮的手机竖屏：压缩信息区与按钮高度，为预览卡片预留完整空间 */
+    @media (max-width: 900px) and (orientation: portrait) and (max-height: 700px) {
+      :root {
+        --side-rail: clamp(106px, 32vw, 148px);
+      }
+
+      .side.right {
+        gap: 6px;
+      }
+
+      .side.left > .card,
+      .side.right > .card {
+        padding: 5px;
+        border-width: 2px;
+        border-radius: 7px;
+        box-shadow: inset 0 0 0 2px #f1e4bf, 0 3px 0 rgba(65,52,42,.18);
+      }
+
+      .side.left > .card h2,
+      .side.right > .card h2 {
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+        font-size: 9px;
+      }
+
+      .side.left .stats {
+        gap: 3px;
+      }
+
+      .side.left .stat {
+        min-height: 25px;
+        padding: 3px 5px;
+      }
+
+      .side.left .stat strong {
+        font-size: clamp(13px, 3.8vw, 16px);
+      }
+
+      .side.right .button-row {
+        gap: 4px;
+      }
+
+      .side.right .button-row button {
+        min-height: 28px;
+        padding: 3px 2px;
+        font-size: 9px;
+      }
+    }
+  </style>
+
 </head>
 <body>
   <div class="toast" id="toast" role="status" aria-live="polite">LEVEL UP!</div>
